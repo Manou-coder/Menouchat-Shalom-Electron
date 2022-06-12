@@ -1,5 +1,5 @@
-const zmanJerusalem = require('../villes/zmanim');
-const zmanVille = require('../villes/zmanim');
+const zmanJerusalem = require('../cities/zmanim');
+const zmanVille = require('../cities/zmanim');
 
 exports.envoyerZman = (req, res, next) => {
     res.json(zmanJerusalem);
