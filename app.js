@@ -8,6 +8,10 @@ app.use(cors());
 
 app.use(express.json());
 
+app.get('/', function(req, res) {
+    res.sendFile(process.cwd() + '/views/index.html');
+  });
+
 app.use("/api/zmanim", zmanRoutes);
 
 
