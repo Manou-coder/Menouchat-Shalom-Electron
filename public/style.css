@@ -1,16 +1,28 @@
-body {
+html {
     text-align: center;
     display: flex;
     flex-direction: column;
 }
 
+body
+{
+    width: 120vh;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 h1
 {
     border: 1px solid black;
-    width: 35%;
+    width: 100%;
     margin-right: auto;
     margin-left: auto;
 
+}
+
+iframe
+{
+    margin-top: 10px;
 }
 
 legend 
@@ -36,5 +48,10 @@ input[type=submit]:hover
 {
     background-color: green;
     color: white;
+}
+
+.pdf
+{
+    margin-top: 20px;
 }
 

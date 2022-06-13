@@ -55,6 +55,11 @@
         </section>
       </main>
 
-      <iframe src="../files/pcr_noa.pdf" height="100%" width="100%"></iframe>
+      <!-- <iframe src="../files/pcr_noa.pdf" height="100%" width="100%"></iframe> -->
+
+      <form class="pdf" action="admin/pdf" method="post" enctype="multipart/form-data">
+        <input type="file" name="avatar" />
+        <input  type="submit" value="SAUVEGARDER"/>
+      </form>
 </body>
 </html>

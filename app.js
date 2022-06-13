@@ -22,6 +22,9 @@ app.use('/admin', adminRoutes);
 
 app.use("/api/zmanim", zmanRoutes);
 
+app.get('/api/pdf', cors(), (req, res, next) => {
+    res.json({urlImages: "http://localhost:3000/files/montre.png"});
+})
 
 
 
