@@ -9,6 +9,52 @@
 </head>
 <body>
     <h1>Ici on change les horaires</h1>
-    
+    <main>
+        <section>
+          <form action="http://localhost:3000/admin/zman-chol" method="POST">
+            <fieldset>
+              <legend>זמנים של חול</legend>
+              <div class="zman shaharit">
+                <input type="time" id="zman_input" value="00:00" name="shaharitChol">
+                <label for="zman_input">שחרית</label>
+              </div><br>
+              <div class="zman mincha">
+                <input type="time" id="zman_input" value="00:00" name="minchaChol">
+                <label for="zman_input">מנחה</label>
+              </div><br>
+              <div class="zman arvit">
+                <input type="time" id="zman_input" value="00:00" name="arvitChol">
+                <label for="zman_input">ערבית</label>
+              </div><br>
+              <input  type="submit" value="SAUVEGARDER"/>
+            </fieldset> 
+          </form>
+
+          <form action="http://localhost:3000/admin/zman-shabat" method="POST">
+            <fieldset>
+              <legend>זמנים של שבת</legend>
+              <div class="zman mincha_erev">
+                <input type="time" id="zman_input" value="00:00" name="minchaErevShbt">
+                <label for="zman_input">מנחה ער״ש</label>
+              </div><br>
+              <div class="zman shaharit">
+                <input type="time" id="zman_input" value="00:00" name="shaharitShbt">
+                <label for="zman_input">שחרית</label>
+              </div><br>
+              <div class="zman mincha">
+                <input type="time" id="zman_input" value="00:00" name="minchaShbt">
+                <label for="zman_input">מנחה</label>
+              </div><br>
+              <div class="zman arvit">
+                <input type="time" id="zman_input" value="00:00" name="arvitShbt">
+                <label for="zman_input">ערבית</label>
+              </div><br>
+              <input  type="submit" value="SAUVEGARDER"/>
+            </fieldset> 
+          </form>
+        </section>
+      </main>
+
+      <iframe src="../files/pcr_noa.pdf" height="100%" width="100%"></iframe>
 </body>
 </html>

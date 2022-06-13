@@ -1,4 +1,40 @@
-* {
-    color: blue;
+body {
     text-align: center;
+    display: flex;
+    flex-direction: column;
 }
+
+h1
+{
+    border: 1px solid black;
+    width: 35%;
+    margin-right: auto;
+    margin-left: auto;
+
+}
+
+legend 
+{
+    font-size: xx-large;
+    color: blue;
+}
+
+.zman
+{
+    color: black;
+    font-size: xx-large;
+}
+
+input[type=submit]
+{
+    background-color: red;
+    padding: 5px;
+    border-radius: 10px;
+}
+
+input[type=submit]:hover
+{
+    background-color: green;
+    color: white;
+}
+
