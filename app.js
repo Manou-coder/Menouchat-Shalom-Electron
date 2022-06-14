@@ -13,7 +13,6 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}))
 
 
-
 app.use('/public', express.static(`${process.cwd()}/public`));
 
 app.use('/files', express.static(`${process.cwd()}/files`));
@@ -23,7 +22,7 @@ app.use('/admin', adminRoutes);
 app.use("/api/zmanim", zmanRoutes);
 
 app.get('/api/pdf', cors(), (req, res, next) => {
-    res.json({urlImages: "http://localhost:3000/files/montre.png"});
+    res.json({urlImages: "files/test.pdf"});
 })
 
 
