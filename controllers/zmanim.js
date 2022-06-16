@@ -1,7 +1,7 @@
 const zmanJerusalem = require('../cities/zmanim');
 const zmanVille = require('../cities/zmanim');
-const zmanShbt = require('../controllers/admin');
-const zmanAdmin = require('../controllers/admin');
+const zmanShbt = require('./admin');
+const zmanAdmin = require('./admin');
 
 exports.envoyerZmanDuJour = (req, res, next) => {
     res.json(zmanJerusalem);
@@ -17,3 +17,6 @@ exports.envoyerZmanShbt = (req, res, next) => {
     res.json(zmanAdmin.zmanShbt);
 };
 
+exports.envoyerImg = (req, res, next) => {
+    res.json({urlImage: "images/imageAffiche.png"});
+};

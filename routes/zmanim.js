@@ -9,5 +9,7 @@ router.get('/zman-chol', zmanCtrl.envoyerZmanChol);
 
 router.get('/zman-shabat', zmanCtrl.envoyerZmanShbt);
 
+router.get('/pdf', zmanCtrl.envoyerImg)
+
 
 module.exports = router;

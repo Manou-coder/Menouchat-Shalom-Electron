@@ -1,6 +1,4 @@
 const multer  = require('multer')
-const upload = multer({ dest: 'uploads/' })
-
 
 
 
@@ -24,8 +22,9 @@ exports.saveZmanShbt = (req, res, next) => {
 };
 
 exports.savePdf = (req, res, next) => {
-    console.log(req.file);
-    if(req.file === undefined) {res.status(404).json({erreur: "Aucun document n'a été fourni. Veuillez réessayer."})}
+    // console.log(req.file);
+    if(req.file === undefined)
+     {return res.status(404).json({erreur: "Aucun document n'a été fourni. Veuillez réessayer."})}
     res.json({message: "Les changements ont bien été pris en compte", originalname: req.file.originalname, path: req.file.path});
 }
 
