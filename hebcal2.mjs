@@ -1,4 +1,4 @@
-import {HebrewCalendar, HDate, Location, Event} from '@hebcal/core';
+import {HebrewCalendar, HDate, Location, Event, OmerEvent, HolidayEvent} from '@hebcal/core';
 
 let objetEvenement;
 let arrayEvenement = [];
@@ -30,8 +30,6 @@ for (let ev of events) {
     // console.log(date.toLocaleDateString(), ev.render(), hd.toString());
     if (date === dateDuJour) {
       // console.log(typeof ev);
-        objetEvenement = Object.assign(ev)
-        objetEvenement = {ev , ev}
         arrayEvenement.push(ev.render());
         arrayEvenement2.push(ev);
     }
@@ -42,11 +40,17 @@ for (let ev of events) {
 // console.log(arrayEvenement2);
 // console.log(objetEvenement);
 
-// for (let i = 0; i < arrayEvenement2.length; i++) {
-//   const element = array[i];
-//   if
-  
-// }
+for (let i = 0; i < arrayEvenement2.length; i++) {
+  const element = arrayEvenement2[i];
+  console.log(element.render('he'));
+}
+
+if (arrayEvenement2[0] == "HebrewDateEvent") {
+  console.log("coucou");
+}
+
+console.log(arrayEvenement2[0].date)
+
 
 // let obj = {};
 

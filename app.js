@@ -29,6 +29,11 @@ app.get('/', (req, res, next) => {
     res.redirect('/admin')
 })
 
+const eventsByDate = require('./hebcal3.js');
+
+// console.log(eventsByDate);
+
+
 
 
 module.exports = app;

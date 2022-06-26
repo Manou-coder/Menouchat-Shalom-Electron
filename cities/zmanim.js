@@ -12,7 +12,7 @@ const jerusalem = {
 
 const zmanJerusalem = KosherZmanim.getZmanimJson(jerusalem);
 
-console.log(zmanJerusalem);
+// console.log(zmanJerusalem);
 
 module.exports = zmanJerusalem;
 

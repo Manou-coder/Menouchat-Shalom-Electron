@@ -9,6 +9,8 @@ router.get('/zman-chol', zmanCtrl.envoyerZmanChol);
 
 router.get('/zman-shabat', zmanCtrl.envoyerZmanShbt);
 
+router.get("/info", zmanCtrl.envoyerInfoDuJour);
+
 router.get('/pdf', zmanCtrl.envoyerImg)
 
 
