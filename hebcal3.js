@@ -1,4 +1,4 @@
-const { HebrewCalendar, HDate, Location, Event, gematriya } = require("@hebcal/core");
+const { HebrewCalendar, HDate, Location, Event, Sedra, gematriya } = require("@hebcal/core");
 
 
 let dateAnnee = new Date().getFullYear();
@@ -49,6 +49,26 @@ renvoyerLeDafAuBonFormat()
 // console.log(eventsByDate['DafYomiEvent']);
 // console.log(eventsByDate['OmerEvent']);
 
+// console.log(events);
+
+let dateInHebrew = new HDate(new Date());
+// console.log(dateInHebrew);
+
+let shabat = dateInHebrew.onOrAfter(6).greg();
+
+shabat = new Date(shabat).toDateString()
+
+// console.log(shabat);
+
+let parashatAshavua = new Sedra(5782, true).getString(dateInHebrew, 'he');
+
+eventsByDate = Object.assign(eventsByDate, {ParashatAshavua : parashatAshavua})
+
 // console.log(eventsByDate);
 
-module.exports = eventsByDate;
+// console.log(zmanJerusalem.zmanShabatJerusalem);
+
+module.exports.eventsByDate = eventsByDate;
+
+module.exports.shabat = shabat;
+

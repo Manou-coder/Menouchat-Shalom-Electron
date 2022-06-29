@@ -14,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}))
 
+app.use('/views', express.static(`${process.cwd()}/views`));
 
 app.use('/public', express.static(`${process.cwd()}/public`));
 
@@ -29,9 +30,12 @@ app.get('/', (req, res, next) => {
     res.redirect('/admin')
 })
 
-const eventsByDate = require('./hebcal3.js');
+const hebcal = require('./hebcal3.js');
+const zmanJerusalem = require('./cities/zmanim')
+const zmanimShabat = require('./cities/zmanim-chabat')
 
-// console.log(eventsByDate);
+// console.log(zmanJerusalem.zmanShabatJerusalem);
+// console.log(hebcal);
 
 
 

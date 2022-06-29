@@ -19,6 +19,9 @@ exports.saveZmanShbt = (req, res, next) => {
     zmanShbt = req.body;
     exports.zmanShbt = zmanShbt;
     res.json({message: "Les changements ont bien été pris en compte", zmanShbt})
+    // res.sendFile(process.cwd() + "/views/index.html")
+    // res.redirect('/admin').json({message: "Les changements ont bien été pris en compte", zmanShbt});
+
 };
 
 exports.savePdf = (req, res, next) => {

@@ -9,13 +9,19 @@ exports.envoyerZmanDuJour = (req, res, next) => {
 };
 
 exports.envoyerZmanChol = (req, res, next) => {
-    if (zmanAdmin.zmanChol === undefined) res.json({error: "Les zmanim ne sont pas definis. Veuillez vous rendre dans la page de modification pour les définir."});
+    if (zmanAdmin.zmanChol === undefined) {
+        res.json({error: "Les zmanim ne sont pas definis. Veuillez vous rendre dans la page de modification pour les définir."});
+    } else {
     res.json(zmanAdmin.zmanChol);
+    }
 };
 
 exports.envoyerZmanShbt = (req, res, next) => {
-    if (zmanAdmin.zmanShbt === undefined) res.json({error: "Les zmanim ne sont pas definis. Veuillez vous rendre dans la page de modification pour les définir."});
-    res.json(zmanAdmin.zmanShbt);
+    if (zmanAdmin.zmanShbt === undefined) {
+        res.json({error: "Les zmanim ne sont pas definis. Veuillez vous rendre dans la page de modification pour les définir."});
+    } else {
+        res.json(zmanAdmin.zmanShbt);
+    }
 };
 
 exports.envoyerInfoDuJour = (req, res, next) => {

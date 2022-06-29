@@ -1,4 +1,4 @@
-import {HebrewCalendar, HDate, Location, Event, OmerEvent, HolidayEvent} from '@hebcal/core';
+import {HebrewCalendar, HDate, Location, Event, OmerEvent, HolidayEvent, Sedra} from '@hebcal/core';
 
 let objetEvenement;
 let arrayEvenement = [];
@@ -42,23 +42,17 @@ for (let ev of events) {
 
 for (let i = 0; i < arrayEvenement2.length; i++) {
   const element = arrayEvenement2[i];
-  console.log(element.render('he'));
+  // console.log(element.render('he'));
 }
 
 if (arrayEvenement2[0] == "HebrewDateEvent") {
   console.log("coucou");
 }
 
-console.log(arrayEvenement2[0].date)
 
+let dateInHebrew = new HDate();
+console.log(dateInHebrew);
 
-// let obj = {};
+let parashatAshavua = new Sedra(5782, true).getString(dateInHebrew, 'he')
 
-// const objet1 = {a: 0, b: 1};
-// const objet2 = {c: 2, d: 3};
-
-// obj = {objet1};
-// obj = {objet1, objet2};
-
-// console.log(obj);
-
+console.log(parashatAshavua);

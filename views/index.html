@@ -15,7 +15,7 @@
             <fieldset>
               <legend>זמנים של חול</legend>
               <div class="zman shaharit">
-                <input type="time" id="zman_input" value="00:00" name="shaharitChol">
+                <input type="time" id="zman_input" value="00:00" name="shacharitChol">
                 <label for="zman_input">שחרית</label>
               </div><br>
               <div class="zman mincha">
@@ -33,6 +33,10 @@
           <form action="admin/zman-shabat" method="POST">
             <fieldset>
               <legend>זמנים של שבת</legend>
+              <div class="zman shirAshirim">
+                <input type="time" id="zman_input" value="00:00" name="shirAshirim">
+                <label for="zman_input">שיר השירים</label>
+              </div><br>
               <div class="zman mincha_erev">
                 <input type="time" id="zman_input" value="00:00" name="minchaErevShbt">
                 <label for="zman_input">מנחה ער״ש</label>
@@ -45,11 +49,7 @@
                 <input type="time" id="zman_input" value="00:00" name="minchaShbt">
                 <label for="zman_input">מנחה</label>
               </div><br>
-              <div class="zman arvit">
-                <input type="time" id="zman_input" value="00:00" name="arvitShbt">
-                <label for="zman_input">ערבית</label>
-              </div><br>
-              <input  type="submit" value="SAUVEGARDER"/>
+              <input id="valid"  type="submit" value="SAUVEGARDER"/><img id="valid" src="" alt="validateur">
             </fieldset> 
           </form>
         </section>
@@ -61,5 +61,6 @@
         <input type="file" name="avatar" />
         <input  type="submit" value="SAUVEGARDER"/>
       </form>
+      <script src="../public/myApp.js"></script>
 </body>
 </html>
