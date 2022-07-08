@@ -43,7 +43,7 @@ zmanJerusalem = Object.assign(zmanJerusalem, {HadlakAndTzais: HadlakAndTzais});
 
 // fin de l'ajout
 
-console.log(zmanJerusalem);
+// console.log(zmanJerusalem);
 module.exports.zmanJerusalem = zmanJerusalem;
 
 

@@ -62,6 +62,11 @@ shabat = new Date(shabat).toDateString()
 
 let parashatAshavua = new Sedra(5782, true).getString(dateInHebrew, 'he');
 
+parashatAshavua = parashatAshavua.split(' ')
+parashatAshavua.shift();
+parashatAshavua = parashatAshavua.toString()
+// console.log(parashatAshavua)
+
 eventsByDate = Object.assign(eventsByDate, {ParashatAshavua : parashatAshavua})
 
 // console.log(eventsByDate);

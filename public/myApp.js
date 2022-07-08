@@ -12,6 +12,13 @@ const displayZmanModif = async () => {
     minchaChol.value = ZmanTefChol.minchaChol;
     let arvitChol = document.getElementsByName('arvitChol')[0];
     arvitChol.value = ZmanTefChol.arvitChol;
+    var img = document.createElement("img");
+    img.src = "../public/validator.png";
+    var div = document.getElementById("x");
+    div.appendChild(img);
+    setTimeout(() => {
+        img.remove()
+    }, 1000);
     }
     let ZmanTefShabat = await fetch('http://localhost:3000/api/zmanim/zman-shabat');
     ZmanTefShabat = await ZmanTefShabat.json();

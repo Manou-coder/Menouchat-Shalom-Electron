@@ -55,8 +55,23 @@ input[type=submit]:hover
     margin-top: 20px;
 }
 
-#valid_shabat
+
+
+img
 {
     max-width: 100%;
     height: 30px;
 }
+
+.bouttonEtValidator
+{
+    display: inline-flex;
+    width: auto;
+    height: auto;
+    border: 2px solid black;
+}
+
+/* #x
+{
+    right: 20px;
+} */
