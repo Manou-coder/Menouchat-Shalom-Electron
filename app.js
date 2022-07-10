@@ -32,7 +32,7 @@ app.get('/', (req, res, next) => {
 
 const hebcal = require('./hebcal3.js');
 const zmanJerusalem = require('./cities/zmanim')
-const zmanimShabat = require('./cities/zmanim-chabat')
+// const zmanimShabat = require('./cities/zmanim-chabat')
 
 // console.log(zmanJerusalem.zmanShabatJerusalem);
 // console.log(hebcal);

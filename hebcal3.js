@@ -1,7 +1,8 @@
 const { HebrewCalendar, HDate, Location, Event, Sedra, gematriya } = require("@hebcal/core");
 
 
-let dateAnnee = new Date().getFullYear();
+function eventsByDate () {
+  let dateAnnee = new Date().getFullYear();
 let dateDuJour = new Date().toDateString();
 dateDuJour = new Date(dateDuJour);
 dateDuJour = dateDuJour.getTime();
@@ -14,22 +15,22 @@ const options = {
   dafyomi: true,
   sedrot: true,
   omer: true,
-  locale: "he",
+  locale: "he-x-NoNikud",
   addHebrewDates: true,
 };
 
 const events = HebrewCalendar.calendar(options);
-
 
 let eventsByDate = {};
 for (const e of events) {
   let date = e.getDate().greg().getTime();
   if (!date || date == "undefined") continue;
   if (date === dateDuJour) {
-    Object.assign(e, {render: e.render('he')});
+    Object.assign(e, {render: e.render('he-x-nonikud')});
     eventsByDate[e.constructor.name] = e;
   }
 }
+
 
 
 // renvoyer le daf en hebreu au lieu de en chiffres
@@ -60,20 +61,43 @@ shabat = new Date(shabat).toDateString()
 
 // console.log(shabat);
 
-let parashatAshavua = new Sedra(5782, true).getString(dateInHebrew, 'he');
+let parashatAshavua = new Sedra(5782, true).getString(dateInHebrew, 'he-x-NoNikud');
 
 parashatAshavua = parashatAshavua.split(' ')
 parashatAshavua.shift();
 parashatAshavua = parashatAshavua.toString()
 // console.log(parashatAshavua)
 
-eventsByDate = Object.assign(eventsByDate, {ParashatAshavua : parashatAshavua})
+return eventsByDate = Object.assign(eventsByDate, {ParashatAshavua : parashatAshavua})
 
 // console.log(eventsByDate);
 
 // console.log(zmanJerusalem.zmanShabatJerusalem);
+}
+
+eventsByDate()
+
+setInterval(() => {
+  eventsByDate()
+}, 1000);
 
 module.exports.eventsByDate = eventsByDate;
+
+function shabat () {
+
+let dateInHebrew = new HDate(new Date());
+// console.log(dateInHebrew);
+
+let shabat = dateInHebrew.onOrAfter(6).greg();
+
+return shabat = new Date(shabat).toDateString()
+};
+
+shabat()
+setInterval(() => {
+  shabat()
+}, 1000);
+
 
 module.exports.shabat = shabat;
 

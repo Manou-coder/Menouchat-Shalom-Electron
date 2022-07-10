@@ -1,11 +1,11 @@
-const zmanJerusalem = require('../cities/zmanim');
+const {zmanJerusalem} = require('../cities/zmanim');
 const zmanVille = require('../cities/zmanim');
 const zmanShbt = require('./admin');
 const zmanAdmin = require('./admin');
-const eventsByDate = require('../hebcal3');
+const {eventsByDate} = require('../hebcal3');
 
 exports.envoyerZmanDuJour = (req, res, next) => {
-    res.json(zmanJerusalem);
+    res.json(zmanJerusalem());
 };
 
 exports.envoyerZmanChol = (req, res, next) => {
@@ -25,7 +25,7 @@ exports.envoyerZmanShbt = (req, res, next) => {
 };
 
 exports.envoyerInfoDuJour = (req, res, next) => {
-    res.json(eventsByDate);
+    res.json(eventsByDate());
 };
 
 exports.envoyerImg = (req, res, next) => {
