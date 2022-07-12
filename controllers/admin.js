@@ -11,6 +11,7 @@ let zmanShbt;
 
 exports.saveZmanChol = (req, res, next) => {
     zmanChol = req.body;
+    console.log(req.body);
     exports.zmanChol = zmanChol;
     // res.redirect('back').json({message: "Les changements ont bien été pris en compte", zmanChol});
     res.json({message: "Les changements ont bien été pris en compte", zmanChol});

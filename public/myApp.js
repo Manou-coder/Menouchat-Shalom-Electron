@@ -41,7 +41,101 @@ const displayZmanModif = async () => {
     }
 };
 
+displayZmanModif()
 
-displayZmanModif();
 
-console.log('coucou');
+
+
+
+
+
+
+
+
+// AFFICHAGE SANS CHANGER DE PAGE
+
+// let submitChol = document.querySelector('#submitChol');
+// console.log(submitChol);
+
+// submitChol.addEventListener('click', (e) => {
+//     e.preventDefault();
+//     e.stopPropagation()
+// })
+
+
+
+/*
+
+// console.log('coucou');
+
+// http://localhost:3000/api/zmanim/zman-chol
+
+const displayZmanChol = async () => {
+    let ZmanTefChol = await fetch('http://localhost:3000/admin/zman-chol', 
+    {method: 'POST',
+        headers: {
+      'Accept': 'application/json', 
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({body: 'body'})
+    })
+    .then(data => data.json())
+    .then(data => data.zmanChol)
+    .then(data => console.log(data))
+
+    // ZmanTefChol = await ZmanTefChol.json();
+    // if (ZmanTefChol.error) {
+    //     console.log('erreur');
+    //     return;
+    // } else {
+    // console.log(ZmanTefChol);
+    // let shacharitChol = document.getElementsByName('shacharitChol')[0];
+    // shacharitChol.value = ZmanTefChol.shacharitChol;
+    // let minchaChol = document.getElementsByName('minchaChol')[0];
+    // minchaChol.value = ZmanTefChol.minchaChol;
+    // let arvitChol = document.getElementsByName('arvitChol')[0];
+    // arvitChol.value = ZmanTefChol.arvitChol;
+    // }
+}
+
+let submitChol = document.querySelector('#submitChol');
+console.log(submitChol);
+
+submitChol.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    displayZmanChol()
+    console.log('bravo');
+})
+
+
+const displayZmanShabat = async () => {
+    let ZmanTefShabat = await fetch('http://localhost:3000/admin/zman-shabat', {method: 'POST'});
+    ZmanTefShabat = await ZmanTefShabat.json();
+    console.log(ZmanTefShabat);
+    if (ZmanTefShabat.error) {
+        console.log('erreur');
+        return;
+    } else {
+    let shirAshirim = document.getElementsByName('shirAshirim')[0];
+    shirAshirim.value = ZmanTefShabat.shirAshirim;
+    let minchaErevShbt = document.getElementsByName('minchaErevShbt')[0];
+    minchaErevShbt.value = ZmanTefShabat.minchaErevShbt;
+    let shaharitShbt = document.getElementsByName('shaharitShbt')[0];
+    shaharitShbt.value = ZmanTefShabat.shaharitShbt;
+    let minchaShbt = document.getElementsByName('minchaShbt')[0];
+    minchaShbt.value = ZmanTefShabat.minchaShbt;
+    let validShabat = document.getElementById('valid');
+}
+};
+
+
+let submitShabat = document.querySelector('#submitShabat');
+console.log(submitShabat);
+
+submitShabat.addEventListener('click', async (e) => {
+    e.preventDefault();
+    displayZmanShabat()
+    console.log('bravo2');
+})
+
+*/

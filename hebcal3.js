@@ -96,7 +96,7 @@ return shabat = new Date(shabat).toDateString()
 shabat()
 setInterval(() => {
   shabat()
-}, 1000);
+}, 300000);
 
 
 module.exports.shabat = shabat;

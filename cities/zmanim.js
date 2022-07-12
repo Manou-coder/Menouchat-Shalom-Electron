@@ -95,7 +95,7 @@ zmanJerusalem()
 setInterval(() => {
     zmanJerusalem()
     // console.log(zmanJerusalem2());
-}, 1000);
+}, 300000);
 
 // console.log(zmanJerusalem())
 
