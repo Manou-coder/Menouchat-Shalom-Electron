@@ -28,6 +28,18 @@ exports.envoyerInfoDuJour = (req, res, next) => {
     res.json(eventsByDate());
 };
 
-exports.envoyerImg = (req, res, next) => {
-    res.json({urlImage: "images/imageAffiche.png"});
+exports.envoyerImg1 = (req, res, next) => {
+    res.json({urlImage: "images/imageAffiche1.jpg"});
+};
+
+exports.envoyerImg2 = (req, res, next) => {
+    res.json({urlImage: "images/imageAffiche2.jpg"});
+};
+
+exports.envoyerImg3 = (req, res, next) => {
+    res.json({urlImage: "images/imageAffiche3.jpg"});
+};
+
+exports.envoyerImg4 = (req, res, next) => {
+    res.json({urlImage: "images/imageAffiche4.jpg"});
 };

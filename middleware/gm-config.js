@@ -7,8 +7,9 @@ module.exports = (req, res, next) => {
      {return console.log("error il n'y a pas de pdf à transformer"), next()}
 
     gm(`${req.file.path}[0]`)
-    .write('images/imageAffiche.png', function(err) {
+    .write('images/imageAffiche.jpg', function(err) {
         if(err) console.log(err);
+        console.log(`${req.file.path}[0]`);
         console.log("Jpg to png!")
     });
 

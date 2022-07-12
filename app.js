@@ -9,6 +9,8 @@ const { error } = require("console");
 const fs = require('fs');
 
 
+
+
 app.use(cors());
 
 app.use(express.json());
@@ -36,7 +38,6 @@ const zmanJerusalem = require('./cities/zmanim')
 
 // console.log(zmanJerusalem.zmanShabatJerusalem);
 // console.log(hebcal);
-
 
 
 
