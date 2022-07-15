@@ -63,6 +63,11 @@ img
     height: 30px;
 }
 
+fieldset
+{
+    margin-top: 10px;
+}
+
 /* .bouttonEtValidator
 {
     display: inline-flex;

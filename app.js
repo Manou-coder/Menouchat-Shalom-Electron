@@ -39,6 +39,17 @@ const zmanJerusalem = require('./cities/zmanim')
 // console.log(zmanJerusalem.zmanShabatJerusalem);
 // console.log(hebcal);
 
+let IMG;
 
+app.post('/admin/displayImg', (req, res, next) => {
+    console.log(req.body);
+    IMG = req.body;
+    res.json(req.body)
+})
+
+app.get('/admin/getdisplayImg', (req, res, next) => {
+    console.log(req.body);
+    res.json(IMG)
+})
 
 module.exports = app;

@@ -59,25 +59,40 @@
       </main>
 
       <form class="pdf" action="admin/pdf1" method="post" enctype="multipart/form-data">
+      <!-- <form > -->
         <label for="image1">image1</label>
         <input type="file" name="avatar" />
         <input  type="submit" value="SAUVEGARDER"/>
+        <input type="checkbox" name="image1" id="image1" value="true">
       </form>
       <form class="pdf" action="admin/pdf2" method="post" enctype="multipart/form-data">
         <label for="image2">image2</label>
         <input type="file" name="avatar" />
         <input  type="submit" value="SAUVEGARDER"/>
+        <input type="checkbox" name="image2" id="image2" value="true">
       </form>
       <form class="pdf" action="admin/pdf3" method="post" enctype="multipart/form-data">
         <label for="image3">image3</label>
         <input type="file" name="avatar" />
         <input  type="submit" value="SAUVEGARDER"/>
+        <input type="checkbox" name="image3" id="image3" value="true">
       </form>
       <form class="pdf" action="admin/pdf4" method="post" enctype="multipart/form-data">
         <label for="image4">image4</label>
         <input type="file" name="avatar" />
         <input  type="submit" value="SAUVEGARDER"/>
+        <input type="checkbox" name="image4" id="image4" value="true">
+
       </form>
+
+      <fieldset>
+        <form id="formImg" >
+          <label for="displayimg">Images à afficher</label><br>
+          <label for="numberSec">Nombre de seconde d'interval entre les images</label>
+          <input id="secInterval" type="number" min="2" max="15"><br>
+          <input  type="submit" value="SAUVEGARDER"/>
+        </form>  
+      </fieldset>
       <script src="../public/myApp.js"></script>
 </body>
 </html>

@@ -43,6 +43,69 @@ const displayZmanModif = async () => {
 
 displayZmanModif()
 
+// let checkbox = document.querySelector('#image1');
+// console.log(checkbox);
+
+// let form = document.querySelector('#form');
+// console.log(form);
+
+let formImg = document.querySelector('#formImg');
+console.log(formImg);
+
+
+const displayFormImg = async () => {
+    let formImg = await fetch('http://localhost:3000/admin/displayImg', 
+    {method: 'POST',
+        headers: {
+      'Accept': 'application/json', 
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        image1: document.querySelector('#image1').checked,
+        image2: document.querySelector('#image2').checked,
+        image3: document.querySelector('#image3').checked,
+        image4: document.querySelector('#image4').checked,
+        secInterval: document.querySelector('#secInterval').value
+    })
+    })
+}
+
+
+formImg.addEventListener('submit', (e) => {
+    e.preventDefault()
+    // console.log(e);
+    displayFormImg()
+})
+
+
+// addEventListener('submit', (e) => {
+//     e.preventDefault()
+//     sendPdf()
+// })
+
+// const sendPdf = async () => {
+//     let urlPdf = await fetch('http://localhost:3000/admin/pdf1', 
+//     {method: 'POST',
+//         headers: {
+//       'Accept': 'application/JSON', 
+//       'Content-Type': 'application/JSON'
+//     },
+//     body: JSON.stringify({body: checkbox.value})
+//     })
+//     .then(data => data.json())
+//     .then(data => data.zmanChol)
+//     .then(data => console.log(data))
+// }
+
+// let submitChol = document.querySelector('#submitChol');
+// console.log(submitChol);
+
+// submitChol.addEventListener('submit', async (e) => {
+//     e.preventDefault();
+//     displayZmanChol()
+//     console.log('bravo');
+// })
+
 
 
 
