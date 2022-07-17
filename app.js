@@ -48,7 +48,7 @@ app.post('/admin/displayImg', (req, res, next) => {
 })
 
 app.get('/admin/getdisplayImg', (req, res, next) => {
-    console.log(req.body);
+    // console.log(req.body);
     res.json(IMG)
 })
 

@@ -4,7 +4,7 @@ const { HebrewCalendar, HDate, Location, Event, Sedra, gematriya } = require("@h
 function eventsByDate () {
   let dateAnnee = new Date().getFullYear();
 let dateDuJour = new Date().toDateString();
-dateDuJour = new Date(dateDuJour);
+dateDuJour = new Date('05/10/2022');
 dateDuJour = dateDuJour.getTime();
 
 const options = {
@@ -26,7 +26,8 @@ for (const e of events) {
   let date = e.getDate().greg().getTime();
   if (!date || date == "undefined") continue;
   if (date === dateDuJour) {
-    Object.assign(e, {render: e.render('he-x-nonikud')});
+    // console.log(e);
+    Object.assign(e, {render2: e.render('he-x-nonikud')});
     eventsByDate[e.constructor.name] = e;
   }
 }
@@ -45,6 +46,19 @@ const renvoyerLeDafAuBonFormat = () => {
 
 renvoyerLeDafAuBonFormat()
 
+let jewishHolliday = '';
+
+if(eventsByDate.hasOwnProperty('HolidayEvent')) {
+  // console.log(eventsByDate.HolidayEvent.AsaraBTevetEvent);
+  // console.log('yes');
+  jewishHolliday = eventsByDate.HolidayEvent.render2;
+  delete eventsByDate.HolidayEvent;
+  delete eventsByDate.TimedEvent;
+} else if (eventsByDate.hasOwnProperty('AsaraBTevetEvent')) {
+  jewishHolliday = eventsByDate.AsaraBTevetEvent.render2;
+  delete eventsByDate.AsaraBTevetEvent;
+  delete eventsByDate.TimedEvent;
+}
 
 
 // console.log(eventsByDate['DafYomiEvent']);
@@ -68,7 +82,16 @@ parashatAshavua.shift();
 parashatAshavua = parashatAshavua.toString()
 // console.log(parashatAshavua)
 
-return eventsByDate = Object.assign(eventsByDate, {ParashatAshavua : parashatAshavua})
+
+
+// console.log(eventsByDate);
+
+// let coucou = JSON.stringify(eventsByDate);
+
+// console.log(coucou);
+
+
+return eventsByDate = Object.assign(eventsByDate, {ParashatAshavua : parashatAshavua}, {Holliday: jewishHolliday})
 
 // console.log(eventsByDate);
 
@@ -76,6 +99,8 @@ return eventsByDate = Object.assign(eventsByDate, {ParashatAshavua : parashatAsh
 }
 
 eventsByDate()
+
+// console.log(eventsByDate());
 
 setInterval(() => {
   eventsByDate()
