@@ -1,0 +1,285 @@
+@font-face {
+    font-family: 'guttman_mantova-decorregular';
+    src: url('../public/font shoul/MANTDEC.TTF') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+p{
+	font-family: 'guttman_mantova-decorregular';
+}
+
+body
+{
+	background-image: url('ebauche\ bet\ hamidrash11.jpg');
+	background-repeat: no-repeat;
+	background-size: cover;
+	margin: 0;
+	padding: 0;
+    /* font-family: 'guttman_mantovaregular'; */
+}
+
+/* CHEARIM */
+
+div.zmanei{
+	color: black;
+	font-size: larger;
+	text-shadow:
+	 0.25px 0.1px 0 #ffffcc,
+	 0.5px 0.2px 0 #ffffcc,
+	 0.75px 0.3px 0 #ffffcc,
+	 0.75px 0.4px 0 #ffffcc,
+	 1px 0.5px 0 #ffffcc;
+}
+
+div.shabat{
+	position: absolute;
+	border: 3px solid red;
+	width: 215px;
+	height: 260px;
+	top: 260px;
+	left: 60px;
+}
+
+/* div.shabat article.item{
+	display: none;
+} */
+
+div.ayom{
+	position: absolute;
+	border: 3px solid red;
+	width: 215px;
+	height: 260px;
+	top: 260px;
+	right: 60px;
+}
+
+article.item
+{
+	position: relative;
+	font-size:large;
+	margin-top: -25px;
+	margin-bottom: -25px;
+	top: 10px
+}
+
+
+article.item p 
+{
+    display: inline-block;
+}
+
+p.zman {
+	margin: auto;
+	text-align: right;
+    border: 1px solid red;
+	width: 50%;
+}
+
+p.horaire 
+{
+    text-align: left;
+    border: 1px solid green;
+	width: 46.55%;
+}
+
+/* Possibilite de bouger les elements des panneaux */
+
+#Sunrise 
+{
+	position: relative;
+	right: 20px;
+	color: red;
+}
+
+#dateFr
+{
+	position: relative;
+	right: 20px;
+	color: red;
+}
+
+/* PANNEAUX A COTE DE LA MONTRE */
+
+div.gauche
+{
+	position: absolute;
+	border: 3px solid yellow;
+	width: 230px;
+	height: 260px;
+	top: 600px;
+	left: 20px;
+}
+
+div.panneau p
+{
+	color: #ffffcc;
+	font-size: larger;
+	text-shadow:
+	 0.25px 0.1px 0 black,
+	 0.5px 0.2px 0 black,
+	 0.75px 0.3px 0 black,
+	 0.75px 0.4px 0 black,
+	 1px 0.5px 0 black;
+}
+
+p.date
+{
+	color: red;
+}
+
+div.droit
+{
+	position: absolute;
+	border: 3px solid yellow;
+	width: 230px;
+	height: 260px;
+	top: 600px;
+	right: 20px;
+}
+
+div.droit article.item
+{
+	position: relative;
+	font-size:large;
+	margin-top: 0px;
+}
+
+div.droit p.zman {
+	margin: auto;
+	text-align: right;
+    border: 1px solid red;
+	width: 70%;
+}
+
+div.droit p.horaire 
+{
+    text-align: left;
+    border: 1px solid green;
+	width: 26.55%;
+}
+
+/* MONTRE */
+
+
+.min {
+	position: absolute;
+	height:140px;
+	max-width: 100%;
+	top: 655px;
+	left: 285px;
+	transform: rotate(135deg);
+}
+
+.hor
+{
+	position: absolute;
+	height:105px;
+	max-width: 100%;
+	top: 673px;
+	left: 305px;
+	transform: rotate(45deg);
+}
+
+.boutton
+{
+	position: absolute;
+	height:15px;
+	max-width: 100%;
+	top: 718px;
+	left: 350px;	
+}
+
+
+/* IMAGE */
+/* #myImg {
+	-webkit-animation-name: fadeInOpacity;
+	        animation-name: fadeInOpacity;
+	-webkit-animation-iteration-count: 1;
+	        animation-iteration-count: 1;
+	-webkit-animation-timing-function: ease-in;
+	        animation-timing-function: ease-in;
+	-webkit-animation-duration: 2s;
+	        animation-duration: 2s;
+}
+
+@-webkit-keyframes fadeInOpacity {
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+@keyframes fadeInOpacity {
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+} */
+/* 
+#myImg
+{
+	position: absolute;
+	bottom: 105px;
+	left: 105px;
+	max-width: 100%;
+	height:410px;
+	box-shadow: 3px 3px 3px 3px black;
+	transition: opacity 2s;
+	-webkit-transition: opacity 2s;
+}
+ */
+ @keyframes fondu {
+	0%   {opacity: 0}
+	100% {opacity: 1;}
+  }
+
+
+/* .myImg
+{
+	position: absolute;
+	bottom: 105px;
+	left: 105px;
+	max-width: 100%;
+	height:410px;
+	box-shadow: 3px 3px 3px 3px black;
+} */
+
+.myImg
+{
+	position: absolute;
+	bottom: 105px;
+	left: 105px;
+	max-width: 100%;
+	height:410px;
+	box-shadow: 3px 3px 3px 3px black;
+	animation-name: fondu ;
+	animation-duration: 6S;
+}
+
+.changing
+{
+	animation-name: fondu ;
+	animation-duration: 4s;
+}
+
+.changing2
+{
+	animation-name: fondu ;
+	animation-duration: 4s;
+}
+
+#shalom
+{
+	position: absolute;
+	top: 200px;
+	left: 200px;
+	font-size: xx-large;
+	color: aliceblue;
+	font-family: 'guttman_mantova-decorregular';
+}
