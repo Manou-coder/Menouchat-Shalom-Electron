@@ -2,9 +2,9 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "backend du louach zmanim de menouchat chalom",
-  "main": "server.js",
+  "main": "main.js",
   "scripts": {
-    "start": "server.js",
+    "start": "electron .",
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,6 +14,7 @@
     "@hebcal/core": "^3.42.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
+    "electron": "^19.0.8",
     "express": "^4.18.1",
     "flatted": "^3.2.6",
     "gm": "^1.23.1",

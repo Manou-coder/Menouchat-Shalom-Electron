@@ -11,48 +11,59 @@
     <h1>Ici on change les horaires</h1>
     <main>
         <section>
-          <form   action="admin/zman-chol" method="POST">
-          <!-- <form id="submitChol"> -->
+          <form id="formChol">
             <fieldset>
               <legend>זמנים של חול</legend>
               <div class="zman shaharit">
-                <input type="time" id="zman_input" value="00:00" name="shacharitChol">
+                <input type="time" id="shacharitChol" value="00:00">
                 <label for="zman_input">שחרית</label>
               </div><br>
               <div class="zman mincha">
-                <input type="time" id="zman_input" value="00:00" name="minchaChol">
+                <input type="time" id="minchaChol" value="00:00">
                 <label for="zman_input">מנחה</label>
               </div><br>
               <div class="zman arvit">
-                <input type="time" id="zman_input" value="00:00" name="arvitChol">
+                <input type="time" id="arvitChol" value="00:00">
                 <label for="zman_input">ערבית</label>
               </div><br>
               <div class="bouttonEtValidator">
-                <input  id="submitChol" type="submit" value="SAUVEGARDER"/>
+                <input  id="submitChol" type="submit" value="ENVOYER"/>
+                  <div class="loader chol" id="loader-1" >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
               </div>
             </fieldset> 
           </form>
 
-          <form >
+          <form id="formShabat">
             <fieldset>
               <legend>זמנים של שבת</legend>
               <div class="zman shirAshirim">
-                <input type="time" id="zman_input" value="00:00" name="shirAshirim">
+                <input type="time" id="shirAshirim" value="00:00">
                 <label for="zman_input">שיר השירים</label>
               </div><br>
               <div class="zman mincha_erev">
-                <input type="time" id="zman_input" value="00:00" name="minchaErevShbt">
+                <input type="time" id="minchaErevShbt" value="00:00">
                 <label for="zman_input">מנחה ער״ש</label>
               </div><br>
               <div class="zman shaharit">
-                <input type="time" id="zman_input" value="00:00" name="shaharitShbt">
+                <input type="time" id="shaharitShbt" value="00:00">
                 <label for="zman_input">שחרית</label>
               </div><br>
               <div class="zman mincha">
-                <input type="time" id="zman_input" value="00:00" name="minchaShbt">
+                <input type="time" id="minchaShbt" value="00:00">
                 <label for="zman_input">מנחה</label>
               </div><br>
-              <input id="submitShabat"  type="submit" value="SAUVEGARDER"/>
+              <div class="bouttonEtValidator">
+                <input  id="submitShabat" type="submit" value="ENVOYER"/>
+                  <div class="loader shabat" id="loader-1" >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+              </div>
             </fieldset> 
           </form>
         </section>

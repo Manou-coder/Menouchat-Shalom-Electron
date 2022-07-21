@@ -4,6 +4,7 @@ const fs = require("fs");
 const gm = require("gm").subClass({ imageMagick: false });
 
 module.exports = (req, res, next) => {
+  console.log(req.file);
   let dossier = req.file.path;
   console.log(dossier + "couco");
 
