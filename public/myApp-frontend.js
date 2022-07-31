@@ -1,6 +1,6 @@
 // GET RELOAD PAGE
 
-let urlGetReload = 'http://localhost:3000/api/zmanim/get-reload';
+let urlGetReload = '/api/zmanim/get-reload';
 
 const arrayReload = [0];
 
@@ -66,7 +66,7 @@ const modifierHeure = (heure) => {
 // ZMANEI TEFILA H'OL
 
 const displayTefChol = async () => {
-  let ZmanTefChol = await fetch("http://localhost:3000/api/zmanim/zman-chol");
+  let ZmanTefChol = await fetch("/api/zmanim/zman-chol");
   ZmanTefChol = await ZmanTefChol.json();
   let arvitOfChol = document.querySelector("#arvit");
   arvitOfChol.innerHTML = ZmanTefChol.arvitChol;
@@ -82,7 +82,7 @@ displayTefChol();
 
 const displayZmaneiShabat = async () => {
   let ZmaneiShabat = await fetch(
-    "http://localhost:3000/api/zmanim/zman-shabat"
+    "/api/zmanim/zman-shabat"
   );
   ZmaneiShabat = await ZmaneiShabat.json();
   // console.log(ZmaneiShabat);
@@ -101,7 +101,7 @@ displayZmaneiShabat()
 // ZMANEI AYOM CALENDRIER
 
 const displayZmaneiAyom = async () => {
-  let ZmaneiAyom = await fetch("http://localhost:3000/api/zmanim/jerusalem");
+  let ZmaneiAyom = await fetch("/api/zmanim/jerusalem");
   ZmaneiAyom = await ZmaneiAyom.json();
   // console.log(ZmaneiAyom);
   ZmaneiShabat = ZmaneiAyom.HadlakAndTzais;
@@ -140,7 +140,7 @@ setInterval(() => {
 // INFO DAF PARASHA ET AUTRES
 
 const displayInfo = async () => {
-  let info = await fetch("http://localhost:3000/api/zmanim/info");
+  let info = await fetch("/api/zmanim/info");
   info = await info.json();
   // console.log(info);
   // console.log(info.eventsByDate.ParashatAshavua);
@@ -175,7 +175,7 @@ const diaporama = async () => {
   // let secondeInterval = 3000;
 
   const infoDiaporama = async () => {
-    fetch("http://localhost:3000/api/zmanim/checkbox")
+    fetch("/api/zmanim/checkbox")
       .then((res) => res.json())
       .then((data) => {
         /* arrAndSec sert a retourner 2 elements : le nb d'images ainsi que les secondesInterval*/
@@ -294,7 +294,7 @@ function diapoFondu(arrayImageRecup) {
 
 function arrayPush(arrayImageRecup, numberOfImage) {
   arrayImageRecup.push(
-    `http://localhost:3000/images/imageAffiche${numberOfImage}.jpg`
+    `/images/imageAffiche${numberOfImage}.jpg`
   );
   return;
 }

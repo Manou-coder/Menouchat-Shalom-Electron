@@ -1,7 +1,7 @@
 
 // POST RELOAD PAGE
 
-let urlReload = 'http://localhost:3000/admin/reload'
+let urlReload = '/admin/reload'
 let bodyReload = {reload: true};
 
 const reloadPage = async (url, body) => {
@@ -20,7 +20,7 @@ const reloadPage = async (url, body) => {
 
 // GET RELOAD PAGE
 
-let urlGetReload = 'http://localhost:3000/api/zmanim/get-reload';
+let urlGetReload = '/api/zmanim/get-reload';
 
 const arrayReload = [0];
 
@@ -69,7 +69,7 @@ let minchaShbt = document.querySelector("#minchaShbt");
 // Affichage des zmanim a partir de la DB
 
 const displayZmanChol = async () => {
-  let ZmanTefChol = await fetch("http://localhost:3000/api/zmanim/zman-chol")
+  let ZmanTefChol = await fetch("/api/zmanim/zman-chol")
     .then((data) => data.json())
     .then((data) => {
       //   console.log(data.shacharitChol);
@@ -86,7 +86,7 @@ const displayZmanChol = async () => {
 displayZmanChol();
 
 const displayZmanShabat = async () => {
-  let ZmanTefChol = await fetch("http://localhost:3000/api/zmanim/zman-shabat")
+  let ZmanTefChol = await fetch("/api/zmanim/zman-shabat")
     .then((data) => data.json())
     .then((data) => {
       //   console.log(data);
@@ -111,7 +111,7 @@ let imageName3 = document.querySelector(".image-name.three");
 let imageName4 = document.querySelector(".image-name.four");
 
 const displayNameOfFile = async () => {
-  let objectImage = await fetch("http://localhost:3000/db/images-display.txt")
+  let objectImage = await fetch("/db/images-display.txt")
     .then((data) => data.json())
     .then((data) => {
       // console.log(data);
@@ -151,7 +151,7 @@ const sendZman = async (url, body) => {
 
 let formChol = document.querySelector("#formChol");
 
-let urlChol = "http://localhost:3000/admin/zman-chol";
+let urlChol = "/admin/zman-chol";
 
 let loaderChol = document.querySelector(".loader.chol");
 
@@ -176,7 +176,7 @@ formChol.addEventListener("submit", async (e) => {
 
 let formShabat = document.querySelector("#formShabat");
 
-let urlShabat = "http://localhost:3000/admin/zman-shabat";
+let urlShabat = "/admin/zman-shabat";
 
 let loaderShabat = document.querySelector(".loader.shabat");
 
@@ -247,7 +247,7 @@ function allPDF(files, loaderPdf) {
   formData.append("files", files.files[0]);
   formData.append("nameOfFile", files.files[0].name);
   formData.append("numberOfImage", files.id.substr(-1));
-  fetch("http://localhost:3000/admin/upload_pdf", {
+  fetch("/admin/upload_pdf", {
     method: "POST",
     body: formData,
     headers: {
@@ -302,7 +302,7 @@ secInterval.addEventListener("blur", (e) => {
 
 const displayFormImg = async () => {
   // console.log('coucou');
-  let formImg = await fetch("http://localhost:3000/admin/checkbox", {
+  let formImg = await fetch("/admin/checkbox", {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -341,7 +341,7 @@ function toggleModal(e) {
     // console.log(e.target.parentNode.children[2].id);
     let nameOfImage = e.target.parentNode.children[2].id.substr(-1);
     // console.log("nameOfImage", nameOfImage);
-    modal.style.backgroundImage = `url('http://localhost:3000/images/imageAffiche${nameOfImage}.jpg')`;
+    modal.style.backgroundImage = `url('/images/imageAffiche${nameOfImage}.jpg')`;
     modal.children[1].innerHTML = e.target.parentNode.children[3].innerHTML;
   } catch (error) {}
   modalContainer.classList.toggle("active");
@@ -354,7 +354,7 @@ const diaporama = async () => {
   // let secondeInterval = 3000;
 
   const infoDiaporama = async () => {
-    fetch("http://localhost:3000/api/zmanim/checkbox")
+    fetch("/api/zmanim/checkbox")
       .then((res) => res.json())
       .then((data) => {
 
@@ -529,7 +529,7 @@ function diapoFondu(arrayImageRecup) {
 
 function arrayPush(arrayImageRecup, numberOfImage) {
   arrayImageRecup.push(
-    `http://localhost:3000/images/imageAffiche${numberOfImage}.jpg`
+    `/images/imageAffiche${numberOfImage}.jpg`
   );
   return;
 }
