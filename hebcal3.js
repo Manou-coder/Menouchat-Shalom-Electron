@@ -4,7 +4,7 @@ const { HebrewCalendar, HDate, Location, Event, Sedra, gematriya } = require("@h
 function eventsByDate () {
   let dateAnnee = new Date().getFullYear();
 let dateDuJour = new Date().toDateString();
-dateDuJour = new Date('05/10/2022');
+dateDuJour = new Date(dateDuJour);
 dateDuJour = dateDuJour.getTime();
 
 const options = {

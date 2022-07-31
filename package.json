@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "Menouchat-Shalom",
   "version": "1.0.0",
   "description": "backend du louach zmanim de menouchat chalom",
   "main": "main.js",
@@ -14,13 +14,10 @@
     "@hebcal/core": "^3.42.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
-    "electron": "^19.0.8",
+    "electron": "^19.0.10",
     "express": "^4.18.1",
-    "flatted": "^3.2.6",
-    "gm": "^1.23.1",
     "kosher-zmanim": "^0.8.2",
     "multer": "^1.4.5-lts.1",
-    "nodemon": "^2.0.16",
-    "pdf-poppler": "^0.2.1"
+    "nodemon": "^2.0.16"
   }
 }

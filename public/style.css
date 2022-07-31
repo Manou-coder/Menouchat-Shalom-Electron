@@ -1,112 +1,407 @@
-html {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-}
-
-body
+html
 {
-    width: 120vh;
-    margin-left: auto;
-    margin-right: auto;
+  height: 100%;
+  /* border: 3px solid red; */
+  /* overflow: hidden; */
 }
 
-h1
+body {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  background-image: url('../public/assets/background-shoul.jpg');
+  background-size: cover;
+  background-image: no-repeat;
+}
+
+main
 {
-    border: 1px solid black;
-    width: 100%;
-    margin-right: auto;
-    margin-left: auto;
-
+  /* width: 100%; */
+  height: 100%;
 }
 
-iframe
+/*  CSS GRID  */
+
+::-webkit-scrollbar {
+  display: none;
+  }
+
+.grid-container {
+  display: grid;
+  grid-template-columns: 50% 50%;
+  grid-template-rows: 50% 50%;
+  margin: 10px;
+  padding: 10px;
+  /* width: 100%; */
+  height: 100%;
+}
+.grid-item {
+  background-color: rgba(255, 255, 255, 0.8);
+  /* border: 1px solid rgba(0, 0, 0, 0.8); */
+  padding: 10px;
+  font-size: 30px;
+  overflow: hidden;
+  scrollbar-width: none;
+}
+
+/*  */
+
+h1 {
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+legend {
+  font-size: xx-large;
+  color: blue;
+}
+
+fieldset {
+  width: 100%;
+  height: 100%;
+}
+
+/* FORM SHABAT */
+
+#formShabat{
+  width: 80%;
+  height: 80%;
+  margin: 5%;
+  margin-top: 0px;
+}
+
+#formShabat .zman {
+  color: black;
+  font-size: xx-large;
+  margin-bottom: -36px;
+}
+
+
+.zman.shirAshirim
 {
-    margin-top: 10px;
+  margin-top: -10px;
 }
 
-legend 
-{
-    font-size: xx-large;
-    color: blue;
+/* FORM CHOL */
+
+#formChol{
+  width: 80%;
+  height: 80%;
+  margin: 5%;
+  margin-top: 0px;
+  overflow:visible;
 }
+
+#formChol .zman {
+  color: black;
+  font-size: xx-large;
+  margin-bottom: -27px;
+}
+
+/* form chol et shabat */
 
 .zman
 {
-    color: black;
-    font-size: xx-large;
+  margin-left: auto;
+  margin-right: auto;
+  width: 60%;
 }
 
-input[type=submit]
+/* .zman label
 {
-    background-color: red;
-    padding: 5px;
-    border-radius: 10px;
-}
+  border: 1px solid yellow;
+} */
 
-input[type=submit]:hover
+.zman input
 {
-    background-color: green;
-    color: white;
+  width: 70px;
+  border: 1px solid red;
+  float: left;
+  position: relative;
+  top: 10px;
 }
 
-.pdf
+.btn-submit-zman
 {
-    margin-top: 20px;
+  position: relative;
+  bottom: -15px;
+  right: 40%;
+}
+
+/* FORM PDF */
+
+input[type="file" i] {
+  display: none;
+}
+
+#fieldset-pdf{
+  width: 100%;
+  height: 100%;
+}
+
+.allForm {
+  /* margin-right: auto;
+  margin-left: auto; */
+  margin: 5%;
+  margin-top: 0px;
+  width: 80%;
+  height: 80%;
+  /* text-align: right; */
+}
+
+.label-image {
+  padding: 1px 10px;
+  border: 1px solid grey;
+  border-radius: 5px;
+  background-color: rgb(240, 240, 240);
+  cursor: pointer;
+  font-size: 0.8em;
+}
+
+.label-image:hover {
+  background-color: rgb(200, 200, 200);
+}
+
+.image {
+  font-weight: bold;
+  font-size: large;
+}
+
+#name-image-modal {
+  color: red;
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  font-style: italic;
+  font-weight: bold;
+}
+
+.sec-interval {
+  text-align: center;
+  font-weight: bold;
+  font-size: 0.8em;
+}
+
+.sec-interval.sec-interval{
+  position: relative;
+  height: 20px;
+}
+
+.image-name {
+  font-size: small;
+}
+
+.essai {
+  position: relative;
+  top: 5px;
+  display: inline-block;
+  width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkbox {
+  position: relative;
+  top: 2px;
 }
 
 
 
-img
-{
-    max-width: 100%;
-    height: 30px;
+
+
+
+
+
+
+/* SUBMIT BUTTON */
+
+
+
+input {
+  cursor: pointer;
 }
 
-fieldset
-{
-    margin-top: 10px;
+input[type="submit"] {
+  background-color: red;
+  padding: 5px;
+  width: 70px;
+  border-radius: 10px;
+  /* margin-right: 40%; */
 }
 
+input[type="submit"]:hover {
+  background-color: green;
+  color: white;
+}
 
+/* IMG VALIDATOR & ERROR */
 
+img {
+  max-width: 100%;
+  height: 30px;
+}
 
 /* LOADER 2 */
 
-#loader-2 span{
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 100%;
-    background-color: #3498db;
-    margin: 35px 5px;
+#loader-2 span {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 100%;
+  background-color: #3498db;
+  margin: 35px 5px;
+}
+
+#loader-2 span:nth-child(1) {
+  animation: bounce 1s ease-in-out infinite;
+}
+
+#loader-2 span:nth-child(2) {
+  animation: bounce 1s ease-in-out 0.33s infinite;
+}
+
+#loader-2 span:nth-child(3) {
+  animation: bounce 1s ease-in-out 0.66s infinite;
+}
+
+@keyframes bounce {
+  0%,
+  75%,
+  100% {
+    -webkit-transform: translateY(0);
+    -ms-transform: translateY(0);
+    -o-transform: translateY(0);
+    transform: translateY(0);
   }
-  
-  #loader-2 span:nth-child(1){
-    animation: bounce 1s ease-in-out infinite;
+
+  25% {
+    -webkit-transform: translateY(-10px);
+    -ms-transform: translateY(-10px);
+    -o-transform: translateY(-10px);
+    transform: translateY(-10px);
   }
-  
-  #loader-2 span:nth-child(2){
-    animation: bounce 1s ease-in-out 0.33s infinite;
+}
+
+.loader.pdf {
+  display: none;
+}
+
+/* MODAL */
+
+.modal-btn {
+  width: 20px;
+  height: 13px;
+  background-image: url("../public/assets/eye-icon.png");
+  border: 1px solid grey;
+  border-radius: 5px;
+  background-size: cover;
+  cursor: pointer;
+  top: 0px;
+  position: relative;
+}
+
+.modal-container {
+  /* display: none; */
+  visibility: hidden;
+  position: fixed;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  transition: visibility 0.4s;
+}
+.modal-container.active {
+  /* display: block; */
+  visibility: visible;
+}
+
+.overlay {
+  opacity: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #333333d3;
+  transition: opacity 0.4s 0.2s ease-out;
+}
+.modal-container.active .overlay {
+  opacity: 1;
+  transition: opacity 0.4s ease-out;
+}
+
+.modal {
+  opacity: 0;
+  width: 500px;
+  height: 200px;
+  /* max-width: 500px;
+  min-width: 300px; */
+  padding: 30px;
+  background-image: url("http://localhost:3000/images/imageAffiche1.jpg");
+  background-size: cover;
+  border-radius: 5px;
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, calc(-50% - 50px));
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.modal-container.active .modal {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.4s 0.2s ease-out, transform 0.4s 0.2s ease-out;
+}
+
+.close-modal {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 5px;
+  font-size: 18px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  cursor: pointer;
+  background: #ff365e;
+  color: #fff;
+}
+.modal h1 {
+  margin-bottom: 10px;
+  font-family: Montserrat, sans-serif;
+  font-weight: 500;
+}
+.modal p {
+  line-height: 1.4;
+  margin-bottom: 5px;
+}
+
+/* IMAGE DIAPORAMA */
+
+.box-img
+{
+  margin: auto;
+  margin-top: 3%;
+  border: 1px solid black;
+  width: 80%;
+  height: 80%;
+  position: relative;
+}
+
+
+@keyframes fondu {
+	0%   {opacity: 0}
+	100% {opacity: 1;}
   }
-  
-  #loader-2 span:nth-child(3){
-    animation: bounce 1s ease-in-out 0.66s infinite;
-  }
-  
-  @keyframes bounce{
-    0%, 75%, 100%{
-      -webkit-transform: translateY(0);
-      -ms-transform: translateY(0);
-      -o-transform: translateY(0);
-      transform: translateY(0);
-    }
-  
-    25%{
-      -webkit-transform: translateY(-10px);
-      -ms-transform: translateY(-10px);
-      -o-transform: translateY(-10px);
-      transform: translateY(-10px);
-    }
-  }
-  
+
+
+.image-diaporama
+{
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  /* top: 0;
+  left: 0; */
+  /* margin-left: 50%;
+  margin-right: 50%; */
+  animation-name: fondu ;
+	animation-duration: 3s;
+}

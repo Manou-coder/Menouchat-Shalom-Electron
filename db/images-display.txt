@@ -1,0 +1,8 @@
+{
+  "imageDisplay": [
+    "halaha10.pdf",
+    "test-image2.pdf",
+    "test-image3.pdf",
+    "test-image4.pdf"
+  ]
+}

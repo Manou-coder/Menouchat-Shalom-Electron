@@ -1,109 +1,167 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="rtl" >
+
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../public/style.css">
-    <title>changement d'horaires</title>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="../public/style.css" />
+  <link rel="icon" type="image/png" href="/public/assets/clock.png">
+  <title>הגדרות הלוח</title>
 </head>
-<body>
-    <h1>Ici on change les horaires</h1>
-    <main>
-        <section>
-          <form id="formChol">
-            <fieldset>
-              <legend>זמנים של חול</legend>
-              <div class="zman shaharit">
-                <input type="time" id="shacharitChol" value="00:00">
-                <label for="zman_input">שחרית</label>
-              </div><br>
-              <div class="zman mincha">
-                <input type="time" id="minchaChol" value="00:00">
-                <label for="zman_input">מנחה</label>
-              </div><br>
-              <div class="zman arvit">
-                <input type="time" id="arvitChol" value="00:00">
-                <label for="zman_input">ערבית</label>
-              </div><br>
-              <div class="bouttonEtValidator">
-                <input  id="submitChol" type="submit" value="ENVOYER"/>
-                  <div class="loader chol" id="loader-1" >
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
+<body  style="display: none;"  onload="document.querySelector('body').style.display = 'block'">
+  <main>
+    <h1>הגדרות הלוח</h1>
+    <div class="grid-container">
+      <div class="grid-item">
+        <form id="formChol">
+          <fieldset>
+            <legend>זמנים של חול</legend>
+            <div class="zman shaharit">
+              <label for="zman_input">שחרית</label>
+              <input type="time" id="shacharitChol" value="00:00" />
+            </div>
+            <br />
+            <div class="zman mincha">
+              <label for="zman_input">מנחה</label>
+              <input type="time" id="minchaChol" value="00:00" />
+            </div>
+            <br />
+            <div class="zman arvit">
+              <label for="zman_input">ערבית</label>
+              <input type="time" id="arvitChol" value="00:00" />
+            </div>
+            <br />
+            <div class="btn-submit-zman">
+              <input id="submitChol" type="submit" value="שלח" />
+              <div class="loader chol" id="loader-1">
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
-            </fieldset> 
-          </form>
-
-          <form id="formShabat">
-            <fieldset>
-              <legend>זמנים של שבת</legend>
-              <div class="zman shirAshirim">
-                <input type="time" id="shirAshirim" value="00:00">
-                <label for="zman_input">שיר השירים</label>
-              </div><br>
-              <div class="zman mincha_erev">
-                <input type="time" id="minchaErevShbt" value="00:00">
-                <label for="zman_input">מנחה ער״ש</label>
-              </div><br>
-              <div class="zman shaharit">
-                <input type="time" id="shaharitShbt" value="00:00">
-                <label for="zman_input">שחרית</label>
-              </div><br>
-              <div class="zman mincha">
-                <input type="time" id="minchaShbt" value="00:00">
-                <label for="zman_input">מנחה</label>
-              </div><br>
-              <div class="bouttonEtValidator">
-                <input  id="submitShabat" type="submit" value="ENVOYER"/>
-                  <div class="loader shabat" id="loader-1" >
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
+            </div>
+          </fieldset>
+        </form>
+      </div>
+      <div class="grid-item">
+        <form id="formShabat">
+          <fieldset>
+            <legend>זמנים של שבת</legend>
+            <div class="zman shirAshirim">
+              <label for="zman_input">שיר השירים</label><input type="time" id="shirAshirim" value="00:00" />
+            </div>
+            <br />
+            <div class="zman mincha_erev">
+              <label for="zman_input">מנחה ער״ש</label>
+              <input type="time" id="minchaErevShbt" value="00:00" />
+            </div>
+            <br />
+            <div class="zman shaharit">
+              <label for="zman_input">שחרית</label>
+              <input type="time" id="shaharitShbt" value="00:00" />
+            </div>
+            <br />
+            <div class="zman mincha">
+              <label for="zman_input">מנחה</label>
+              <input type="time" id="minchaShbt" value="00:00" />
+            </div>
+            <br />
+            <div class="btn-submit-zman">
+              <input id="submitShabat" type="submit" value="שלח" />
+              <div class="loader shabat" id="loader-1">
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
-            </fieldset> 
-          </form>
-        </section>
-      </main>
+            </div>
+          </fieldset>
+        </form>
+      </div>
+      <div class="grid-item">
 
-      <form class="pdf" action="admin/pdf1" method="post" enctype="multipart/form-data">
-      <!-- <form > -->
-        <label for="image1">image1</label>
-        <input type="file" name="avatar" />
-        <input  type="submit" value="SAUVEGARDER"/>
-        <input type="checkbox" name="image1" id="image1" value="true">
-      </form>
-      <form class="pdf" action="admin/pdf2" method="post" enctype="multipart/form-data">
-        <label for="image2">image2</label>
-        <input type="file" name="avatar" />
-        <input  type="submit" value="SAUVEGARDER"/>
-        <input type="checkbox" name="image2" id="image2" value="true">
-      </form>
-      <form class="pdf" action="admin/pdf3" method="post" enctype="multipart/form-data">
-        <label for="image3">image3</label>
-        <input type="file" name="avatar" />
-        <input  type="submit" value="SAUVEGARDER"/>
-        <input type="checkbox" name="image3" id="image3" value="true">
-      </form>
-      <form class="pdf" action="admin/pdf4" method="post" enctype="multipart/form-data">
-        <label for="image4">image4</label>
-        <input type="file" name="avatar" />
-        <input  type="submit" value="SAUVEGARDER"/>
-        <input type="checkbox" name="image4" id="image4" value="true">
+        <div class="allForm">
+          <fieldset id="fieldset-pdf">
+            <legend style="text-align: right;">תמונות</legend>
+            <form class="formPDF one">
+              <span class="image one">תמונה 1: </span>
+              <label class="label-image" for="file1">בחר קובץ ...</label>
+              <input id="file1" type="file" name="avatar" />
+              <div class="essai">
+                <span class="image-name one"></span>
+              </div>
+              <input type="checkbox" class="checkbox" name="image1" id="image1" value="true" />
+              <button class="modal-btn modal-trigger"></button>
+              <div class="loader pdf" id="loader-1">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </form>
+            <form class="formPDF two">
+              <span class="image two">תמונה 2: </span>
+              <label class="label-image" for="file2">בחר קובץ ...</label>
+              <input id="file2" type="file" name="avatar" />
+              <div class="essai">
+                <span class="image-name two"></span>
+              </div>
+              <input type="checkbox" class="checkbox" name="image2" id="image2" value="true" />
+              <button class="modal-btn modal-trigger"></button>
+              <div class="loader pdf" id="loader-1">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </form>
+            <form class="formPDF three">
+              <span class="image three">תמונה 3: </span>
+              <label class="label-image" for="file3">בחר קובץ ...</label>
+              <input id="file3" type="file" name="avatar" />
+              <div class="essai">
+                <span class="image-name three"></span>
+              </div>
+              <input type="checkbox" class="checkbox" name="image3" id="image3" value="true" />
+              <button class="modal-btn modal-trigger"></button>
+              <div class="loader pdf" id="loader-1">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </form>
+            <form class="formPDF four">
+              <span class="image four">תמונה 4: </span>
+              <label class="label-image" for="file4">בחר קובץ ...</label>
+              <input id="file4" type="file" name="avatar" />
+              <div class="essai">
+                <span class="image-name four"></span>
+              </div>
+              <input type="checkbox" class="checkbox" name="image4" id="image4" value="true" />
+              <button class="modal-btn modal-trigger"></button>
+              <div class="loader pdf" id="loader-1">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </form>
+            <label class="sec-interval" for="sec-interval">מספר שניות המתנה: </label>
+            <input class="sec-interval sec" type="number" min="3" max="30" /><br />
+          </fieldset>
+        </div>
+      </div>
+      <div class="grid-item">
+        <div class="box-img">
+        </div>
+      </div>
+    </div>
+  </main>
+  <div class="modal-container">
 
-      </form>
-
-      <fieldset>
-        <form id="formImg" >
-          <label for="displayimg">Images à afficher</label><br>
-          <label for="numberSec">Nombre de seconde d'interval entre les images</label>
-          <input id="secInterval" type="number" min="2" max="15"><br>
-          <input  type="submit" value="SAUVEGARDER"/>
-        </form>  
-      </fieldset>
-      <script src="../public/myApp.js"></script>
+    <div class="overlay modal-trigger"></div>
+  
+    <div class="modal" role="dialog" aria-labelledby="modalTitle" aria-describedby="dialogDesc">
+      <button aria-label="close modal" class="close-modal modal-trigger">X</button>
+      <span id="name-image-modal"></span>
+    </div>
+  </div>
 </body>
+  <script src="../public/myApp.js"></script>
 </html>
