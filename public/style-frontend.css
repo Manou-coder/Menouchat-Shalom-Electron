@@ -86,6 +86,7 @@ div.ayom {
 }
 
 article.item {
+  display: flex;
   position: relative;
   font-size: large;
   margin-top: -25px;
@@ -220,7 +221,7 @@ div.gauche p.horaire {
   right: 52px;
 }
 
-.tzais72 {
+.tzaisRabenouTam {
   position: absolute;
   top: 20px;
   right: 55px;
