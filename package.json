@@ -1,6 +1,6 @@
 {
-  "name": "Menouchat-Shalom",
-  "version": "1.0.0",
+  "name": "menouchat-chalom",
+  "version": "1.1.0",
   "description": "backend du louach zmanim de menouchat chalom",
   "main": "main.js",
   "scripts": {
