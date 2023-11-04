@@ -1,46 +1,38 @@
 @font-face {
-	font-family: "Guttman Mantova";
-	src: url("./fonts/MANTM.TTF") format("truetype");
-   }
+  font-family: 'Guttman Mantova';
+  src: url('./fonts/MANTM.TTF') format('truetype');
+}
 
 @font-face {
-	font-family: "Guttman Mantova Decor";
-	src: url("./fonts/MANTDEC.TTF") format("truetype");
-   }
+  font-family: 'Guttman Mantova Decor';
+  src: url('./fonts/MANTDEC.TTF') format('truetype');
+}
 
-
-
-
-body
-{
-	background-image: url('./assets/ebauche bet hamidrash15.jpg');
-	background-repeat: no-repeat;
-	background-size: cover;
-	margin: 0;
-	padding: 0;
+body {
+  background-image: url('./assets/ebauche\ bet\ hamidrash16.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  margin: 0;
+  padding: 0;
 }
 
 /* CHEARIM */
 
-div.zmanei{
-	font-family: 'Guttman Mantova';
-	font-weight: bold;
-	color: black;
-	font-size: larger;
-	text-shadow:
-	 0.25px 0.1px 0 #ffffcc,
-	 0.5px 0.2px 0 #ffffcc,
-	 0.75px 0.3px 0 #ffffcc,
-	 0.75px 0.4px 0 #ffffcc,
-	 1px 0.5px 0 #ffffcc;
+div.zmanei {
+  font-family: 'Guttman Mantova';
+  font-weight: bold;
+  color: black;
+  font-size: larger;
+  text-shadow: 0.25px 0.1px 0 #ffffcc, 0.5px 0.2px 0 #ffffcc,
+    0.75px 0.3px 0 #ffffcc, 0.75px 0.4px 0 #ffffcc, 1px 0.5px 0 #ffffcc;
 }
 
-div.shabat{
-	position: absolute;
-	width: 210px;
-	height: 200px;
-	top: 325px;
-	left: 70px;
+div.shabat {
+  position: absolute;
+  width: 210px;
+  height: 200px;
+  top: 325px;
+  left: 70px;
 }
 
 /* div.zmanei p.horaire
@@ -48,343 +40,299 @@ div.shabat{
 	font-weight: bold;
 } */
 
-#shirAshirim
-{
-	position: relative;
-	left: 10px;
-	font-size: 0.78em;
+#shirAshirim {
+  position: relative;
+  left: 10px;
+  font-size: 0.78em;
 }
 
-.shir
-{
-	position: relative;
-	right: 10px;
-	font-size: 0.78em;
+.shir {
+  position: relative;
+  right: 10px;
+  font-size: 0.78em;
 }
 
-#TzaisShabat
-{
-	position: relative;
-	left: 23px;
+#TzaisShabat {
+  position: relative;
+  left: 23px;
 }
 
-.arv
-{
-	position: relative;
-	right: 15px;
+.arv {
+  position: relative;
+  right: 15px;
 }
 
-div.shabat article.item{
-	margin-top: -53px;
-	font-size: 1.5em;
+div.shabat article.item {
+  margin-top: -53px;
+  font-size: 1.5em;
 }
 
-div.shabat p.horaire{
-	width: 25%;
-	border: none;
+div.shabat p.horaire {
+  width: 25%;
+  border: none;
 }
 
-div.shabat p.zman{
-	width: 70%;
-	border: none;
+div.shabat p.zman {
+  width: 70%;
+  border: none;
 }
 
-div.ayom{
-	position: absolute;
-	width: 190px;
-	height: 200px;
-	top: 330px;
-	right: 75px;
+div.ayom {
+  position: absolute;
+  width: 190px;
+  height: 200px;
+  top: 330px;
+  right: 75px;
 }
 
-article.item
-{
-	position: relative;
-	font-size:large;
-	margin-top: -25px;
-	margin-bottom: -25px;
-	top: 10px
+article.item {
+  position: relative;
+  font-size: large;
+  margin-top: -25px;
+  margin-bottom: -25px;
+  top: 10px;
 }
 
-
-article.item p 
-{
-    display: inline-block;
+article.item p {
+  display: inline-block;
 }
 
 p.zman {
-	/* font-weight: bold; */
-	margin: auto;
-	text-align: right;
-    border: 1px solid red;
-	width: 50%;
+  /* font-weight: bold; */
+  margin: auto;
+  text-align: right;
+  border: 1px solid red;
+  width: 50%;
 }
 
-p.horaire 
-{
-    text-align: left;
-    border: 1px solid green;
-	width: 46.55%;
+p.horaire {
+  text-align: left;
+  border: 1px solid green;
+  width: 46.55%;
 }
 
-div.ayom article.item
-{
-	margin-top: -50px;
-	font-size: xx-large;
+div.ayom article.item {
+  margin-top: -50px;
+  font-size: xx-large;
 }
 
-div.ayom article.item p
-{
-border: none;
+div.ayom article.item p {
+  border: none;
 }
-
 
 /* Possibilite de bouger les elements des panneaux */
 
-
-#dateFr
-{
-	position: relative;
-	right: 50px;
+#dateFr {
+  position: relative;
+  right: 50px;
 }
 
-#AlosHashachar
-{
-	position: relative;
-	right: 25px;
+#AlosHashachar {
+  position: relative;
+  right: 25px;
 }
 
-#Sunrise 
-{
-	position: relative;
-	right: 10px;
+#Sunrise {
+  position: relative;
+  right: 10px;
 }
 
-#Chatzos
-{
-	position: relative;
-	right: 5px;
+#Chatzos {
+  position: relative;
+  right: 5px;
 }
 
-#Sunset
-{
-	position: relative;
-	right: 20px;
+#Sunset {
+  position: relative;
+  right: 20px;
 }
 
-#Tzais
-{
-	position: relative;
-	right: 45px;
+#Tzais {
+  position: relative;
+  right: 45px;
 }
 
 /* PANNEAUX A COTE DE LA MONTRE */
 
-div.panneau p.horaire
-{
-	font-family: 'Guttman Mantova';
+div.panneau p.horaire {
+  font-family: 'Guttman Mantova';
 }
 
-div.panneau p.zman
-{
-	font-family: 'Guttman Mantova Decor';
-	/* font-size: 0.8em; */
+div.panneau p.zman {
+  font-family: 'Guttman Mantova Decor';
+  /* font-size: 0.8em; */
 }
 
-
-div.gauche
-{
-	position: absolute;
-	width: 230px;
-	height: 260px;
-	top: 590px;
-	left: 25px;
+div.gauche {
+  position: absolute;
+  width: 230px;
+  height: 260px;
+  top: 590px;
+  left: 25px;
 }
 
-div.gauche article.item
-{
-	position: relative;
-	margin-top: -27px;
+div.gauche article.item {
+  position: relative;
+  margin-top: -27px;
 }
 
-div.gauche p.zman
-{
-	/* font-weight: bold; */
-	margin: auto;
-	text-align: right;
-	width: 55%;
-	border: none;
+div.gauche p.zman {
+  /* font-weight: bold; */
+  margin: auto;
+  text-align: right;
+  width: 55%;
+  border: none;
 }
 
-div.gauche p.horaire 
-{
-    text-align: left;
-	width:44%;
-	border: none;
+div.gauche p.horaire {
+  text-align: left;
+  width: 44%;
+  border: none;
 }
-
 
 /*  */
 
 .zman.daf {
-    position: absolute;
-    left: 104px;
-    top: 21px;
+  position: absolute;
+  left: 104px;
+  top: 21px;
 }
 
-#daf
-{
-	position: relative;
-	z-index: 1;
-	width: 70%;
+#daf {
+  position: relative;
+  z-index: 1;
+  width: 70%;
 }
 
-
-.parashat
-{
-	position: relative;
-	right: 37px;
-
+.parashat {
+  position: relative;
+  right: 37px;
 }
 
-#ParashatAshavua
-{
-	position: relative;
-	z-index: 1;
+#ParashatAshavua {
+  position: relative;
+  z-index: 1;
 }
 
-.adlaka
-{
-	position: absolute;
-	top: 20px;
-	right: 52px;
+.adlaka {
+  position: absolute;
+  top: 20px;
+  right: 52px;
 }
 
-.tzais72
-{
-	position: absolute;
-	top: 20px;
-	right: 55px;
+.tzais72 {
+  position: absolute;
+  top: 20px;
+  right: 55px;
 }
 
-div.panneau p
-{
-	color: #ffffcc;
-	font-size: larger;
-	text-shadow:
-	 0.25px 0.1px 0 black,
-	 0.5px 0.2px 0 black,
-	 0.75px 0.3px 0 black,
-	 0.75px 0.4px 0 black,
-	 1px 0.5px 0 black;
+div.panneau p {
+  color: #ffffcc;
+  font-size: larger;
+  text-shadow: 0.25px 0.1px 0 black, 0.5px 0.2px 0 black, 0.75px 0.3px 0 black,
+    0.75px 0.4px 0 black, 1px 0.5px 0 black;
 }
 
-p.date
-{
-	color: red;
+p.date {
+  color: red;
 }
 
-div.droit
-{
-	position: absolute;
-	width: 190px;
-	height: 260px;
-	top: 600px;
-	right: 18px;
+div.droit {
+  position: absolute;
+  width: 190px;
+  height: 260px;
+  top: 600px;
+  right: 18px;
 }
 
-div.droit article.item
-{
-	position: relative;
-	font-size:large;
-	margin-top: -37px;
+div.droit article.item {
+  position: relative;
+  font-size: large;
+  margin-top: -37px;
 }
 
 div.droit p.zman {
-	/* font-weight: bold; */
-	margin: auto;
-	text-align: right;
-	width: 75%;
+  /* font-weight: bold; */
+  margin: auto;
+  text-align: right;
+  width: 75%;
 }
 
-div.droit p.horaire 
-{
-    text-align: left;
-	width: 22.55%;
+div.droit p.horaire {
+  text-align: left;
+  width: 22.55%;
 }
 
-div.droit p
-{
-	border: none;
+div.droit p {
+  border: none;
 }
 
 /* MONTRE */
 
-
 .min {
-	position: absolute;
-	height:140px;
-	max-width: 100%;
-	top: 655px;
-	left: 285px;
-	transform: rotate(135deg);
+  position: absolute;
+  height: 140px;
+  max-width: 100%;
+  top: 655px;
+  left: 285px;
+  transform: rotate(135deg);
 }
 
-.hor
-{
-	position: absolute;
-	height:105px;
-	max-width: 100%;
-	top: 673px;
-	left: 305px;
-	transform: rotate(45deg);
+.hor {
+  position: absolute;
+  height: 105px;
+  max-width: 100%;
+  top: 673px;
+  left: 305px;
+  transform: rotate(45deg);
 }
 
-.boutton
-{
-	position: absolute;
-	height:15px;
-	max-width: 100%;
-	top: 718px;
-	left: 350px;	
+.boutton {
+  position: absolute;
+  height: 15px;
+  max-width: 100%;
+  top: 718px;
+  left: 350px;
 }
-
 
 /* IMAGE */
 
 @keyframes fondu {
-	0%   {opacity: 0}
-	100% {opacity: 1;}
+  0% {
+    opacity: 0;
   }
-
-
-.myImg
-{
-	position: absolute;
-	bottom: 66px;
-	left: 63px;
-	max-width: 100%;
-	height: 280px;
-	animation-name: fondu ;
-	animation-duration: 5S;
+  100% {
+    opacity: 1;
+  }
 }
 
+.myImg {
+  position: absolute;
+  bottom: 66px;
+  left: 63px;
+  max-width: 100%;
+  height: 280px;
+  animation-name: fondu;
+  animation-duration: 5s;
+}
 
 /* IMAGE */
 
 @keyframes fondu {
-	0%   {opacity: 0}
-	100% {opacity: 1;}
+  0% {
+    opacity: 0;
   }
+  100% {
+    opacity: 1;
+  }
+}
 
-
-.image-diaporama
-{
-	position: absolute;
-	bottom: 66px;
-	left: 63px;
-	max-width: 100%;
-	height: 280px;
-	animation-name: fondu ;
-	animation-duration: 3S;
+.image-diaporama {
+  position: absolute;
+  bottom: 66px;
+  left: 63px;
+  max-width: 100%;
+  height: 280px;
+  animation-name: fondu;
+  animation-duration: 3s;
 }
