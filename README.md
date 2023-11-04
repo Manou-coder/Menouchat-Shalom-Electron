@@ -8,6 +8,6 @@ louach zmanim de menouchat-chalom
 * Il faut aussi telecharger les fonts de ghostscript et les inserer dans "programfiles/gs/" ainsi que changer le PATH dans variables d'environnement. pour plus d'infos "http://www.graphicsmagick.org/INSTALL-windows.html".
 
 * Enfin, le module 'electron' sert à transformer le projet en programme executable.
-
+changement pour essai
 
 
