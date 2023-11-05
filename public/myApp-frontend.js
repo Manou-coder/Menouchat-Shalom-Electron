@@ -33,29 +33,27 @@ setInterval(async () => {
 // MONTRE
 
 function clock() {
-  const date = new Date()
-  const hours = ((date.getHours() + 11) % 12) + 1
-  const minutes = date.getMinutes()
-  const seconds = date.getSeconds()
-  const hour = hours * 30
-  const minute = minutes * 6
-  const second = seconds * 6
+  setInterval(() => {
+    const date = new Date()
+    const hours = date.getHours()
+    const minutes = date.getMinutes()
+    const seconds = date.getSeconds()
 
-  let min = minutes * 6
-  min += 45
+    const minutesDegrees = ((minutes + seconds / 60) / 60) * 360 + 90
+    const hoursDegrees = ((hours + minutes / 60) / 12) * 360 + 90
 
-  let hor = hours * 30
-  hor += 60
-
-  document.querySelector('.min').style.transform = `rotate(${min}deg)`
-
-  document.querySelector('.hor').style.transform = `rotate(${hor}deg)`
+    document.querySelector('.min').style.transform = `rotate(${
+      // ces degrees en moins sont pour compenser l'orientation initiale de l'aiguille
+      minutesDegrees - 45
+    }deg )`
+    document.querySelector('.hor').style.transform = `rotate(${
+      // ces degrees en moins sont pour compenser l'orientation initiale de l'aiguille
+      hoursDegrees - 107
+    }deg)`
+  }, 1000)
 }
 
-setInterval(() => {
-  clock()
-}, 1000)
-//
+clock()
 
 // donne heure et minutes sans les secondes
 
