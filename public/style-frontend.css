@@ -123,9 +123,14 @@ div.ayom article.item p {
 
 /* Possibilite de bouger les elements des panneaux */
 
+#dateH {
+  width: 100%;
+}
+
 #dateFr {
-  position: relative;
-  right: 50px;
+  visibility: hidden;
+  /* position: relative;
+  right: 50px; */
 }
 
 #AlosHashachar {
