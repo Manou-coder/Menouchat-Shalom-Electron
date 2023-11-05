@@ -8,7 +8,7 @@
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make && node postBuild.js"
   },
   "author": "manou haouzi",
   "license": "ISC",
