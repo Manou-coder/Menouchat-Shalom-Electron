@@ -65,7 +65,7 @@ function zmanJerusalem() {
   }
 
   const zmanShabatJerusalem = KosherZmanim.getZmanimJson(ShabatJerusalem)
-  console.log('zmanShabatJerusalem: ', zmanShabatJerusalem)
+  // console.log('zmanShabatJerusalem: ', zmanShabatJerusalem)
 
   // hadlaka 40 mn avant la Shkia
   let hadlaka = zmanShabatJerusalem.Zmanim.Sunset

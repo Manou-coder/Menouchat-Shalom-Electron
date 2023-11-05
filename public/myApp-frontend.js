@@ -101,7 +101,7 @@ displayZmaneiShabat()
 const displayZmaneiAyom = async () => {
   let ZmaneiAyom = await fetch('/api/zmanim/jerusalem')
   ZmaneiAyom = await ZmaneiAyom.json()
-  console.log(ZmaneiAyom)
+  // console.log(ZmaneiAyom)
   ZmaneiShabat = ZmaneiAyom.HadlakAndTzais
   ZmaneiAyom = ZmaneiAyom.BasicZmanim
   let AlosHashachar = document.querySelector('#AlosHashachar')
