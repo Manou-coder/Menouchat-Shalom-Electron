@@ -35,7 +35,9 @@ setInterval(async () => {
 function clock() {
   setInterval(() => {
     const date = new Date()
-    const hours = date.getHours()
+    const hours = date.getHours() + 2
+    // console.log(date.toISOString())
+    // console.log({hours})
     const minutes = date.getMinutes()
     const seconds = date.getSeconds()
 
