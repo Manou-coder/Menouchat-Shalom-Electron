@@ -15,8 +15,6 @@ jobs:
           - os: ubuntu-latest
             artifact: out/make/**/*.deb
           - os: windows-latest
-            artifact: out/make/**/*.exe
-          - os: macos-latest
             artifact: out/make/**/*.zip
 
     runs-on: ${{ matrix.os }}
