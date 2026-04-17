@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { createCanvas, loadImage } = require("canvas");
+const { createCanvas, loadImage } = require("@napi-rs/canvas");
 
 const ROOT = path.join(__dirname, "..");
 
