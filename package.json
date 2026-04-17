@@ -42,15 +42,10 @@
       },
       "makers": [
         {
-          "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "name": "Menouchat_Shalom"
-          }
-        },
-        {
           "name": "@electron-forge/maker-zip",
           "platforms": [
-            "darwin"
+            "darwin",
+            "win32"
           ]
         },
         {
