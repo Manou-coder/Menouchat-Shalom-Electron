@@ -2,6 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const { createCanvas, loadImage } = require("canvas");
 
+const ROOT = path.join(__dirname, "..");
+
 async function convertToJpg(inputPath, outputPath, mimetype) {
   if (mimetype === "application/pdf") {
     const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
@@ -47,8 +49,8 @@ module.exports = (req, res, next) => {
   const numberOfImage = req.body.numberOfImage;
   const oldPath = req.files[0].path;
   const mimetype = req.files[0].mimetype;
-  const newPath = path.join("files", nameOfFile);
-  const outputJpg = path.join("images", `imageAffiche${numberOfImage}.jpg`);
+  const newPath = path.join(ROOT, "files", nameOfFile);
+  const outputJpg = path.join(ROOT, "images", `imageAffiche${numberOfImage}.jpg`);
 
   convertToJpg(oldPath, outputJpg, mimetype)
     .then(() => {
@@ -57,11 +59,12 @@ module.exports = (req, res, next) => {
         if (err) throw err;
         console.log("fichier renommé dans './files'");
 
-        let objectImage = fs.readFileSync("./db/images-display.txt");
+        const dbPath = path.join(ROOT, "db", "images-display.txt");
+        let objectImage = fs.readFileSync(dbPath);
         objectImage = JSON.parse(objectImage);
         objectImage.imageDisplay[numberOfImage - 1] = nameOfFile;
         objectImage = JSON.stringify(objectImage, null, 2);
-        fs.writeFileSync("./db/images-display.txt", objectImage);
+        fs.writeFileSync(dbPath, objectImage);
       });
       next();
     })

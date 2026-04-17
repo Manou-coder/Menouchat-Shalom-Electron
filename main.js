@@ -1,5 +1,5 @@
 const {app, BrowserWindow} = require('electron');
-const { path } = require('./app');
+require('./app');
 
 const server = require('./server');
 
