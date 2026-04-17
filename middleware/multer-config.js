@@ -20,4 +20,12 @@ const storage = multer.diskStorage({
   },
 });
 
-module.exports = multer({ storage: storage }).array("files");
+const fileFilter = (req, file, callback) => {
+  if (MIME_TYPES[file.mimetype]) {
+    callback(null, true);
+  } else {
+    callback(new Error("Format non supporté. Utilisez PDF, PNG ou JPG."), false);
+  }
+};
+
+module.exports = multer({ storage, fileFilter }).array("files");
