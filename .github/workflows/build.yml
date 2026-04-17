@@ -9,14 +9,15 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
-            artifact: deb/x64/*.deb
+            artifact: out/make/**/*.deb
           - os: windows-latest
-            artifact: squirrel.windows/x64/*.exe
+            artifact: out/make/**/*.exe
           - os: macos-latest
-            artifact: zip/darwin/x64/*.zip
+            artifact: out/make/**/*.zip
 
     runs-on: ${{ matrix.os }}
 
@@ -53,5 +54,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: installer-${{ runner.os }}
-          path: out/make/${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
           if-no-files-found: error
