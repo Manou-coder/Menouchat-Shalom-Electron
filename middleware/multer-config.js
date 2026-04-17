@@ -1,4 +1,5 @@
 const multer = require("multer");
+const path = require("path");
 
 const MIME_TYPES = {
   "image/jpg": "jpg",
@@ -9,7 +10,7 @@ const MIME_TYPES = {
 
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
-    callback(null, "files");
+    callback(null, path.join(__dirname, "..", "files"));
   },
   filename: (req, file, callback) => {
     // console.log('req.files', req.files);
@@ -20,4 +21,12 @@ const storage = multer.diskStorage({
   },
 });
 
-module.exports = multer({ storage: storage }).array("files");
+const fileFilter = (req, file, callback) => {
+  if (MIME_TYPES[file.mimetype]) {
+    callback(null, true);
+  } else {
+    callback(new Error("Format non supporté. Utilisez PDF, PNG ou JPG."), false);
+  }
+};
+
+module.exports = multer({ storage, fileFilter }).array("files");
