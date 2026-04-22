@@ -5,6 +5,12 @@ const log = require("electron-log");
 // en plus du terminal quand il y en a un.
 Object.assign(console, log.functions);
 
+// Blob is not available in the global scope in Electron 28.
+// This is a workaround to make Blob available in the global scope.
+if (typeof globalThis.Blob === 'undefined') {
+  globalThis.Blob = require('node:buffer').Blob;
+}
+
 // Rend le chemin userData visible au serveur Express (chargé ci-dessous).
 // Doit être positionné AVANT le require('./server'), sinon paths.js retombera
 // sur les dossiers du bundle (lecture seule en prod).
