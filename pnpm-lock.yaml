@@ -20,6 +20,9 @@ importers:
       dotenv:
         specifier: ^16.0.1
         version: 16.6.1
+      electron-log:
+        specifier: ^5.4.3
+        version: 5.4.3
       electron-squirrel-startup:
         specifier: ^1.0.0
         version: 1.0.1
@@ -325,6 +328,7 @@ packages:
   '@xmldom/xmldom@0.8.12':
     resolution: {integrity: sha512-9k/gHF6n/pAi/9tqr3m3aqkuiNosYTurLLUtc7xQ9sxB/wm7WPygCv8GYa6mS0fLJEHhqMC1ATYhz++U/lRHqg==}
     engines: {node: '>=10.0.0'}
+    deprecated: this version has critical issues, please update to the latest version
 
   abbrev@1.1.1:
     resolution: {integrity: sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==}
@@ -678,6 +682,10 @@ packages:
     engines: {node: '>= 10.0.0'}
     os: [darwin, linux]
     hasBin: true
+
+  electron-log@5.4.3:
+    resolution: {integrity: sha512-sOUsM3LjZdugatazSQ/XTyNcw8dfvH1SYhXWiJyfYodAAKOZdHs0txPiLDXFzOZbhXgAgshQkshH2ccq0feyLQ==}
+    engines: {node: '>= 14'}
 
   electron-packager@17.1.2:
     resolution: {integrity: sha512-XofXdikjYI7MVBcnXeoOvRR+yFFFHOLs3J7PF5KYQweigtgLshcH4W660PsvHr4lYZ03JBpLyEcUB8DzHZ+BNw==}
@@ -2933,6 +2941,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
     optional: true
+
+  electron-log@5.4.3: {}
 
   electron-packager@17.1.2:
     dependencies:
