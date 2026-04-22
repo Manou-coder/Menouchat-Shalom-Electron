@@ -1,8 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { createCanvas, loadImage } = require("@napi-rs/canvas");
-
-const ROOT = path.join(__dirname, "..");
+const { DB_DIR, IMAGES_DIR, FILES_DIR } = require("../paths");
 
 async function convertToJpg(inputPath, outputPath, mimetype) {
   if (mimetype === "application/pdf") {
@@ -49,8 +48,8 @@ module.exports = (req, res, next) => {
   const numberOfImage = req.body.numberOfImage;
   const oldPath = req.files[0].path;
   const mimetype = req.files[0].mimetype;
-  const newPath = path.join(ROOT, "files", nameOfFile);
-  const outputJpg = path.join(ROOT, "images", `imageAffiche${numberOfImage}.jpg`);
+  const newPath = path.join(FILES_DIR, nameOfFile);
+  const outputJpg = path.join(IMAGES_DIR, `imageAffiche${numberOfImage}.jpg`);
 
   convertToJpg(oldPath, outputJpg, mimetype)
     .then(() => {
@@ -59,7 +58,7 @@ module.exports = (req, res, next) => {
         if (err) throw err;
         console.log("fichier renommé dans './files'");
 
-        const dbPath = path.join(ROOT, "db", "images-display.txt");
+        const dbPath = path.join(DB_DIR, "images-display.txt");
         let objectImage = fs.readFileSync(dbPath);
         objectImage = JSON.parse(objectImage);
         objectImage.imageDisplay[numberOfImage - 1] = nameOfFile;
