@@ -17,6 +17,7 @@
     "@napi-rs/canvas": "^0.1.98",
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
+    "electron-log": "^5.4.3",
     "electron-squirrel-startup": "^1.0.0",
     "express": "^4.18.1",
     "kosher-zmanim": "^0.8.2",
@@ -33,7 +34,9 @@
     "electron": "^19.0.10"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["electron"]
+    "onlyBuiltDependencies": [
+      "electron"
+    ]
   },
   "config": {
     "forge": {

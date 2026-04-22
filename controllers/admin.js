@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { DB_DIR } = require("../paths");
 
 const ROOT = path.join(__dirname, "..");
 
@@ -10,7 +11,7 @@ exports.afficheHtml = (req, res, next) => {
 exports.saveZmanChol = (req, res, next) => {
   let zmanChol = req.body;
   zmanChol = JSON.stringify(zmanChol, null, 2);
-  fs.writeFileSync(path.join(ROOT, "db", "zmanChol.txt"), zmanChol);
+  fs.writeFileSync(path.join(DB_DIR, "zmanChol.txt"), zmanChol);
   res.json({
     message: "Les changements ont bien été pris en compte",
     zmanChol,
@@ -20,7 +21,7 @@ exports.saveZmanChol = (req, res, next) => {
 exports.saveZmanShbt = (req, res, next) => {
   let zmanShbt = req.body;
   zmanShbt = JSON.stringify(zmanShbt, null, 2);
-  fs.writeFileSync(path.join(ROOT, "db", "zmanShbt.txt"), zmanShbt);
+  fs.writeFileSync(path.join(DB_DIR, "zmanShbt.txt"), zmanShbt);
   res.json({
     message: "Les changements ont bien été pris en compte",
     zmanShbt,
@@ -37,18 +38,18 @@ exports.saveCheckbox = (req, res, next) => {
   let checkbox = req.body;
   console.log(checkbox);
   checkbox = JSON.stringify(checkbox, null, 2);
-  fs.writeFileSync(path.join(ROOT, "db", "checkbox.txt"), checkbox);
+  fs.writeFileSync(path.join(DB_DIR, "checkbox.txt"), checkbox);
   res.json({ message: "Successfully uploaded files", body: req.body });
 };
 
 exports.saveReload = (req, res, next) => {
-  let reloadDB = fs.readFileSync(path.join(ROOT, "db", "reload.txt"));
+  let reloadDB = fs.readFileSync(path.join(DB_DIR, "reload.txt"));
   reloadDB = JSON.parse(reloadDB);
   console.log("reloadDB", reloadDB);
   let checkReload = reloadDB.reload;
   let inverse = { reload: !checkReload };
   console.log("inverse", inverse);
   inverse = JSON.stringify(inverse, null, 2);
-  fs.writeFileSync(path.join(ROOT, "db", "reload.txt"), inverse);
+  fs.writeFileSync(path.join(DB_DIR, "reload.txt"), inverse);
   res.json({ message: "Successfully reload", inverse });
 };
