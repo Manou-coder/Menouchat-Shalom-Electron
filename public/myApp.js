@@ -1,3 +1,5 @@
+import * as pdfjsLib from "/pdfjs/pdf.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.mjs";
 
 // POST RELOAD PAGE
 
@@ -238,37 +240,74 @@ function addEvent(formPDF, loaderPdf, inputFile) {
   });
 }
 
-function allPDF(files, loaderPdf) {
+async function fileToJpegBlob(file) {
+  console.log(`[conversion] début : ${file.name} (${file.type})`);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (file.type === "application/pdf") {
+    const data = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjsLib.getDocument({ data }).promise;
+    console.log(`[conversion] PDF chargé : ${pdf.numPages} page(s)`);
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 150 / 72 });
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    console.log(`[conversion] page 1 rendue (${canvas.width}×${canvas.height}px)`);
+  } else {
+    const img = await createImageBitmap(file);
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    console.log(`[conversion] image rendue (${canvas.width}×${canvas.height}px)`);
+  }
+
+  return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+}
+
+async function allPDF(files, loaderPdf) {
   let formParent = loaderPdf.parentNode;
-  // console.log(formParent);
   files = document.getElementById(files);
-  // console.log(files.files[0]);
+  const file = files.files[0];
+  const numberOfImage = files.id.substr(-1);
+
+  console.log(`[upload] fichier sélectionné : ${file.name}, slot ${numberOfImage}`);
+
+  let jpegBlob;
+  try {
+    jpegBlob = await fileToJpegBlob(file);
+    console.log(`[upload] blob JPEG prêt : ${jpegBlob.size} bytes`);
+  } catch (err) {
+    console.error(`[upload] erreur conversion :`, err);
+    loaderPdf.setAttribute("id", "loader-1");
+    erreur(loaderPdf);
+    return;
+  }
+
+  const baseName = file.name.replace(/\.[^.]+$/, "");
   const formData = new FormData();
-  formData.append("files", files.files[0]);
-  formData.append("nameOfFile", files.files[0].name);
-  formData.append("numberOfImage", files.id.substr(-1));
-  fetch("/admin/upload_pdf", {
-    method: "POST",
-    body: formData,
-    headers: {
-      //   "Content-Type":'undefined'
-    },
-  })
+  formData.append("files", jpegBlob, baseName + ".jpg");
+  formData.append("nameOfFile", file.name);
+  formData.append("numberOfImage", numberOfImage);
+
+  fetch("/admin/upload_pdf", { method: "POST", body: formData })
     .then((res) => {
-      console.log(res);
       if (!res.ok) {
+        console.error(`[upload] erreur serveur : HTTP ${res.status}`);
         loaderPdf.setAttribute("id", "loader-1");
         erreur(loaderPdf);
       } else {
+        console.log(`[upload] succès → imageAffiche${numberOfImage}.jpg`);
         validator(loaderPdf);
-        formParent.children[3].innerHTML = files.files[0].name;
+        formParent.children[3].innerHTML = file.name;
       }
       reloadPage(urlReload, bodyReload);
     })
     .catch((err) => {
+      console.error("[upload] erreur réseau :", err);
       loaderPdf.setAttribute("id", "loader-1");
       erreur(loaderPdf);
-      return "Error occured", err;
     });
 }
 
