@@ -17,6 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/views", express.static(path.join(ROOT, "views")));
 app.use("/public", express.static(path.join(ROOT, "public")));
+app.use("/pdfjs", express.static(path.join(ROOT, "node_modules/pdfjs-dist/build")));
 app.use("/files", express.static(FILES_DIR));
 app.use("/images", express.static(IMAGES_DIR));
 app.use("/db", express.static(DB_DIR));
