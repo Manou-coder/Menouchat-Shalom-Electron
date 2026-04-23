@@ -17,11 +17,21 @@ Desktop app that displays Jewish prayer times (zmanim) for a synagogue, packaged
 
 **Electron + Express hybrid.** `main.js` is the Electron entrypoint: it imports `./app` (to share the `path` handle) and `./server` (which starts the HTTP listener as a side effect), then opens two windows against the local server. The server is a normal Express app — nothing is wired through IPC, everything goes over HTTP on `localhost:3000`.
 
+**`main.js` startup sequence.**
+1. `electron-log` is wired up — redirects `console.log/error` to `userData/logs/main.log` in addition to stdout.
+2. Blob polyfill: Electron 28 doesn't expose `Blob` in the Node global scope; `globalThis.Blob = require('node:buffer').Blob` fixes this before the server loads.
+3. `process.env.MENOUCHAT_USER_DATA = app.getPath('userData')` — must be set **before** `require('./server')` so that `paths.js` resolves to the correct runtime directories.
+4. `seedUserData()` copies the default `db/`, `images/`, `files/` bundle directories into `userData` on first launch.
+
 **Request flow.**
 - `app.js` mounts two routers: `/admin` (HTML form + POST handlers, in `routes/admin.js` → `controllers/admin.js`) and `/api/zmanim` (read-only JSON for the display, in `routes/zmanim.js` → `controllers/zmanim.js`). `/` redirects to `/admin`; `/shoul` serves `views/index-frontend.html`.
 - Static folders `views/`, `public/`, `files/`, `images/`, `db/`, and `/pdfjs` are all exposed directly via `express.static`.
 
-**"Database" is flat JSON files.** `db/*.txt` are JSON documents read/written with `fs.readFileSync` / `fs.writeFileSync` on every request. Keys are hardcoded in the controllers:
+**Path resolution (`paths.js`).** All references to `db/`, `images/`, and `files/` go through `paths.js`, never hardcoded:
+- In **production** (packaged Electron): `MENOUCHAT_USER_DATA` is set by `main.js` → directories resolve to `userData/db`, `userData/images`, `userData/files` (writable, outside the app bundle).
+- In **dev** (`npm run dev`): `MENOUCHAT_USER_DATA` is unset → directories fall back to the repo root (`db/`, `images/`, `files/`).
+
+**"Database" is flat JSON files.** `db/*.txt` are JSON documents read/written with `fs.readFileSync` / `fs.writeFileSync` on every request via `DB_DIR` from `paths.js`. Keys are hardcoded in the controllers:
 - `zmanChol.txt`, `zmanShbt.txt` — prayer time tables (weekday / shabbat)
 - `checkbox.txt` — display toggles + `secInterval`
 - `reload.txt` — `{ reload: bool }` flipped by `POST /admin/reload`, polled by the frontend to trigger a refresh
@@ -41,7 +51,9 @@ The conversion from PDF or image to JPEG happens **entirely in the browser** bef
 
 No system dependencies (no GraphicsMagick, no Ghostscript, no `@napi-rs/canvas`) are required.
 
-**Compatibility note.** `pdfjs-dist` v5 uses `Map.prototype.getOrInsertComputed` (available from Chrome 129+). Electron 19 embeds Chromium 102 which lacks this method. A polyfill is injected via a plain `<script>` tag in `views/index.html` before the ES module is loaded.
+**Compatibility notes.**
+- `pdfjs-dist` v5 uses `Map.prototype.getOrInsertComputed` (available from Chrome 129+). Electron 19 embeds Chromium 102 which lacks this method. A polyfill is injected via a plain `<script>` tag in `views/index.html` before the ES module is loaded.
+- Electron 28 doesn't expose `Blob` in the Node.js global scope. A polyfill is applied in `main.js` before the server starts.
 
 ## CI/CD
 
@@ -64,6 +76,6 @@ Key design decisions:
 ## Conventions
 
 - Code comments, log messages, and API response messages are in French. Keep that style when editing existing files; documentation files (like this one) are in English.
-- Controllers read/write `db/*.txt` with synchronous `fs` calls — there is no abstraction layer, and that is intentional for this project's size. Do not introduce a DB or ORM unless explicitly asked.
+- Controllers read/write `db/*.txt` with synchronous `fs` calls via `DB_DIR` from `paths.js` — there is no abstraction layer, and that is intentional for this project's size. Do not introduce a DB or ORM unless explicitly asked.
 - `public/myApp.js` is loaded as an **ES module** (`<script type="module">`). `public/myApp-frontend.js` is a plain browser script.
 - Upload logging uses the prefixes `[upload]` (server, `gmshell-config.js`) and `[upload]` / `[conversion]` (browser, `myApp.js`) — visible in the Electron DevTools console and Node.js stdout respectively.
