@@ -19,29 +19,47 @@ Desktop app that displays Jewish prayer times (zmanim) for a synagogue, packaged
 
 **Request flow.**
 - `app.js` mounts two routers: `/admin` (HTML form + POST handlers, in `routes/admin.js` → `controllers/admin.js`) and `/api/zmanim` (read-only JSON for the display, in `routes/zmanim.js` → `controllers/zmanim.js`). `/` redirects to `/admin`; `/shoul` serves `views/index-frontend.html`.
-- Static folders `views/`, `public/`, `files/`, `images/`, and `db/` are all exposed directly via `express.static`.
+- Static folders `views/`, `public/`, `files/`, `images/`, `db/`, and `/pdfjs` are all exposed directly via `express.static`.
 
 **"Database" is flat JSON files.** `db/*.txt` are JSON documents read/written with `fs.readFileSync` / `fs.writeFileSync` on every request. Keys are hardcoded in the controllers:
 - `zmanChol.txt`, `zmanShbt.txt` — prayer time tables (weekday / shabbat)
 - `checkbox.txt` — display toggles + `secInterval`
 - `reload.txt` — `{ reload: bool }` flipped by `POST /admin/reload`, polled by the frontend to trigger a refresh
-- `images-display.txt` — names of uploaded display images (note: `controllers/zmanim.js:41` reads `display-images.txt`, which is a bug — the writer uses `images-display.txt`)
+- `images-display.txt` — names of uploaded display images
 
 **Zmanim computation.** `cities/zmanim.js` wraps `kosher-zmanim` with hardcoded Jerusalem coordinates and returns the full zmanim JSON plus a custom `HadlakAndTzais` block (candle-lighting = sunset − 40 min). `hebcal3.js` wraps `@hebcal/core` to return today's events (parsha, daf yomi, omer, Hebrew date) in Hebrew without nikud.
 
-**PDF upload pipeline.** `POST /admin/upload_pdf` chains three middlewares: `multer-config.js` (writes the upload to `files/`), `gmshell-config.js` (shells out to GraphicsMagick to convert page 0 of the PDF to `images/imageAffiche{N}.jpg` and updates `db/images-display.txt`), then `controllers/admin.savePdf` responds.
+**PDF/image upload pipeline.** `POST /admin/upload_pdf` works as follows:
+1. `multer-config.js` — receives the file and writes it to `files/`
+2. `gmshell-config.js` — copies the received JPEG to `images/imageAffiche{N}.jpg` and updates `db/images-display.txt`
+3. `controllers/admin.savePdf` — responds with success
 
-## Platform notes (Linux dev, Windows origin)
+The conversion from PDF or image to JPEG happens **entirely in the browser** before upload:
+- `public/myApp.js` imports `pdfjs-dist` (v5) via ES module from `/pdfjs/pdf.mjs` (served from `node_modules/pdfjs-dist/build` via `express.static`)
+- `fileToJpegBlob(file)` renders page 1 of a PDF (or any image) onto a native browser Canvas, then calls `canvas.toBlob('image/jpeg')` — no server-side native module needed
+- The resulting JPEG blob is sent to the server; `gmshell-config.js` only does file I/O, no conversion
 
-The project was originally developed on Windows and still has Windows-specific code paths. When working on Linux, watch for:
+No system dependencies (no GraphicsMagick, no Ghostscript, no `@napi-rs/canvas`) are required.
 
-- **`middleware/gmshell-config.js`** invokes `gm.exe` and uses a backslash path (`files\\${nameOfFile}`). On Linux the binary is `gm` and paths must use forward slashes. Fix at the call site if touching this flow.
-- **`postBuild.js`** only handles `out/menouchat-chalom-win32-x64/`. Electron Forge on Linux produces `linux-x64` / `.deb` / `.rpm` artifacts; adjust the source path or guard by platform if you run `npm run make` here.
-- **GraphicsMagick + Ghostscript** are runtime requirements for PDF upload. On Debian/Ubuntu: `sudo apt install graphicsmagick ghostscript`. The README's note about Ghostscript 9.50 being mandatory was a Windows-specific quirk; modern distro packages work on Linux.
+**Compatibility note.** `pdfjs-dist` v5 uses `Map.prototype.getOrInsertComputed` (available from Chrome 129+). Electron 19 embeds Chromium 102 which lacks this method. A polyfill is injected via a plain `<script>` tag in `views/index.html` before the ES module is loaded.
+
+## CI/CD
+
+`.github/workflows/build.yml` triggers on every push to `main`:
+1. **create-tag** — reads the latest `v*` tag, bumps the patch version, pushes the new tag; outputs `tag` for downstream jobs
+2. **build** — matrix job (ubuntu-latest + windows-latest): runs `pnpm install`, sets `package.json` version to match the tag via `npm version <tag> --no-git-tag-version`, then runs `electron-forge make`. Produces `.deb` (Linux) and `.zip` (Windows)
+3. **release** — downloads all artifacts and publishes a GitHub Release using `softprops/action-gh-release`
+
+The tag creation and build run in the same workflow to work around the GitHub limitation that `GITHUB_TOKEN`-pushed tags do not trigger new workflow runs.
+
+## Platform notes
+
+- **`postBuild.js`** only handles `out/menouchat-chalom-win32-x64/`. Electron Forge on Linux produces `linux-x64` / `.deb` / `.rpm` artifacts; adjust the source path or guard by platform if you run `npm run make` locally.
 - The Electron main process sets `app.commandLine.appendSwitch('lang', 'fr')` — UI locale is French.
 
 ## Conventions
 
 - Code comments, log messages, and API response messages are in French. Keep that style when editing existing files; documentation files (like this one) are in English.
 - Controllers read/write `db/*.txt` with synchronous `fs` calls — there is no abstraction layer, and that is intentional for this project's size. Do not introduce a DB or ORM unless explicitly asked.
-- No build step for the frontend: `public/myApp.js` and `public/myApp-frontend.js` are plain browser scripts loaded by the HTML views.
+- `public/myApp.js` is loaded as an **ES module** (`<script type="module">`). `public/myApp-frontend.js` is a plain browser script.
+- Upload logging uses the prefixes `[upload]` (server, `gmshell-config.js`) and `[upload]` / `[conversion]` (browser, `myApp.js`) — visible in the Electron DevTools console and Node.js stdout respectively.

@@ -1,13 +1,36 @@
 # menouchat-chalom
-louach zmanim de menouchat-chalom
 
-* Afin que les fichiers envoyés en pdf soit bien convertis en jpg, il faut installer graphicsMagik sur la machine. (cf. "./midlleware/gmshell-config.js").
+Louach zmanim (tableau des horaires de prières) pour la synagogue Menouchat Chalom, packagé en application desktop avec Electron.
 
-* Pour que graphicsMagick fonctionne, il faut telecharger "ghostscript" (version 9.50 - les autres ne marchent pas);
+## Prérequis
 
-* Il faut aussi telecharger les fonts de ghostscript et les inserer dans "programfiles/gs/" ainsi que changer le PATH dans variables d'environnement. pour plus d'infos "http://www.graphicsmagick.org/INSTALL-windows.html".
+- Node.js 20+
+- pnpm
 
-* Enfin, le module 'electron' sert à transformer le projet en programme executable.
-changement pour essai
+Aucune dépendance système requise : la conversion des PDF en images se fait nativement dans Chromium (Electron), sans GraphicsMagick ni Ghostscript.
 
+## Installation
 
+```bash
+pnpm install
+```
+
+## Lancement
+
+```bash
+# Serveur Express seul (développement rapide, sans fenêtre Electron)
+npm run dev
+
+# Application Electron complète
+npm start
+```
+
+## Build & Release
+
+Le workflow GitHub Actions (`build.yml`) se déclenche automatiquement à chaque merge dans `main` :
+
+1. Crée un nouveau tag patch (`v1.x.y → v1.x.y+1`)
+2. Build Linux (`.deb`) et Windows (`.zip`) en parallèle
+3. Publie une GitHub Release avec les artefacts
+
+Pour déclencher un build manuellement : Actions → *Build Cross-Platform* → *Run workflow*.
