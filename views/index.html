@@ -163,5 +163,14 @@
     </div>
   </div>
 </body>
+  <script>
+    // Polyfill Map.prototype.getOrInsertComputed (Chrome 129+) absent d'Electron 19 (Chromium 102)
+    if (!Map.prototype.getOrInsertComputed) {
+      Map.prototype.getOrInsertComputed = function (key, fn) {
+        if (!this.has(key)) this.set(key, fn(key));
+        return this.get(key);
+      };
+    }
+  </script>
   <script type="module" src="../public/myApp.js"></script>
 </html>
