@@ -29,8 +29,10 @@ npm start
 
 Le workflow GitHub Actions (`build.yml`) se déclenche automatiquement à chaque merge dans `main` :
 
-1. Crée un nouveau tag patch (`v1.x.y → v1.x.y+1`)
-2. Build Linux (`.deb`) et Windows (`.zip`) en parallèle
-3. Publie une GitHub Release avec les artefacts
+1. **create-tag** — bumpe le patch (`v1.x.y → v1.x.y+1`), met à jour `package.json`, committe sur `main` puis pousse le tag
+2. **build** — compile Linux (`.deb`) et Windows (`.zip`) en parallèle à partir du tag
+3. **release** — publie une GitHub Release avec les artefacts et les release notes auto-générées
+
+`package.json` dans le repo est toujours synchronisé avec le dernier tag — aucune action manuelle requise.
 
 Pour déclencher un build manuellement : Actions → *Build Cross-Platform* → *Run workflow*.

@@ -46,11 +46,15 @@ No system dependencies (no GraphicsMagick, no Ghostscript, no `@napi-rs/canvas`)
 ## CI/CD
 
 `.github/workflows/build.yml` triggers on every push to `main`:
-1. **create-tag** — reads the latest `v*` tag, bumps the patch version, pushes the new tag; outputs `tag` for downstream jobs
-2. **build** — matrix job (ubuntu-latest + windows-latest): runs `pnpm install`, sets `package.json` version to match the tag via `npm version <tag> --no-git-tag-version`, then runs `electron-forge make`. Produces `.deb` (Linux) and `.zip` (Windows)
-3. **release** — downloads all artifacts and publishes a GitHub Release using `softprops/action-gh-release`
+1. **create-tag** — reads the latest `v*` tag, bumps the patch version, updates `package.json` via `node -e` (pnpm-compatible), commits `chore: bump version to X.X.X [skip ci]` on `main` using `git push origin HEAD:refs/heads/main`, then pushes the new tag. Outputs `tag` for downstream jobs.
+2. **build** — matrix job (ubuntu-latest + windows-latest): checks out the new tag, runs `pnpm install` then `electron-forge make`. Produces `.deb` (Linux) and `.zip` (Windows).
+3. **release** — downloads all artifacts and publishes a GitHub Release using `softprops/action-gh-release`.
 
-The tag creation and build run in the same workflow to work around the GitHub limitation that `GITHUB_TOKEN`-pushed tags do not trigger new workflow runs.
+Key design decisions:
+- Everything runs in one workflow because `GITHUB_TOKEN`-pushed tags do not trigger new workflow runs (GitHub anti-loop protection).
+- `[skip ci]` in the version bump commit message prevents the push to `main` from re-triggering the workflow.
+- `ref: main` on checkout and `HEAD:refs/heads/main` on push avoid detached HEAD issues in CI.
+- `node -e` is used instead of `npm version` to avoid creating a `package-lock.json` in a pnpm project.
 
 ## Platform notes
 
