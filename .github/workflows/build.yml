@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Calculer le prochain tag et mettre à jour package.json
@@ -34,12 +35,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Met à jour package.json et committe sur main
-          # [skip ci] empêche ce commit de re-déclencher le workflow
-          npm version "$NEW_VERSION" --no-git-tag-version
+          # Met à jour package.json sans passer par npm (compatible pnpm)
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$NEW_VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
           git add package.json
           git commit -m "chore: bump version to ${NEW_VERSION} [skip ci]"
-          git push origin main
+          git push origin HEAD:refs/heads/main
 
           # Crée et pousse le tag sur le commit de version
           git tag "$NEW_TAG"
