@@ -241,22 +241,26 @@ function addEvent(formPDF, loaderPdf, inputFile) {
 }
 
 async function fileToJpegBlob(file) {
+  console.log(`[conversion] début : ${file.name} (${file.type})`);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
   if (file.type === "application/pdf") {
     const data = new Uint8Array(await file.arrayBuffer());
     const pdf = await pdfjsLib.getDocument({ data }).promise;
+    console.log(`[conversion] PDF chargé : ${pdf.numPages} page(s)`);
     const page = await pdf.getPage(1);
     const viewport = page.getViewport({ scale: 150 / 72 });
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     await page.render({ canvasContext: ctx, viewport }).promise;
+    console.log(`[conversion] page 1 rendue (${canvas.width}×${canvas.height}px)`);
   } else {
     const img = await createImageBitmap(file);
     canvas.width = img.width;
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
+    console.log(`[conversion] image rendue (${canvas.width}×${canvas.height}px)`);
   }
 
   return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
@@ -268,10 +272,14 @@ async function allPDF(files, loaderPdf) {
   const file = files.files[0];
   const numberOfImage = files.id.substr(-1);
 
+  console.log(`[upload] fichier sélectionné : ${file.name}, slot ${numberOfImage}`);
+
   let jpegBlob;
   try {
     jpegBlob = await fileToJpegBlob(file);
+    console.log(`[upload] blob JPEG prêt : ${jpegBlob.size} bytes`);
   } catch (err) {
+    console.error(`[upload] erreur conversion :`, err);
     loaderPdf.setAttribute("id", "loader-1");
     erreur(loaderPdf);
     return;
@@ -286,15 +294,18 @@ async function allPDF(files, loaderPdf) {
   fetch("/admin/upload_pdf", { method: "POST", body: formData })
     .then((res) => {
       if (!res.ok) {
+        console.error(`[upload] erreur serveur : HTTP ${res.status}`);
         loaderPdf.setAttribute("id", "loader-1");
         erreur(loaderPdf);
       } else {
+        console.log(`[upload] succès → imageAffiche${numberOfImage}.jpg`);
         validator(loaderPdf);
         formParent.children[3].innerHTML = file.name;
       }
       reloadPage(urlReload, bodyReload);
     })
     .catch((err) => {
+      console.error("[upload] erreur réseau :", err);
       loaderPdf.setAttribute("id", "loader-1");
       erreur(loaderPdf);
     });
