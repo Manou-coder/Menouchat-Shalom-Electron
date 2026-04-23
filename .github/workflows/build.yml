@@ -70,6 +70,9 @@ jobs:
         env:
           CI: true
 
+      - name: Synchroniser la version dans package.json avec le tag
+        run: npm version ${{ needs.create-tag.outputs.tag }} --no-git-tag-version
+
       - name: Build
         run: pnpm exec electron-forge make
         env:
