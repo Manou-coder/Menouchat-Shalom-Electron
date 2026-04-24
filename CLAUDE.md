@@ -19,9 +19,8 @@ Desktop app that displays Jewish prayer times (zmanim) for a synagogue, packaged
 
 **`main.js` startup sequence.**
 1. `electron-log` is wired up — redirects `console.log/error` to `userData/logs/main.log` in addition to stdout.
-2. Blob polyfill: Electron 28 doesn't expose `Blob` in the Node global scope; `globalThis.Blob = require('node:buffer').Blob` fixes this before the server loads.
-3. `process.env.MENOUCHAT_USER_DATA = app.getPath('userData')` — must be set **before** `require('./server')` so that `paths.js` resolves to the correct runtime directories.
-4. `seedUserData()` copies the default `db/`, `images/`, `files/` bundle directories into `userData` on first launch.
+2. `process.env.MENOUCHAT_USER_DATA = app.getPath('userData')` — must be set **before** `require('./server')` so that `paths.js` resolves to the correct runtime directories.
+3. `seedUserData()` copies the default `db/`, `images/`, `files/` bundle directories into `userData` on first launch.
 
 **Request flow.**
 - `app.js` mounts two routers: `/admin` (HTML form + POST handlers, in `routes/admin.js` → `controllers/admin.js`) and `/api/zmanim` (read-only JSON for the display, in `routes/zmanim.js` → `controllers/zmanim.js`). `/` redirects to `/admin`; `/shoul` serves `views/index-frontend.html`.
@@ -52,8 +51,7 @@ The conversion from PDF or image to JPEG happens **entirely in the browser** bef
 No system dependencies (no GraphicsMagick, no Ghostscript, no `@napi-rs/canvas`) are required.
 
 **Compatibility notes.**
-- `pdfjs-dist` v5 uses `Map.prototype.getOrInsertComputed` (available from Chrome 129+). Electron 19 embeds Chromium 102 which lacks this method. A polyfill is injected via a plain `<script>` tag in `views/index.html` before the ES module is loaded.
-- Electron 28 doesn't expose `Blob` in the Node.js global scope. A polyfill is applied in `main.js` before the server starts.
+- `pdfjs-dist` v5 requires a modern Chromium (Chrome 129+ for `Map.prototype.getOrInsertComputed`, 119+ for `Promise.withResolvers`, 128+ for `Promise.try`). Electron 33+ embeds Chromium 130+, so all these APIs are native — no polyfills needed. When bumping Electron, keep the minimum at 33+ as long as `pdfjs-dist` v5 is in use.
 
 ## CI/CD
 
