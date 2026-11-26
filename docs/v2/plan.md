@@ -2,7 +2,7 @@
 
 This document is the project memory for the v2 rewrite. Each work session picks the next unchecked step in [§7](#7-steps), does it on a branch off `v2`, and checks the box in the same PR.
 
-Status: plan approved on 2026-11-26. Steps 1 (skeleton) and 2 (reference tests) done.
+Status: plan approved on 2026-11-26. Steps 1–3 (skeleton, reference tests, zmanim calculation) done.
 
 ## 1. Goals
 
@@ -206,7 +206,7 @@ One session per step, each on its own branch and PR into `v2`.
 
 - [x] **1. Skeleton** — pnpm workspace (`packages/core`, `packages/shared`, `apps/desktop` with electron-vite, `apps/web` with Vite + React), strict TS, electron-builder NSIS, ESLint + Prettier, Vitest, CI running `typecheck`, `lint`, `test`, `build`; minimal tRPC server and one window loading it over `127.0.0.1`. Pick the UI component library (§9).
 - [x] **2. Reference tests** — capture v1 outputs as described in §6.
-- [ ] **3. Zmanim calculation** — `packages/core` for any location: zmanim, candle lighting, Motzei Shabbat, daf yomi, parasha, Hebrew date; all reference tests green.
+- [x] **3. Zmanim calculation** — `packages/core` for any location: zmanim, candle lighting, Motzei Shabbat, daf yomi, parasha, Hebrew date; all reference tests green.
 - [ ] **4. Storage** — zod schemas, atomic writes, `.bak`, defaults, schema migrations, tests.
 - [ ] **5. Display** — layout registry, `DisplayState` + SSE subscription, `classic-portrait` layout faithful to v1, clock, multi-page slideshow, kiosk window.
 - [ ] **6. Admin** — times, slides (pdf.js worker, all pages, original kept, ordering, enable/disable), location, "Screens" card (layout, options, live preview), phone access (LAN listening, PIN, QR code); UI rules in §9.

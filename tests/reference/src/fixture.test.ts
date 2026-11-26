@@ -1,14 +1,10 @@
-import { readFileSync } from 'node:fs';
-
 import { HDate, Sedra } from '@hebcal/core';
 import { describe, expect, it } from 'vitest';
 
 import { captureDays, HEBREW_YEARS } from './build-fixture.ts';
-import { referenceFixtureSchema } from './fixture-schema.ts';
+import { loadReferenceFixture } from './load-fixture.ts';
 
-const fixture = referenceFixtureSchema.parse(
-  JSON.parse(readFileSync(new URL('../../fixtures/v1-reference.json', import.meta.url), 'utf8')),
-);
+const fixture = loadReferenceFixture();
 
 function hebrewDateOf(isoDate: string): HDate {
   const [year, month, day] = isoDate.split('-').map(Number);
