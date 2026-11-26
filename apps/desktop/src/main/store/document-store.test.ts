@@ -47,10 +47,12 @@ const readJson = async (suffix = ''): Promise<unknown> =>
 const document = (title: string, count = 1): TestDocument => ({ schemaVersion: 3, title, count });
 
 describe('document store', () => {
-  it('returns the defaults on first launch, without warning', async () => {
-    await expect(store().read()).resolves.toEqual(definition.createDefault());
+  it('returns the defaults on first launch, without warning, saying so once', async () => {
+    const shared = store();
+    await expect(shared.read()).resolves.toEqual(definition.createDefault());
+    await shared.read();
     expect(logger.warn).not.toHaveBeenCalled();
-    expect(logger.info).toHaveBeenCalledWith('Using default test.json');
+    expect(logger.info).toHaveBeenCalledExactlyOnceWith('Using default test.json');
   });
 
   it('round-trips a document and creates the directory', async () => {

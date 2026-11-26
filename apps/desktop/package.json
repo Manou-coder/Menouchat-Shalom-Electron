@@ -24,6 +24,7 @@
     "fastify": "^5.12.8"
   },
   "devDependencies": {
+    "@menouchat/core": "workspace:*",
     "@menouchat/shared": "workspace:*",
     "@types/node": "~24.19.2",
     "electron": "~41.10.7",
