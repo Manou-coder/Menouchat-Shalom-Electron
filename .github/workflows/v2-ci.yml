@@ -51,5 +51,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: menouchat-chalom-setup
-          path: apps/desktop/release/*.exe
+          # Also proves the files the release (and electron-updater) need are produced.
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.exe.blockmap
+            apps/desktop/release/latest.yml
+          if-no-files-found: error
           retention-days: 7

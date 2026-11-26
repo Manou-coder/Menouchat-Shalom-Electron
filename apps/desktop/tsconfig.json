@@ -7,5 +7,5 @@
       "@hebcal/core": ["../../packages/core/node_modules/@hebcal/core/hebcal.d.ts"]
     }
   },
-  "include": ["src", "electron.vite.config.ts"]
+  "include": ["src", "scripts", "electron.vite.config.ts"]
 }

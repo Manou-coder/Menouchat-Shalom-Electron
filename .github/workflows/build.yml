@@ -1,118 +1,110 @@
-name: Build Cross-Platform
+name: Release
 
+# Every push to main publishes a Windows release that installed copies update to
+# (plan step 9). The version is computed by apps/desktop/scripts/next-version.ts.
 on:
   workflow_dispatch:
   push:
     branches:
       - main
 
+# Two releases must never compute their version at the same time.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   create-tag:
+    name: Version and tag
     runs-on: ubuntu-latest
     permissions:
       contents: write
     outputs:
-      tag: ${{ steps.bump.outputs.new_tag }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
 
-      - name: Calculer le prochain tag et mettre à jour package.json
-        id: bump
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Compute the version, commit it and tag it
+        id: version
         run: |
-          LATEST=$(git tag --list 'v*' --sort=-version:refname | head -1)
-          [ -z "$LATEST" ] && LATEST="v1.0.0"
-          LATEST=$(echo "$LATEST" | sed 's/^v\./v/')
-          VERSION=${LATEST#v}
-          MAJOR=$(echo "$VERSION" | cut -d. -f1)
-          MINOR=$(echo "$VERSION" | cut -d. -f2)
-          PATCH=$(echo "$VERSION" | cut -d. -f3)
-          NEW_TAG="v${MAJOR}.${MINOR}.$((PATCH + 1))"
-          NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          LATEST=$(git tag --list 'v[0-9]*' --sort=-version:refname | head -1)
+          CURRENT=$(node -p "require('./apps/desktop/package.json').version")
+          VERSION=$(node apps/desktop/scripts/next-version.ts "$LATEST" "$CURRENT")
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Met à jour package.json sans passer par npm (compatible pnpm)
+          # Without npm, which would create a package-lock.json in this pnpm workspace.
           node -e "
             const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '$NEW_VERSION';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            const path = 'apps/desktop/package.json';
+            const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+            pkg.version = '$VERSION';
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
           "
-          git add package.json
-          git commit -m "chore: bump version to ${NEW_VERSION} [skip ci]"
-          git push origin HEAD:refs/heads/main
+          if ! git diff --quiet; then
+            git add apps/desktop/package.json
+            # [skip ci] keeps this commit from starting another release.
+            git commit -m "chore: bump version to ${VERSION} [skip ci]"
+            git push origin HEAD:refs/heads/main
+          fi
 
-          # Crée et pousse le tag sur le commit de version
-          git tag "$NEW_TAG"
-          git push origin "$NEW_TAG"
-
-          echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
-          echo "Tag créé : $NEW_TAG"
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Releasing v${VERSION} (previous tag: ${LATEST:-none})"
 
   build:
+    name: Windows installer
     needs: create-tag
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact: out/make/**/*.deb
-          - os: windows-latest
-            artifact: out/make/**/*.zip
-
-    runs-on: ${{ matrix.os }}
-
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.create-tag.outputs.tag }}
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: latest
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
 
-      - name: Install Linux build dependencies
-        if: runner.os == 'Linux'
-        run: sudo apt-get install -y dpkg fakeroot
+      - run: pnpm install --frozen-lockfile
 
-      - name: Install dependencies
-        run: pnpm install
-        env:
-          CI: true
+      - run: pnpm dist
 
-      - name: Build
-        run: pnpm exec electron-forge make
-        env:
-          CI: true
-
+      # latest.yml and the blockmap are what electron-updater reads to update.
       - uses: actions/upload-artifact@v4
         with:
-          name: installer-${{ runner.os }}
-          path: ${{ matrix.artifact }}
+          name: windows-installer
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.exe.blockmap
+            apps/desktop/release/latest.yml
           if-no-files-found: error
 
   release:
+    name: Publish the release
     needs: [create-tag, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - uses: actions/download-artifact@v4
         with:
+          name: windows-installer
           path: artifacts
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.create-tag.outputs.tag }}
-          files: artifacts/**/*
+          files: artifacts/*
           generate_release_notes: true
