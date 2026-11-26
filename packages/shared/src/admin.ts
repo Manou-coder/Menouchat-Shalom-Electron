@@ -20,12 +20,21 @@ export const phoneAccessSchema = z.object({
 });
 export type PhoneAccess = z.infer<typeof phoneAccessSchema>;
 
+/** A newer version found on GitHub: downloaded in the background, installed on restart. */
+export const updateStatusSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('none') }),
+  z.object({ status: z.literal('downloading'), version: z.string() }),
+  z.object({ status: z.literal('ready'), version: z.string() }),
+]);
+export type UpdateStatus = z.infer<typeof updateStatusSchema>;
+
 /** Everything the admin shows, pushed again after every change. The PIN hash never leaves. */
 export const adminStateSchema = z.object({
   schedule: scheduleInputSchema,
   slides: z.array(slideSchema),
   slideIntervalSec: displaySchema.shape.slideIntervalSec,
   phoneAccess: phoneAccessSchema,
+  update: updateStatusSchema,
 });
 export type AdminState = z.infer<typeof adminStateSchema>;
 

@@ -21,6 +21,7 @@
     "@fastify/static": "^10.1.12",
     "@trpc/server": "^11.31.3",
     "electron-log": "^5.4.4",
+    "electron-updater": "~6.8.11",
     "fastify": "^5.12.8"
   },
   "devDependencies": {

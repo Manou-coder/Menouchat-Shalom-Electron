@@ -6,6 +6,7 @@ import {
   type ScheduleInput,
   type Slide,
   type SlideSlot,
+  type UpdateStatus,
 } from '@menouchat/shared';
 
 import { AdminError } from '../api/errors.ts';
@@ -29,6 +30,7 @@ export interface AdminServiceDependencies {
   onPhoneAccessChanged: (enabled: boolean) => void;
   /** Full admin addresses on this PC's local network, for the listening port. */
   phoneUrls: (port: number) => string[];
+  updateStatus: () => UpdateStatus;
 }
 
 export interface AdminService {
@@ -76,6 +78,7 @@ export function createAdminService(dependencies: AdminServiceDependencies): Admi
         pinSet: settings.lan.pinHash !== null,
         urls: settings.lan.enabled ? dependencies.phoneUrls(settings.lan.port) : [],
       },
+      update: dependencies.updateStatus(),
     };
   }
 

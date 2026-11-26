@@ -2,7 +2,7 @@
 
 This document is the project memory for the v2 rewrite. Each work session picks the next unchecked step in [§7](#7-steps), does it on a branch off `v2`, and checks the box in the same PR.
 
-Status: plan approved on 2026-11-26. Steps 1–7 (skeleton, reference tests, zmanim calculation, storage, display, admin, v1 import) done.
+Status: plan approved on 2026-11-26. Steps 1–8 done; step 9 (release workflow) remains.
 
 ## 1. Goals
 
@@ -174,6 +174,15 @@ Implemented in step 5:
 - Start at login (`app.setLoginItemSettings`), `powerSaveBlocker` against display sleep, reload on `render-process-gone`, `app.relaunch()` after a fatal main-process error, logs with `electron-log`.
 - `electron-updater` against GitHub Releases, plus a "Check for updates" action in the admin.
 
+Decided with the owner in step 8 (2026-11-26), replacing the points above where they differ:
+
+- **No start at login:** someone launches the app.
+- **At launch, only the public display opens**, in plain full screen (not kiosk): Escape leaves full screen, F11 toggles it, Alt+F4 closes it. In development it is a 540 × 960 window.
+- **Opening the admin:** moving the mouse over the display shows the cursor and a "ניהול" button at the top; both hide 3 s after the mouse stops. The button opens the admin window. It is shown only in the app's own windows and calls `desktop.showAdmin`, a procedure reserved for them. Ctrl+Alt+A also opens the admin. There is no tray icon.
+- **Screen sleep:** `powerSaveBlocker` keeps the screen on while the app runs.
+- **Updates:** `electron-updater` checks GitHub Releases at start and every 6 hours, downloads in the background and installs when the app next starts. The admin shows "new version X ready" with an "install now" button (`admin.installUpdate`). Only packaged builds check; `electron-builder.yml` names the GitHub repository.
+- **Crash recovery:** a crashed page reloads (`render-process-gone`). An uncaught error in the main process relaunches the app, unless it happens in the first minute, so a broken start cannot loop.
+
 ### 4.7 Persisted data (`userData/data/`)
 
 | File                    | Content                                                                                                                                                                                     |
@@ -242,7 +251,7 @@ One session per step, each on its own branch and PR into `v2`.
 - [x] **5. Display** — layout registry, `DisplayState` + SSE subscription, `classic-portrait` layout faithful to v1, clock, multi-page slideshow, kiosk window.
 - [x] **6. Admin** (simplified afterwards with the owner, see §9.2) — times, slides (pdf.js worker, all pages, original kept, ordering, enable/disable), location, "Screens" card (layout, options, live preview), phone access (LAN listening, PIN, QR code); UI rules in §9.
 - [x] **7. v1 import** — §5, tested against a copy of a real v1 `userData`.
-- [ ] **8. Reliability and auto-update** — start at login, crash recovery, sleep prevention, `electron-updater`, "Check for updates".
+- [x] **8. Reliability and auto-update** (as decided with the owner, see §4.6) — start at login, crash recovery, sleep prevention, `electron-updater`, "Check for updates".
 - [ ] **9. Release workflow** — Windows NSIS build with `latest.yml`; version read from `package.json` (2.0.0) instead of always bumping the patch; v2.0.0 published when `v2` is merged into `main`; manual pre-release builds from `v2` for testing on the synagogue PC.
 
 ## 8. Code quality rules

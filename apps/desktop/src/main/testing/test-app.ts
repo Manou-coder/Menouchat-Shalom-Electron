@@ -24,6 +24,8 @@ export interface TestApp {
   slidesRoot: string;
   /** Every phone-access switch the admin service asked the main process to apply. */
   phoneAccessChanges: boolean[];
+  /** Calls the API made to the desktop app (open admin, install update). */
+  desktopCalls: string[];
   dispose(): Promise<void>;
 }
 
@@ -41,6 +43,7 @@ export async function createTestApp(
   const now = options.now ?? Date.now;
   const sessions = createSessionStore(now);
   const phoneAccessChanges: boolean[] = [];
+  const desktopCalls: string[] = [];
 
   const admin = createAdminService({
     store,
@@ -53,6 +56,7 @@ export async function createTestApp(
     },
     onPhoneAccessChanged: (enabled) => phoneAccessChanges.push(enabled),
     phoneUrls: (port) => [`http://192.168.1.10:${String(port)}/admin`],
+    updateStatus: () => ({ status: 'ready', version: '2.0.1' }),
   });
 
   const server = await createServer({
@@ -75,6 +79,10 @@ export async function createTestApp(
       verifyPin: (pin) => admin.verifyPin(pin),
       isPinSet: async () => (await store.settings.read()).lan.pinHash !== null,
     }),
+    desktop: {
+      showAdmin: () => desktopCalls.push('showAdmin'),
+      installUpdate: () => desktopCalls.push('installUpdate'),
+    },
     slidesRoot,
     onError: () => undefined,
     ...(options.webRoot === undefined ? {} : { webRoot: options.webRoot }),
@@ -87,6 +95,7 @@ export async function createTestApp(
     changes,
     slidesRoot,
     phoneAccessChanges,
+    desktopCalls,
     async dispose() {
       await server.close();
       await rm(userData, { recursive: true, force: true });

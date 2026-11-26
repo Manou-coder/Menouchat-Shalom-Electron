@@ -7,9 +7,11 @@ export {
   SLIDE_UPLOAD_LIMITS,
   slideIntervalInputSchema,
   slideToggleInputSchema,
+  updateStatusSchema,
   type AdminState,
   type PhoneAccess,
   type ScheduleInput,
+  type UpdateStatus,
 } from './admin.ts';
 export {
   decodeDesktopBridge,

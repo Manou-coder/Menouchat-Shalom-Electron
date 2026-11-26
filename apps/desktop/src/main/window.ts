@@ -13,8 +13,10 @@ export interface WindowManagerOptions {
   /** Origin of the web app: the embedded server, or the Vite dev server in development. */
   appUrl: string;
   bridge: DesktopBridge;
-  /** Full-screen kiosk display (production) or an ordinary window (development). */
-  kiosk: boolean;
+  /** Full-screen display (production) or a 540 × 960 window (development). */
+  fullScreen: boolean;
+  /** Logs why a window's page had to be reloaded. */
+  onRendererGone: (details: string) => void;
 }
 
 export interface WindowManager {
@@ -51,6 +53,13 @@ export function createWindowManager(options: WindowManagerOptions): WindowManage
         event.preventDefault();
       }
     });
+    // A crashed page would leave the synagogue screen blank: load it again.
+    window.webContents.on('render-process-gone', (_event, details) => {
+      options.onRendererGone(`${path}: ${details.reason}`);
+      if (!window.isDestroyed()) {
+        window.reload();
+      }
+    });
     window.once('ready-to-show', () => {
       window.show();
     });
@@ -75,10 +84,16 @@ export function createWindowManager(options: WindowManagerOptions): WindowManage
       }
       const window = create(
         `/display/${encodeURIComponent(displayId)}`,
-        options.kiosk
-          ? { kiosk: true, frame: false, backgroundColor: '#000000' }
+        options.fullScreen
+          ? { fullscreen: true, backgroundColor: '#000000' }
           : { ...DISPLAY_WINDOW_SIZE, useContentSize: true, backgroundColor: '#000000' },
       );
+      // Plain full screen (owner's choice, not kiosk): Escape leaves it, F11 toggles it.
+      window.webContents.on('before-input-event', (_event, input) => {
+        if (input.type === 'keyDown' && input.key === 'Escape' && window.isFullScreen()) {
+          window.setFullScreen(false);
+        }
+      });
       displays.set(displayId, window);
       window.on('closed', () => displays.delete(displayId));
     },

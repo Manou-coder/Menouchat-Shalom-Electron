@@ -5,6 +5,7 @@ import { DESKTOP_BRIDGE_GLOBAL } from '@menouchat/shared';
 
 import { ApiClientContext, createApiClient } from './api/api-client.ts';
 import { resolveApiConfig } from './api/api-config.ts';
+import { IsDesktopWindowContext } from './api/is-desktop-window.ts';
 import { App } from './App.tsx';
 import './styles/global.css';
 
@@ -14,12 +15,15 @@ if (root === null) {
 }
 
 const bridge: unknown = Reflect.get(window, DESKTOP_BRIDGE_GLOBAL);
-const apiClient = createApiClient(resolveApiConfig(bridge, window.location.origin));
+const apiConfig = resolveApiConfig(bridge, window.location.origin);
+const apiClient = createApiClient(apiConfig);
 
 createRoot(root).render(
   <StrictMode>
     <ApiClientContext value={apiClient}>
-      <App />
+      <IsDesktopWindowContext value={apiConfig.token !== undefined}>
+        <App />
+      </IsDesktopWindowContext>
     </ApiClientContext>
   </StrictMode>,
 );

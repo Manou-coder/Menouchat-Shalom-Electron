@@ -46,16 +46,30 @@ export interface AuthApi {
   isPinSet(): Promise<boolean>;
 }
 
+/** What only the app's own windows may ask of the desktop app. */
+export interface DesktopApi {
+  showAdmin(): void;
+  /** Restarts into a downloaded update. */
+  installUpdate(): void;
+}
+
 export interface AppRouterDependencies {
   version: string;
   displayStates: DisplayStateApi;
   admin: AdminApi;
   auth: AuthApi;
+  desktop: DesktopApi;
 }
 
 const displayIdInput = z.object({ displayId: z.string().min(1).max(50) });
 
-export function createAppRouter({ version, displayStates, admin, auth }: AppRouterDependencies) {
+export function createAppRouter({
+  version,
+  displayStates,
+  admin,
+  auth,
+  desktop,
+}: AppRouterDependencies) {
   const isAdmin = (ctx: RequestContext) =>
     ctx.client === 'local' || auth.isSessionValid(ctx.sessionId);
 
@@ -63,6 +77,14 @@ export function createAppRouter({ version, displayStates, admin, auth }: AppRout
   const adminProcedure = publicProcedure.use(({ ctx, next }) => {
     if (!isAdmin(ctx)) {
       throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Sign in with the admin PIN' });
+    }
+    return next();
+  });
+
+  /** The app's own windows only: these act on the PC itself. */
+  const localProcedure = publicProcedure.use(({ ctx, next }) => {
+    if (ctx.client !== 'local') {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Only on the synagogue PC' });
     }
     return next();
   });
@@ -125,7 +147,17 @@ export function createAppRouter({ version, displayStates, admin, auth }: AppRout
       }),
     }),
 
+    desktop: router({
+      showAdmin: localProcedure.mutation(() => {
+        desktop.showAdmin();
+      }),
+    }),
+
     admin: router({
+      installUpdate: adminProcedure.mutation(() => {
+        desktop.installUpdate();
+      }),
+
       state: adminProcedure.output(adminStateSchema).query(() => admin.getState()),
 
       onState: adminProcedure.subscription(async function* ({ signal }) {

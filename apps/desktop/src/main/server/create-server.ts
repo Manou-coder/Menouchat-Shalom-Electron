@@ -9,6 +9,7 @@ import {
   type AdminApi,
   type AppRouter,
   type AuthApi,
+  type DesktopApi,
   type DisplayStateApi,
 } from '../api/router.ts';
 import { bearerToken, resolveClientKind } from './client-kind.ts';
@@ -21,6 +22,7 @@ export interface ServerOptions {
   displayStates: DisplayStateApi;
   admin: AdminApi;
   auth: AuthApi;
+  desktop: DesktopApi;
   /** `userData/slides`, served read-only under `/slides`. */
   slidesRoot: string;
   /** Built web app to serve; omitted in development, where Vite serves it. */
@@ -58,6 +60,7 @@ export async function createServer(options: ServerOptions): Promise<FastifyInsta
       displayStates: options.displayStates,
       admin: options.admin,
       auth: options.auth,
+      desktop: options.desktop,
     }),
     createContext: ({ req, res, info }) => ({
       // Server-sent events cannot carry headers, so subscriptions pass the token as a
