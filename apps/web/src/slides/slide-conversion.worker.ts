@@ -1,21 +1,23 @@
 /// <reference lib="webworker" />
-// Converts an uploaded PDF or image into one JPEG per page, off the main thread, so the
-// admin stays responsive on a phone while a long PDF renders (plan §2).
+// Converts an uploaded PDF (its first page, as v1 did) or image into the JPEG the screen
+// shows, off the main thread so the admin stays responsive on a phone.
 // The legacy build carries polyfills: the admin also runs on older phone browsers.
-import { getDocument, VerbosityLevel } from 'pdfjs-dist/legacy/build/pdf.mjs';
-// This file already runs off the main thread, so pdf.js parses here instead of starting a
-// worker of its own: loading its worker module registers it on `globalThis.pdfjsWorker`.
-import 'pdfjs-dist/legacy/build/pdf.worker.min.mjs';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
+// pdf.js parses in a worker of its own, nested in this one. Its worker module attaches to
+// whatever worker loads it, so it must not be imported into this file directly.
+import PdfJsWorker from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?worker';
 
 import {
   JPEG_QUALITY,
-  MAX_PAGE_SIDE_PX,
+  MAX_IMAGE_SIDE_PX,
   RENDER_DPI,
   type ConversionMessage,
   type ConversionRequest,
 } from './conversion-protocol.ts';
 
 declare const self: DedicatedWorkerGlobalScope;
+
+GlobalWorkerOptions.workerPort = new PdfJsWorker();
 
 const PDF_POINTS_PER_INCH = 72;
 
@@ -49,51 +51,43 @@ function post(message: ConversionMessage): void {
 }
 
 function fitScale(width: number, height: number): number {
-  return Math.min(1, MAX_PAGE_SIDE_PX / Math.max(width, height));
+  return Math.min(1, MAX_IMAGE_SIDE_PX / Math.max(width, height));
 }
 
 async function toJpeg(canvas: OffscreenCanvas): Promise<Blob> {
   return canvas.convertToBlob({ type: 'image/jpeg', quality: JPEG_QUALITY });
 }
 
-async function convertPdf(file: File): Promise<Blob[]> {
+async function convertPdf(file: File): Promise<Blob> {
   const loadingTask = getDocument({
     data: new Uint8Array(await file.arrayBuffer()),
     CanvasFactory: OffscreenCanvasFactory,
     isOffscreenCanvasSupported: true,
     // No DOM fonts in a worker: glyphs are drawn as paths instead.
     disableFontFace: true,
-    // Running in-thread is intended (see the import above); only real errors are reported.
-    verbosity: VerbosityLevel.ERRORS,
   });
-  const document = await loadingTask.promise;
   try {
-    const pages: Blob[] = [];
-    for (let number = 1; number <= document.numPages; number++) {
-      const page = await document.getPage(number);
-      const base = page.getViewport({ scale: RENDER_DPI / PDF_POINTS_PER_INCH });
-      const viewport = page.getViewport({
-        scale: (RENDER_DPI / PDF_POINTS_PER_INCH) * fitScale(base.width, base.height),
-      });
-      const canvas = new OffscreenCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
-      await page.render({
-        // pdf.js renders to an OffscreenCanvas in workers; its types only name the DOM canvas.
-        canvas: canvas as unknown as HTMLCanvasElement,
-        viewport,
-        // JPEG has no transparency: paint the page white, as a printer would.
-        background: '#ffffff',
-      }).promise;
-      pages.push(await toJpeg(canvas));
-      page.cleanup();
-      post({ type: 'progress', done: number, total: document.numPages });
-    }
-    return pages;
+    const document = await loadingTask.promise;
+    const page = await document.getPage(1);
+    const base = page.getViewport({ scale: RENDER_DPI / PDF_POINTS_PER_INCH });
+    const viewport = page.getViewport({
+      scale: (RENDER_DPI / PDF_POINTS_PER_INCH) * fitScale(base.width, base.height),
+    });
+    const canvas = new OffscreenCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+    await page.render({
+      // pdf.js renders to an OffscreenCanvas in workers; its types only name the DOM canvas.
+      canvas: canvas as unknown as HTMLCanvasElement,
+      viewport,
+      // JPEG has no transparency: paint the page white, as a printer would.
+      background: '#ffffff',
+    }).promise;
+    return await toJpeg(canvas);
   } finally {
     await loadingTask.destroy();
   }
 }
 
-async function convertImage(file: File): Promise<Blob[]> {
+async function convertImage(file: File): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   const scale = fitScale(bitmap.width, bitmap.height);
   const canvas = new OffscreenCanvas(
@@ -108,16 +102,15 @@ async function convertImage(file: File): Promise<Blob[]> {
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
-  post({ type: 'progress', done: 1, total: 1 });
-  return [await toJpeg(canvas)];
+  return toJpeg(canvas);
 }
 
 self.addEventListener('message', (event: MessageEvent<ConversionRequest>) => {
   const { file } = event.data;
   const conversion = file.type === 'application/pdf' ? convertPdf(file) : convertImage(file);
   conversion.then(
-    (pages) => {
-      post({ type: 'done', pages });
+    (image) => {
+      post({ type: 'done', image });
     },
     (error: unknown) => {
       post({ type: 'error', message: error instanceof Error ? error.message : String(error) });

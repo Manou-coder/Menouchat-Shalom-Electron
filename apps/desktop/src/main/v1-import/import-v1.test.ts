@@ -58,35 +58,37 @@ describe('v1 import, on a copy of a real v1 userData', () => {
 
     const { slides } = await store.slides.read();
     expect(
-      slides.map(({ title, enabled, originalFile, pages }) => ({
+      slides.map(({ slot, title, enabled, originalFile, image }) => ({
+        slot,
         title,
         enabled,
         originalFile,
-        pages,
+        image,
       })),
     ).toEqual([
       {
+        slot: 1,
         title: 'ian-dooley-d1UPkiFd04A-unsplash',
         enabled: true,
         originalFile: null,
-        pages: ['page-1.jpg'],
+        image: 'page-1.jpg',
       },
-      { title: 'test-image2', enabled: false, originalFile: null, pages: ['page-1.jpg'] },
-      { title: 'test-image3', enabled: false, originalFile: null, pages: ['page-1.jpg'] },
-      { title: 'test-image4', enabled: false, originalFile: null, pages: ['page-1.jpg'] },
+      { slot: 2, title: 'test-image2', enabled: false, originalFile: null, image: 'page-1.jpg' },
+      { slot: 3, title: 'test-image3', enabled: false, originalFile: null, image: 'page-1.jpg' },
+      { slot: 4, title: 'test-image4', enabled: false, originalFile: null, image: 'page-1.jpg' },
     ]);
     const [first] = slides;
-    expect(await readFile(join(userData, 'slides', first?.id ?? '', 'page-1.jpg'))).toEqual(
+    expect(await readFile(join(userData, 'slides', first?.id ?? '', first?.image ?? ''))).toEqual(
       await readFile(join(userData, 'images', 'imageAffiche1.jpg')),
     );
 
     await expect(store.displays.read()).resolves.toMatchObject({
-      displays: [{ id: 'main', layoutId: 'classic-portrait', slideIds: [], slideIntervalSec: 10 }],
+      displays: [{ id: 'main', layoutId: 'classic-portrait', slideIntervalSec: 10 }],
     });
 
     const log = await readFile(join(userData, 'data', 'migration.log'), 'utf8');
     expect(log).toContain('2026-11-26T12:00:00.000Z Imported Menouchat Chalom v1 data');
-    expect(log).toContain('slide 1: "ian-dooley-d1UPkiFd04A-unsplash" shown');
+    expect(log).toContain('slot 1: "ian-dooley-d1UPkiFd04A-unsplash" shown');
 
     expect(await fingerprintV1()).toEqual(before);
   });

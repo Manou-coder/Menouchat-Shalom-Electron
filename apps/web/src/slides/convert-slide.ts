@@ -7,27 +7,17 @@ export class SlideConversionError extends Error {
   override readonly name = 'SlideConversionError';
 }
 
-/** Renders every page of a PDF (or an image) to JPEG in a Web Worker. */
-export function convertSlide(
-  file: File,
-  onProgress: (done: number, total: number) => void,
-): Promise<Blob[]> {
+/** Renders the first page of a PDF, or an image, to the JPEG the screen shows, in a Web Worker. */
+export function convertSlide(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const worker = new SlideConversionWorker();
     worker.addEventListener('message', (event: MessageEvent<ConversionMessage>) => {
+      worker.terminate();
       const message = event.data;
-      switch (message.type) {
-        case 'progress':
-          onProgress(message.done, message.total);
-          return;
-        case 'done':
-          worker.terminate();
-          resolve(message.pages);
-          return;
-        case 'error':
-          worker.terminate();
-          reject(new SlideConversionError(message.message));
-          return;
+      if (message.type === 'done') {
+        resolve(message.image);
+      } else {
+        reject(new SlideConversionError(message.message));
       }
     });
     worker.addEventListener('error', (event) => {

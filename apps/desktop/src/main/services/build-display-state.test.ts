@@ -13,11 +13,12 @@ import {
   type DisplayInputs,
 } from './build-display-state.ts';
 
-const slide = (id: string, enabled: boolean, pages = ['page-1.jpg']): Slide => ({
+const slide = (id: string, slot: Slide['slot'], enabled: boolean): Slide => ({
   id,
+  slot,
   title: id,
   originalFile: null,
-  pages,
+  image: 'page-1.jpg',
   enabled,
 });
 
@@ -31,7 +32,7 @@ function inputs(overrides: Partial<DisplayInputs> = {}): DisplayInputs {
     schedule: createDefaultSchedule(),
     slides: {
       schemaVersion: 1,
-      slides: [slide(A, true, ['page-1.jpg', 'page-2.jpg']), slide(B, false), slide(C, true)],
+      slides: [slide(C, 4, true), slide(B, 2, false), slide(A, 1, true)],
     },
     displays: createDefaultDisplays(),
     ...overrides,
@@ -64,29 +65,15 @@ describe('buildDisplayState', () => {
     expect(new Date(state.validUntil).toISOString()).toBe('2026-11-27T22:00:00.000Z');
   });
 
-  it('shows every page of every enabled slide in library order by default', () => {
+  it('shows the enabled slots in slot order, as v1 did', () => {
     const state = buildDisplayState(inputs(), 'main', FRIDAY_NOON);
     expect(state.slideshow).toEqual({
       intervalSec: 10,
       pages: [
         { key: `${A}/page-1.jpg`, url: `/slides/${A}/page-1.jpg` },
-        { key: `${A}/page-2.jpg`, url: `/slides/${A}/page-2.jpg` },
         { key: `${C}/page-1.jpg`, url: `/slides/${C}/page-1.jpg` },
       ],
     });
-  });
-
-  it("follows the display's own slide order, still skipping disabled slides", () => {
-    const displays = createDefaultDisplays();
-    const [main] = displays.displays;
-    if (main === undefined) throw new Error('missing main display');
-    main.slideIds = [C, B, A];
-    const state = buildDisplayState(inputs({ displays }), 'main', FRIDAY_NOON);
-    expect(state.slideshow.pages.map((page) => page.key)).toEqual([
-      `${C}/page-1.jpg`,
-      `${A}/page-1.jpg`,
-      `${A}/page-2.jpg`,
-    ]);
   });
 
   it('rejects unknown displays', () => {

@@ -1,7 +1,6 @@
 import { civilDateAt, computeDay, startOfNextCivilDate } from '@menouchat/core';
 import {
   slidePageUrl,
-  type Display,
   type DisplayState,
   type Displays,
   type Schedule,
@@ -58,20 +57,14 @@ export function buildDisplayState(
     calendar: day.calendar,
     slideshow: {
       intervalSec: display.slideIntervalSec,
-      pages: slidesFor(display, inputs.slides).flatMap((slide) =>
-        slide.pages.map((page) => ({
-          key: `${slide.id}/${page}`,
-          url: slidePageUrl(slide.id, page),
+      // The enabled slots, in slot order, as v1 did.
+      pages: inputs.slides.slides
+        .filter((slide) => slide.enabled)
+        .toSorted((a, b) => a.slot - b.slot)
+        .map((slide) => ({
+          key: `${slide.id}/${slide.image}`,
+          url: slidePageUrl(slide.id, slide.image),
         })),
-      ),
     },
   };
-}
-
-function slidesFor(display: Display, library: Slides): Slides['slides'] {
-  const enabled = library.slides.filter((slide) => slide.enabled);
-  if (display.slideIds.length === 0) {
-    return enabled;
-  }
-  return display.slideIds.flatMap((id) => enabled.filter((slide) => slide.id === id));
 }

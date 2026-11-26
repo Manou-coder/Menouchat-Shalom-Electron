@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
-import type {
-  AdminState,
-  DisplayInput,
-  LocationInput,
-  ScheduleInput,
-  Slide,
+import {
+  MAIN_DISPLAY_ID,
+  type AdminState,
+  type ScheduleInput,
+  type Slide,
+  type SlideSlot,
 } from '@menouchat/shared';
 
 import { AdminError } from '../api/errors.ts';
@@ -27,7 +27,7 @@ export interface AdminServiceDependencies {
   onPinChanged: () => void;
   /** Applies phone access: listen on the local network or on this PC only. */
   onPhoneAccessChanged: (enabled: boolean) => void;
-  /** Where phones can reach the admin, for the current listening port. */
+  /** Full admin addresses on this PC's local network, for the listening port. */
   phoneUrls: (port: number) => string[];
 }
 
@@ -35,13 +35,10 @@ export interface AdminService {
   getState(): Promise<AdminState>;
   watch(signal: AbortSignal): AsyncGenerator<AdminState>;
   updateSchedule(input: ScheduleInput): Promise<void>;
-  updateLocation(input: LocationInput): Promise<void>;
-  updateDisplay(input: DisplayInput): Promise<void>;
-  addSlide(upload: SlideUpload): Promise<Slide>;
-  setSlideEnabled(slideId: string, enabled: boolean): Promise<void>;
-  renameSlide(slideId: string, title: string): Promise<void>;
-  reorderSlides(slideIds: readonly string[]): Promise<void>;
-  deleteSlide(slideId: string): Promise<void>;
+  /** Puts a new picture in a slot, replacing what was there (as in v1). */
+  uploadSlide(upload: SlideUpload): Promise<Slide>;
+  setSlideEnabled(slot: SlideSlot, enabled: boolean): Promise<void>;
+  setSlideInterval(seconds: number): Promise<void>;
   setPin(pin: string): Promise<void>;
   setPhoneAccess(enabled: boolean): Promise<void>;
   verifyPin(pin: string): Promise<boolean>;
@@ -69,33 +66,17 @@ export function createAdminService(dependencies: AdminServiceDependencies): Admi
       store.slides.read(),
       store.displays.read(),
     ]);
+    const main = displays.displays.find((display) => display.id === MAIN_DISPLAY_ID);
     return {
-      location: {
-        location: settings.location,
-        candleLightingMinutes: settings.candleLightingMinutes,
-        motzashArvitOffsetMinutes: settings.motzashArvitOffsetMinutes,
-      },
       schedule: { weekday: schedule.weekday, shabbat: schedule.shabbat },
-      slides: slides.slides,
-      displays: displays.displays,
+      slides: slides.slides.toSorted((a, b) => a.slot - b.slot),
+      slideIntervalSec: main?.slideIntervalSec ?? 10,
       phoneAccess: {
         enabled: settings.lan.enabled,
         pinSet: settings.lan.pinHash !== null,
-        port: settings.lan.port,
         urls: settings.lan.enabled ? dependencies.phoneUrls(settings.lan.port) : [],
       },
     };
-  }
-
-  async function updateSlides(update: (slides: Slide[]) => Slide[]): Promise<void> {
-    const document = await store.slides.read();
-    await store.slides.write({ ...document, slides: update(document.slides) });
-  }
-
-  function requireSlide(slides: readonly Slide[], slideId: string): void {
-    if (!slides.some((slide) => slide.id === slideId)) {
-      throw new AdminError('NOT_FOUND', `No slide with id "${slideId}"`);
-    }
   }
 
   return {
@@ -111,90 +92,58 @@ export function createAdminService(dependencies: AdminServiceDependencies): Admi
     updateSchedule: (input) =>
       exclusive(() => store.schedule.write({ schemaVersion: 1, ...input })),
 
-    updateLocation: (input) =>
-      exclusive(async () => {
-        const settings = await store.settings.read();
-        await store.settings.write({ ...settings, ...input });
-      }),
-
-    updateDisplay: (input) =>
-      exclusive(async () => {
-        const document = await store.displays.read();
-        if (!document.displays.some((display) => display.id === input.id)) {
-          throw new AdminError('NOT_FOUND', `No display with id "${input.id}"`);
-        }
-        await store.displays.write({
-          ...document,
-          displays: document.displays.map((display) =>
-            display.id === input.id ? { ...display, ...input } : display,
-          ),
-        });
-      }),
-
-    addSlide: (upload) =>
+    uploadSlide: (upload) =>
       exclusive(async () => {
         const id = randomUUID();
         const files = await saveSlideFiles(dependencies.slidesRoot, id, upload);
-        const slide: Slide = { id, title: upload.title, ...files, enabled: true };
+        const document = await store.slides.read();
+        const previous = document.slides.find((slide) => slide.slot === upload.slot);
+        // A new picture is shown, as ticking the slot was the point of choosing it.
+        const slide: Slide = {
+          id,
+          slot: upload.slot,
+          title: upload.title,
+          ...files,
+          enabled: previous?.enabled ?? true,
+        };
         try {
-          await updateSlides((slides) => [...slides, slide]);
+          await store.slides.write({
+            ...document,
+            slides: [...document.slides.filter((other) => other.slot !== upload.slot), slide],
+          });
         } catch (error) {
           await removeSlideFiles(dependencies.slidesRoot, id);
           throw error;
         }
+        if (previous !== undefined) {
+          await removeSlideFiles(dependencies.slidesRoot, previous.id);
+        }
         return slide;
       }),
 
-    setSlideEnabled: (slideId, enabled) =>
-      exclusive(() =>
-        updateSlides((slides) => {
-          requireSlide(slides, slideId);
-          return slides.map((slide) => (slide.id === slideId ? { ...slide, enabled } : slide));
-        }),
-      ),
-
-    renameSlide: (slideId, title) =>
-      exclusive(() =>
-        updateSlides((slides) => {
-          requireSlide(slides, slideId);
-          return slides.map((slide) => (slide.id === slideId ? { ...slide, title } : slide));
-        }),
-      ),
-
-    reorderSlides: (slideIds) =>
-      exclusive(() =>
-        updateSlides((slides) => {
-          const byId = new Map(slides.map((slide) => [slide.id, slide]));
-          if (slideIds.length !== slides.length || new Set(slideIds).size !== slides.length) {
-            throw new AdminError('BAD_REQUEST', 'The new order must list every slide once');
-          }
-          return slideIds.map((id) => {
-            const slide = byId.get(id);
-            if (slide === undefined) {
-              throw new AdminError('BAD_REQUEST', `No slide with id "${id}"`);
-            }
-            return slide;
-          });
-        }),
-      ),
-
-    deleteSlide: (slideId) =>
+    setSlideEnabled: (slot, enabled) =>
       exclusive(async () => {
-        await updateSlides((slides) => {
-          requireSlide(slides, slideId);
-          return slides.filter((slide) => slide.id !== slideId);
-        });
-        const displays = await store.displays.read();
-        if (displays.displays.some((display) => display.slideIds.includes(slideId))) {
-          await store.displays.write({
-            ...displays,
-            displays: displays.displays.map((display) => ({
-              ...display,
-              slideIds: display.slideIds.filter((id) => id !== slideId),
-            })),
-          });
+        const document = await store.slides.read();
+        if (!document.slides.some((slide) => slide.slot === slot)) {
+          throw new AdminError('NOT_FOUND', `Slot ${String(slot)} is empty`);
         }
-        await removeSlideFiles(dependencies.slidesRoot, slideId);
+        await store.slides.write({
+          ...document,
+          slides: document.slides.map((slide) =>
+            slide.slot === slot ? { ...slide, enabled } : slide,
+          ),
+        });
+      }),
+
+    setSlideInterval: (seconds) =>
+      exclusive(async () => {
+        const document = await store.displays.read();
+        await store.displays.write({
+          ...document,
+          displays: document.displays.map((display) =>
+            display.id === MAIN_DISPLAY_ID ? { ...display, slideIntervalSec: seconds } : display,
+          ),
+        });
       }),
 
     setPin: (pin) =>

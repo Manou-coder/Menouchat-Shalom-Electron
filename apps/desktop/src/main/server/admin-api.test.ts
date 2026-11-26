@@ -65,21 +65,21 @@ async function errorCode(promise: Promise<unknown>): Promise<string | undefined>
 
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
 
-function uploadForm(pages: Uint8Array[] = [JPEG, JPEG], pageType = 'image/jpeg'): FormData {
+function uploadForm(
+  slot: number | string = 2,
+  image: Uint8Array = JPEG,
+  imageType = 'image/jpeg',
+): FormData {
   const form = new FormData();
-  form.set(SLIDE_UPLOAD_FIELDS.title, 'Halacha yomit');
+  form.set(SLIDE_UPLOAD_FIELDS.slot, String(slot));
+  form.set(SLIDE_UPLOAD_FIELDS.title, 'halacha.pdf');
   form.set(
     SLIDE_UPLOAD_FIELDS.original,
     new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], 'halacha.pdf', {
       type: 'application/pdf',
     }),
   );
-  pages.forEach((page, index) => {
-    form.append(
-      SLIDE_UPLOAD_FIELDS.pages,
-      new File([page], `page-${String(index + 1)}.jpg`, { type: pageType }),
-    );
-  });
+  form.set(SLIDE_UPLOAD_FIELDS.image, new File([image], 'page-1.jpg', { type: imageType }));
   return form;
 }
 
@@ -93,7 +93,7 @@ describe('admin access', () => {
 
   it('lets local windows in without a PIN', async () => {
     const state = await local().admin.state.query();
-    expect(state.phoneAccess).toEqual({ enabled: false, pinSet: false, port: 3741, urls: [] });
+    expect(state.phoneAccess).toEqual({ enabled: false, pinSet: false, urls: [] });
     await expect(local().auth.status.query()).resolves.toEqual({ signedIn: true, pinSet: false });
   });
 
@@ -163,17 +163,14 @@ describe('phone access', () => {
 });
 
 describe('editing', () => {
-  it('saves the schedule and the location, and the display follows', async () => {
-    const before = await local().admin.state.query();
+  it('saves the schedule and the display follows', async () => {
+    const { schedule } = await local().admin.state.query();
     await local().admin.updateSchedule.mutate({
-      ...before.schedule,
-      weekday: { ...before.schedule.weekday, shacharit: '06:45' },
+      ...schedule,
+      weekday: { ...schedule.weekday, shacharit: '06:45' },
     });
-    await local().admin.updateLocation.mutate({ ...before.location, candleLightingMinutes: 30 });
-
     const display = await client().display.state.query({ displayId: 'main' });
     expect(display.schedule.weekday.shacharit).toBe('06:45');
-    expect((await app.store.settings.read()).candleLightingMinutes).toBe(30);
   });
 
   it('rejects invalid times', async () => {
@@ -188,82 +185,80 @@ describe('editing', () => {
     ).resolves.toBe('BAD_REQUEST');
   });
 
-  it('updates a display and refuses unknown ones', async () => {
-    const input = {
-      id: 'main',
-      layoutId: 'classic-portrait',
-      layoutOptions: { showClock: false },
-      slideIntervalSec: 15,
-    };
-    await local().admin.updateDisplay.mutate(input);
+  it('sets the seconds per slide, from 3 to 300', async () => {
+    await local().admin.slides.setInterval.mutate({ slideIntervalSec: 15 });
+    await expect(local().admin.state.query()).resolves.toMatchObject({ slideIntervalSec: 15 });
     await expect(client().display.state.query({ displayId: 'main' })).resolves.toMatchObject({
-      layoutOptions: { showClock: false },
       slideshow: { intervalSec: 15 },
     });
     await expect(
-      errorCode(local().admin.updateDisplay.mutate({ ...input, id: 'lobby' })),
-    ).resolves.toBe('NOT_FOUND');
+      errorCode(local().admin.slides.setInterval.mutate({ slideIntervalSec: 2 })),
+    ).resolves.toBe('BAD_REQUEST');
   });
 });
 
 describe('slides', () => {
-  it('stores an upload with its original and every page, then serves the pages', async () => {
-    const slide = await local().admin.slides.add.mutate(uploadForm());
+  it('stores a picture in its slot with the original file, then serves it', async () => {
+    const slide = await local().admin.slides.upload.mutate(uploadForm(2));
     expect(slide).toMatchObject({
-      title: 'Halacha yomit',
+      slot: 2,
+      title: 'halacha.pdf',
       originalFile: 'original.pdf',
-      pages: ['page-1.jpg', 'page-2.jpg'],
+      image: 'page-1.jpg',
       enabled: true,
     });
     const folder = join(app.slidesRoot, slide.id);
     await expect(readFile(join(folder, 'original.pdf'))).resolves.toEqual(Buffer.from('%PDF'));
-    const page = await fetch(`${baseUrl}/slides/${slide.id}/page-2.jpg`);
+    const page = await fetch(`${baseUrl}/slides/${slide.id}/page-1.jpg`);
     expect(page.status).toBe(200);
+  });
+
+  it('replaces what a slot held, keeping whether it was shown', async () => {
+    const first = await local().admin.slides.upload.mutate(uploadForm(2));
+    await local().admin.slides.setEnabled.mutate({ slot: 2, enabled: false });
+    const second = await local().admin.slides.upload.mutate(uploadForm(2));
+
+    await expect(access(join(app.slidesRoot, first.id))).rejects.toThrow();
+    const { slides } = await local().admin.state.query();
+    expect(slides).toEqual([expect.objectContaining({ id: second.id, slot: 2, enabled: false })]);
+  });
+
+  it('shows the enabled slots on the display in slot order', async () => {
+    const third = await local().admin.slides.upload.mutate(uploadForm(3));
+    const first = await local().admin.slides.upload.mutate(uploadForm(1));
+    await local().admin.slides.upload.mutate(uploadForm(4));
+    await local().admin.slides.setEnabled.mutate({ slot: 4, enabled: false });
 
     const display = await client().display.state.query({ displayId: 'main' });
     expect(display.slideshow.pages.map((p) => p.url)).toEqual([
-      `/slides/${slide.id}/page-1.jpg`,
-      `/slides/${slide.id}/page-2.jpg`,
+      `/slides/${first.id}/page-1.jpg`,
+      `/slides/${third.id}/page-1.jpg`,
     ]);
   });
 
-  it('refuses pages that are not JPEG images and leaves nothing behind', async () => {
+  it('refuses images that are not JPEG, unknown slots, and leaves nothing behind', async () => {
     await expect(
-      errorCode(local().admin.slides.add.mutate(uploadForm([JPEG], 'image/png'))),
+      errorCode(local().admin.slides.upload.mutate(uploadForm(2, JPEG, 'image/png'))),
     ).resolves.toBe('BAD_REQUEST');
     await expect(
-      errorCode(local().admin.slides.add.mutate(uploadForm([new Uint8Array([1, 2, 3])]))),
+      errorCode(local().admin.slides.upload.mutate(uploadForm(2, new Uint8Array([1, 2, 3])))),
     ).resolves.toBe('BAD_REQUEST');
+    await expect(errorCode(local().admin.slides.upload.mutate(uploadForm(5)))).resolves.toBe(
+      'BAD_REQUEST',
+    );
     await expect(local().admin.state.query()).resolves.toMatchObject({ slides: [] });
   });
 
-  it('does not accept uploads from anonymous callers', async () => {
-    await expect(errorCode(client().admin.slides.add.mutate(uploadForm()))).resolves.toBe(
-      'UNAUTHORIZED',
-    );
+  it('cannot show an empty slot', async () => {
+    await expect(
+      errorCode(local().admin.slides.setEnabled.mutate({ slot: 1, enabled: true })),
+    ).resolves.toBe('NOT_FOUND');
   });
 
-  it('reorders, toggles, renames and deletes slides', async () => {
-    const first = await local().admin.slides.add.mutate(uploadForm());
-    const second = await local().admin.slides.add.mutate(uploadForm([JPEG]));
-    await local().admin.slides.reorder.mutate({ slideIds: [second.id, first.id] });
-    await local().admin.slides.setEnabled.mutate({ slideId: first.id, enabled: false });
-    await local().admin.slides.rename.mutate({ slideId: second.id, title: 'Shabbat' });
-
-    const { slides } = await local().admin.state.query();
-    expect(slides.map((slide) => [slide.title, slide.enabled])).toEqual([
-      ['Shabbat', true],
-      ['Halacha yomit', false],
-    ]);
-    await expect(
-      errorCode(local().admin.slides.reorder.mutate({ slideIds: [first.id] })),
-    ).resolves.toBe('BAD_REQUEST');
-
-    await local().admin.slides.delete.mutate({ slideId: first.id });
-    await expect(access(join(app.slidesRoot, first.id))).rejects.toThrow();
-    await expect(local().admin.state.query()).resolves.toMatchObject({
-      slides: [{ id: second.id }],
-    });
+  it('does not accept uploads from anonymous callers', async () => {
+    await expect(errorCode(client().admin.slides.upload.mutate(uploadForm()))).resolves.toBe(
+      'UNAUTHORIZED',
+    );
   });
 });
 

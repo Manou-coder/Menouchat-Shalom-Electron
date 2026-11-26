@@ -1,107 +1,84 @@
 import { useState } from 'react';
-import {
-  FileTrigger,
-  GridList,
-  GridListItem,
-  ProgressBar,
-  useDragAndDrop,
-} from 'react-aria-components';
+import { FileTrigger } from 'react-aria-components';
 
-import { SLIDE_UPLOAD_FIELDS, slidePageUrl, strings, type Slide } from '@menouchat/shared';
+import {
+  SLIDE_SLOTS,
+  SLIDE_UPLOAD_FIELDS,
+  slidePageUrl,
+  strings,
+  type Slide,
+  type SlideSlot,
+} from '@menouchat/shared';
 
 import { useApiClient } from '../../api/api-client.ts';
 import { Button } from '../../components/Button.tsx';
-import { ACCEPTED_SLIDE_TYPES, convertSlide } from '../../slides/convert-slide.ts';
+import {
+  ACCEPTED_SLIDE_TYPES,
+  convertSlide,
+  SlideConversionError,
+} from '../../slides/convert-slide.ts';
 import { errorMessage } from '../errors.ts';
 import { toast } from '../toasts.tsx';
 import { Card } from '../ui/Card.tsx';
-import { Toggle } from '../ui/fields.tsx';
+import { NumberInput, Toggle } from '../ui/fields.tsx';
 import { useAction } from '../use-action.ts';
+import { useDraft } from '../use-draft.ts';
 
 const labels = strings.admin.slides;
 
-type UploadProgress = { stage: 'converting'; done: number; total: number } | { stage: 'uploading' };
-
-function titleFromFileName(name: string): string {
-  return name.replace(/\.[^.]+$/, '').slice(0, 200) || name;
-}
-
-function useSlideUpload() {
+function SlotRow({ slot, slide }: { slot: SlideSlot; slide: Slide | undefined }) {
   const api = useApiClient();
-  const [progress, setProgress] = useState<UploadProgress>();
+  const [busy, setBusy] = useState(false);
+  const toggle = useAction((enabled: boolean) =>
+    api.admin.slides.setEnabled.mutate({ slot, enabled }),
+  );
 
   async function upload(file: File) {
-    setProgress({ stage: 'converting', done: 0, total: 1 });
+    setBusy(true);
     try {
-      const pages = await convertSlide(file, (done, total) => {
-        setProgress({ stage: 'converting', done, total });
-      });
-      setProgress({ stage: 'uploading' });
+      const image = await convertSlide(file);
       const form = new FormData();
-      form.set(SLIDE_UPLOAD_FIELDS.title, titleFromFileName(file.name));
+      form.set(SLIDE_UPLOAD_FIELDS.slot, String(slot));
+      form.set(SLIDE_UPLOAD_FIELDS.title, file.name);
       form.set(SLIDE_UPLOAD_FIELDS.original, file);
-      pages.forEach((page, index) => {
-        form.append(SLIDE_UPLOAD_FIELDS.pages, page, `page-${String(index + 1)}.jpg`);
-      });
-      await api.admin.slides.add.mutate(form);
+      form.set(SLIDE_UPLOAD_FIELDS.image, image, 'page-1.jpg');
+      await api.admin.slides.upload.mutate(form);
       toast.success(labels.added);
     } catch (error) {
       toast.error(
-        error instanceof Error && error.name === 'SlideConversionError'
-          ? labels.conversionFailed
-          : errorMessage(error),
+        error instanceof SlideConversionError ? labels.conversionFailed : errorMessage(error),
       );
     } finally {
-      setProgress(undefined);
-    }
-  }
-
-  return { upload, progress };
-}
-
-function moved(ids: readonly string[], from: number, to: number): string[] {
-  const order = [...ids];
-  const [item] = order.splice(from, 1);
-  if (item !== undefined) {
-    order.splice(to, 0, item);
-  }
-  return order;
-}
-
-/** The slide library: upload, order (drag, or arrows on touch screens), show/hide, delete. */
-export function SlidesCard({ slides }: { slides: readonly Slide[] }) {
-  const api = useApiClient();
-  const { upload, progress } = useSlideUpload();
-  const ids = slides.map((slide) => slide.id);
-  const reorder = useAction((slideIds: string[]) => api.admin.slides.reorder.mutate({ slideIds }));
-  const toggle = useAction((slideId: string, enabled: boolean) =>
-    api.admin.slides.setEnabled.mutate({ slideId, enabled }),
-  );
-  const remove = useAction(
-    (slideId: string) => api.admin.slides.delete.mutate({ slideId }),
-    labels.deleted,
-  );
-
-  const { dragAndDropHooks } = useDragAndDrop({
-    getItems: (keys) => [...keys].map((key) => ({ 'text/plain': String(key) })),
-    onReorder: (event) => {
-      const dragged = [...event.keys].map(String);
-      const rest = ids.filter((id) => !dragged.includes(id));
-      const targetIndex = rest.indexOf(String(event.target.key));
-      const insertAt = event.target.dropPosition === 'before' ? targetIndex : targetIndex + 1;
-      void reorder.run([...rest.slice(0, insertAt), ...dragged, ...rest.slice(insertAt)]);
-    },
-  });
-
-  function confirmDelete(slide: Slide) {
-    if (window.confirm(labels.confirmDelete(slide.title))) {
-      void remove.run(slide.id);
+      setBusy(false);
     }
   }
 
   return (
-    <Card title={labels.title}>
-      <div className="grid gap-2">
+    <li className="grid gap-2 rounded-lg border border-border p-3">
+      <div className="flex items-center gap-3">
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-background font-semibold">
+          {slot}
+        </span>
+        {slide === undefined ? (
+          <div className="h-16 w-24 shrink-0 rounded bg-background" />
+        ) : (
+          <img
+            src={slidePageUrl(slide.id, slide.image)}
+            alt=""
+            className="h-16 w-24 shrink-0 rounded bg-background object-contain"
+          />
+        )}
+        <span className="min-w-0 flex-1 truncate" dir="auto">
+          {slide?.title ?? labels.emptySlot}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Toggle
+          label={labels.shown}
+          isSelected={slide?.enabled === true}
+          isDisabled={slide === undefined || toggle.pending}
+          onChange={(enabled) => void toggle.run(enabled)}
+        />
         <FileTrigger
           acceptedFileTypes={ACCEPTED_SLIDE_TYPES}
           onSelect={(files) => {
@@ -111,105 +88,60 @@ export function SlidesCard({ slides }: { slides: readonly Slide[] }) {
             }
           }}
         >
-          <Button isDisabled={progress !== undefined}>{labels.add}</Button>
+          <Button variant="secondary" isDisabled={busy}>
+            {busy ? labels.converting : slide === undefined ? labels.choose : labels.replace}
+          </Button>
         </FileTrigger>
-        <p className="text-sm text-text-muted">{labels.accepted}</p>
-        {progress !== undefined && (
-          <ProgressBar
-            aria-label={progress.stage === 'converting' ? labels.converting : labels.uploading}
-            {...(progress.stage === 'converting'
-              ? { value: progress.done, maxValue: progress.total }
-              : { isIndeterminate: true })}
-            className="grid gap-1"
-          >
-            {({ percentage }) => (
-              <>
-                <span className="text-sm">
-                  {progress.stage === 'converting' ? labels.converting : labels.uploading}
-                </span>
-                <div className="h-2 overflow-hidden rounded-full bg-border">
-                  <div
-                    className="h-full bg-accent transition-[width]"
-                    style={{ width: `${String(percentage ?? 100)}%` }}
-                  />
-                </div>
-              </>
-            )}
-          </ProgressBar>
-        )}
       </div>
+    </li>
+  );
+}
 
-      <GridList
-        aria-label={labels.title}
-        items={slides}
-        dragAndDropHooks={dragAndDropHooks}
-        renderEmptyState={() => <p className="p-3 text-text-muted">{labels.empty}</p>}
-        className="grid gap-2"
-      >
-        {(slide) => {
-          const index = ids.indexOf(slide.id);
-          const firstPage = slide.pages[0];
-          return (
-            <GridListItem
-              id={slide.id}
-              textValue={slide.title}
-              className="grid gap-2 rounded-lg border border-border p-2 outline-none data-dragging:opacity-50 data-focus-visible:ring-3 data-focus-visible:ring-focus"
-            >
-              <div className="flex items-center gap-3">
-                <Button slot="drag" variant="icon" aria-label={slide.title}>
-                  ⠿
-                </Button>
-                {firstPage !== undefined && (
-                  <img
-                    src={slidePageUrl(slide.id, firstPage)}
-                    alt=""
-                    className="h-14 w-20 shrink-0 rounded bg-background object-contain"
-                  />
-                )}
-                <div className="grid min-w-0 flex-1">
-                  <span className="truncate font-medium">{slide.title}</span>
-                  <span className="text-sm text-text-muted">
-                    {labels.pages(slide.pages.length)}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <Toggle
-                  label={labels.shown}
-                  isSelected={slide.enabled}
-                  onChange={(enabled) => void toggle.run(slide.id, enabled)}
-                />
-                <div className="flex gap-1">
-                  <Button
-                    variant="icon"
-                    aria-label={labels.moveUp}
-                    isDisabled={index === 0}
-                    onPress={() => void reorder.run(moved(ids, index, index - 1))}
-                  >
-                    ↑
-                  </Button>
-                  <Button
-                    variant="icon"
-                    aria-label={labels.moveDown}
-                    isDisabled={index === ids.length - 1}
-                    onPress={() => void reorder.run(moved(ids, index, index + 1))}
-                  >
-                    ↓
-                  </Button>
-                  <Button
-                    variant="danger"
-                    onPress={() => {
-                      confirmDelete(slide);
-                    }}
-                  >
-                    {labels.delete}
-                  </Button>
-                </div>
-              </div>
-            </GridListItem>
-          );
+/** v1's four slide slots: a picture each, shown or not, and the seconds per slide. */
+export function SlidesCard({
+  slides,
+  slideIntervalSec,
+}: {
+  slides: readonly Slide[];
+  slideIntervalSec: number;
+}) {
+  const api = useApiClient();
+  const interval = useDraft(slideIntervalSec);
+  const saveInterval = useAction(
+    () => api.admin.slides.setInterval.mutate({ slideIntervalSec: interval.draft }),
+    strings.admin.saved,
+  );
+
+  return (
+    <Card title={labels.title}>
+      <p className="text-sm text-text-muted">{labels.accepted}</p>
+      <ul className="grid gap-2">
+        {SLIDE_SLOTS.map((slot) => (
+          <SlotRow key={slot} slot={slot} slide={slides.find((slide) => slide.slot === slot)} />
+        ))}
+      </ul>
+      <form
+        className="flex flex-wrap items-end gap-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (event.currentTarget.reportValidity()) {
+            void saveInterval.run();
+          }
         }}
-      </GridList>
+      >
+        <div className="w-40">
+          <NumberInput
+            label={labels.interval}
+            value={interval.draft}
+            min={3}
+            max={300}
+            onChange={interval.setDraft}
+          />
+        </div>
+        <Button type="submit" isDisabled={!interval.dirty || saveInterval.pending}>
+          {saveInterval.pending ? strings.admin.saving : strings.admin.save}
+        </Button>
+      </form>
     </Card>
   );
 }

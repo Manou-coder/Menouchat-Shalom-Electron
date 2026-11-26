@@ -25,10 +25,13 @@ export {
 } from './settings.ts';
 export {
   createDefaultSlides,
+  SLIDE_SLOTS,
   slideIdSchema,
   slideSchema,
+  slideSlotSchema,
   slidesSchema,
   SLIDES_SCHEMA_VERSION,
   type Slide,
+  type SlideSlot,
   type Slides,
 } from './slides.ts';

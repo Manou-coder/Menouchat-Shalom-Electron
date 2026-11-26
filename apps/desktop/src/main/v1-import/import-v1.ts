@@ -75,10 +75,11 @@ export async function importV1IfNeeded(
     await copyFile(imported.sourcePath, join(slidesRoot, id, PAGE_FILE));
     slides.push({
       id,
+      slot: imported.slot,
       title: imported.title,
       // v1 kept only the converted JPEG, never the uploaded original.
       originalFile: null,
-      pages: [PAGE_FILE],
+      image: PAGE_FILE,
       enabled: imported.enabled,
     });
   }
@@ -102,8 +103,8 @@ export async function importV1IfNeeded(
     `schedule: weekday ${Object.values(conversion.schedule.weekday).join(' ')}, shabbat ${Object.values(conversion.schedule.shabbat).join(' ')}`,
     `slide interval: ${String(conversion.slideIntervalSec)} s`,
     ...slides.map(
-      (slide, index) =>
-        `slide ${String(index + 1)}: "${slide.title}" ${slide.enabled ? 'shown' : 'hidden'} (${slide.id})`,
+      (slide) =>
+        `slot ${String(slide.slot)}: "${slide.title}" ${slide.enabled ? 'shown' : 'hidden'} (${slide.id})`,
     ),
     'location: Jerusalem (v1 coordinates)',
     ...notes.map((note) => `note: ${note}`),
