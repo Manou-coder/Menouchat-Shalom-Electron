@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 
-import { HDate } from '@hebcal/core';
+import { DafYomi, gematriya, HDate, Locale, Sedra } from '@hebcal/core';
 import { z } from 'zod';
 
 import type { DayRecord, DisplayedTime, ReferenceFixture } from './fixture-schema.ts';
@@ -52,6 +52,20 @@ function isoDate(date: Date): string {
   return `${String(date.getFullYear())}-${month}-${day}`;
 }
 
+/** v1's parasha with its display defect fixed: words joined with spaces, not commas. */
+function correctedParasha(hebrewDate: HDate): string {
+  // Same lookup as v1, whose hard-coded 5782 is harmless (plan §3.4).
+  const words = new Sedra(5782, true).getString(hebrewDate, 'he-x-NoNikud').split(' ');
+  words.shift();
+  return words.join(' ');
+}
+
+/** v1's daf yomi with its display defect fixed: the tractate name in Hebrew, one space. */
+function correctedDafYomi(day: Date): string {
+  const daf = new DafYomi(day);
+  return `${Locale.gettext(daf.getName(), 'he-x-NoNikud')} ${gematriya(daf.getBlatt())}`;
+}
+
 /** v1's candle lighting with the defect fixed: Friday's sunset instead of Saturday's. */
 function correctedCandleLighting(day: Date): DisplayedTime {
   const kosherZmanim = kosherZmanimSchema.parse(require('kosher-zmanim'));
@@ -89,6 +103,8 @@ function toDayRecord(day: Date, zmanim: V1Zmanim, info: V1Info): DayRecord {
     },
     correctedV1Bugs: {
       candleLighting: correctedCandleLighting(day),
+      parasha: correctedParasha(new HDate(day)),
+      dafYomi: correctedDafYomi(day),
     },
   };
 }

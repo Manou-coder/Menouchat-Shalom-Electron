@@ -69,7 +69,7 @@ Stored in Electron `userData/data/` (`settings.json`, `schedule.json`, `slides.j
 
 ## Reference tests
 
-`tests/fixtures/v1-reference.json` records v1 outputs. v2 must match them exactly, except candle lighting (known v1 bug, checked against `correctedV1Bugs`). Parasha turned out correct in v1; two display quirks are open questions for step 3 (plan §6.1). Never edit fixtures by hand or loosen a comparison to make a test pass.
+`tests/fixtures/v1-reference.json` records v1 outputs. v2 must match them exactly, except candle lighting, parasha separators and the daf yomi tractate name (v1 defects, checked against `correctedV1Bugs`; plan §3.4 and §6.1). Never edit fixtures by hand or loosen a comparison to make a test pass.
 
 ## Conventions
 

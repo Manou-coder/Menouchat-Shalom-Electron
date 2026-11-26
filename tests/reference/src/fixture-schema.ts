@@ -32,17 +32,23 @@ export const dayRecordSchema = z.object({
   }),
   calendar: z.object({
     /**
-     * Despite v1's hard-coded `new Sedra(5782, true)`, correct for these years: hebcal moves
-     * on to the following years by itself (checked in fixture.test.ts).
+     * Despite v1's hard-coded `new Sedra(5782, true)`, the right parasha for these years:
+     * hebcal moves on to the following years by itself (checked in fixture.test.ts). v1
+     * displayed multi-word names joined with commas; see `correctedV1Bugs.parasha`.
      */
     parasha: z.string().min(1),
+    /** v1 bug: English tractate name. See `correctedV1Bugs.dafYomi`. */
     dafYomi: z.string().min(1),
     hebrewDate: z.string().min(1),
   }),
-  /** Expected values where v2 fixes a v1 defect (plan §3.4), computed by v1's own code path with only the defect corrected. */
+  /** Expected values where v2 fixes a v1 defect (plan §3.4, §6.1), computed by v1's own code path with only the defect corrected. */
   correctedV1Bugs: z.object({
     /** Friday's sunset − 40 min. */
     candleLighting: displayedTimeSchema,
+    /** Words separated by spaces, e.g. `חיי שרה` instead of `חיי,שרה`. */
+    parasha: z.string().min(1),
+    /** Hebrew tractate name and page, e.g. `ערכין י׳` instead of `Arachin  י׳`. */
+    dafYomi: z.string().min(1),
   }),
 });
 

@@ -19,16 +19,16 @@ Rewrite Menouchat Chalom (synagogue prayer-times display) in strict TypeScript, 
 
 Answers given by the owner on 2026-11-26:
 
-| Question                     | Answer                                       | Consequence                                                                                   |
-| ---------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Edit from a phone?           | Yes, on the local Wi-Fi                      | Keep an embedded HTTP server, PIN-protected, mobile-friendly admin                            |
-| How many places?             | One synagogue, city configurable             | Location lives in settings, Jerusalem by default                                              |
-| Screens on the synagogue PC? | One PC, one screen                           | Public display is full screen; admin opens on demand                                          |
-| Operating system             | Windows                                      | NSIS installer + `electron-updater`                                                           |
-| v1 calculation bugs (§3.4)   | Fix both                                     | Reference tests flag candle lighting as a known v1 bug (parasha turned out correct, see §3.4) |
-| Future "several screens"     | Several layouts, chosen from the admin       | Displays and layouts are first-class in the data model from v2.0                              |
-| Code style                   | Everything in English, professional quality  | See §8                                                                                        |
-| Admin UI                     | Clean and simple on desktop and small phones | See §9                                                                                        |
+| Question                     | Answer                                       | Consequence                                                                                                                         |
+| ---------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Edit from a phone?           | Yes, on the local Wi-Fi                      | Keep an embedded HTTP server, PIN-protected, mobile-friendly admin                                                                  |
+| How many places?             | One synagogue, city configurable             | Location lives in settings, Jerusalem by default                                                                                    |
+| Screens on the synagogue PC? | One PC, one screen                           | Public display is full screen; admin opens on demand                                                                                |
+| Operating system             | Windows                                      | NSIS installer + `electron-updater`                                                                                                 |
+| v1 calculation bugs (§3.4)   | Fix both                                     | Reference tests flag candle lighting as a known v1 bug (parasha turned out correct, see §3.4); two display defects fixed too (§6.1) |
+| Future "several screens"     | Several layouts, chosen from the admin       | Displays and layouts are first-class in the data model from v2.0                                                                    |
+| Code style                   | Everything in English, professional quality  | See §8                                                                                                                              |
+| Admin UI                     | Clean and simple on desktop and small phones | See §9                                                                                                                              |
 
 Decisions taken earlier, with their reasons:
 
@@ -190,15 +190,15 @@ Runs on first launch when `userData/data/` does not exist.
 - `src/generate-fixture.ts` loads them under a fake clock (`@sinonjs/fake-timers`) with `TZ=Asia/Jerusalem`, calls v1's two API functions at noon Israel time for each day, and formats times exactly as the v1 display did (`toLocaleTimeString()` in French, first five characters: **truncated** to the minute, not rounded).
 - Dates: every day of Hebrew years 5787 (leap) and 5788 (common), 12 Sep 2026 – 20 Sep 2028: 740 days, all holidays, four DST transitions (checked by the test).
 - Output: `tests/fixtures/v1-reference.json` (schema in `src/fixture-schema.ts`): per day, the seven daily zmanim, the coming Shabbat's candle lighting, Motzei Shabbat arvit and Rabbeinu Tam, the parasha, daf yomi and Hebrew date, each time with its raw ISO value and its displayed `HH:MM`.
-- v2's `core` must match every value exactly, except candle lighting, which is checked against `correctedV1Bugs.candleLighting` (Friday's sunset − 40 min, computed by v1's own code path with only that defect fixed).
+- v2's `core` must match every value exactly, except candle lighting, parasha and daf yomi, which are checked against `correctedV1Bugs` (Friday's sunset − 40 min; the two display defects of §6.1), computed by v1's own code path with only the defect fixed.
 - Fixtures are never edited by hand. `pnpm --filter @menouchat/reference-tests generate` rewrites the fixture; `… check` fails if it differs from v1's output and runs in CI. Regenerating requires a deliberate, reviewed change.
 
-### 6.1 v1 display quirks found while capturing (to settle in step 3)
+### 6.1 v1 display defects found while capturing
 
-The fixture records them as v1 showed them. Step 3 must either reproduce them or, with the owner's approval, list them as corrected like candle lighting:
+Found in step 2; the owner decided on 2026-11-26 to fix both in v2. The fixture keeps v1's values and records the expected v2 values in `correctedV1Bugs`, computed by v1's own code path with only the defect fixed:
 
-- **Daf yomi tractate name in English:** v1 replaces the rendered event with its English `desc` and only converts the page number, so the screen shows e.g. `Arachin  י׳` (Latin tractate name, two spaces).
-- **Multi-word parashot joined with commas:** `Array.prototype.toString()` turns `חיי שרה` into `חיי,שרה` (also `אחרי,מות`, `כי,תשא`, `ראש,השנה`, `פסח,שבת,חול,המועד`…).
+- **Daf yomi tractate name in English:** v1 replaces the rendered event with its English `desc` and only converts the page number, so the screen shows e.g. `Arachin  י׳` (Latin name, two spaces). v2 shows `ערכין י׳`: Hebrew tractate name, one space, page in gematria.
+- **Multi-word parashot joined with commas:** `Array.prototype.toString()` turns `חיי שרה` into `חיי,שרה` (also `אחרי,מות`, `ראש,השנה`, `פסח,שבת,חול,המועד`…). v2 separates the words with spaces.
 
 ## 7. Steps
 

@@ -58,6 +58,21 @@ describe('v1 reference fixture', () => {
     expect(mismatches).toEqual([]);
   });
 
+  it('corrects only the separators in multi-word parashot', () => {
+    for (const day of fixture.days) {
+      expect(day.correctedV1Bugs.parasha).toBe(day.calendar.parasha.replaceAll(',', ' '));
+    }
+    expect(fixture.days.map((day) => day.correctedV1Bugs.parasha)).toContain('חיי שרה');
+  });
+
+  it('corrects the daf yomi to the Hebrew tractate name with the same page', () => {
+    for (const day of fixture.days) {
+      const page = day.calendar.dafYomi.split(' ').at(-1);
+      expect(day.correctedV1Bugs.dafYomi).toMatch(/^[\u0590-\u05FF"״׳ ]+$/);
+      expect(day.correctedV1Bugs.dafYomi.endsWith(` ${page ?? ''}`)).toBe(true);
+    }
+  });
+
   it('records candle lighting from Saturday in v1 and from Friday once corrected', () => {
     for (const day of fixture.days) {
       const v1 = new Date(day.shabbat.candleLighting.iso);
