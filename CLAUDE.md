@@ -67,7 +67,7 @@ docs/v2           rewrite plan
 
 ## Data
 
-Stored in Electron `userData/data/` (`settings.json`, `schedule.json`, `slides.json`, `displays.json`) and `userData/slides/<id>/`. On first launch, v1 data in `userData/db/` and `userData/images/` is imported, never modified. Schemas and migration rules are in `docs/v2/plan.md` §4.7 and §5.
+Stored in Electron `userData/data/` (`settings.json`, `schedule.json`, `slides.json`, `displays.json`) and `userData/slides/<id>/`. Schemas and defaults live in `packages/shared/src/persisted/`; every read and write goes through `createStore()` in `apps/desktop/src/main/store/`. Bumping a document's `schemaVersion` requires a migration in its definition (`store.ts`) and a test. On first launch, v1 data in `userData/db/` and `userData/images/` is imported, never modified. Schemas and migration rules are in `docs/v2/plan.md` §4.7 and §5.
 
 ## Reference tests
 
