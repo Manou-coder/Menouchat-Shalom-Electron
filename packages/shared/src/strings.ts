@@ -17,6 +17,10 @@ export const strings = {
     failed: 'אין חיבור לשרת',
   },
   notFound: 'הדף לא נמצא',
+  defaults: {
+    locationName: 'ירושלים',
+    mainDisplayName: 'מסך ראשי',
+  },
   desktop: {
     startupFailed: 'הפעלת התוכנה נכשלה',
   },

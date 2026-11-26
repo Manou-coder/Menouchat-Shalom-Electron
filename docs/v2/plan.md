@@ -2,7 +2,7 @@
 
 This document is the project memory for the v2 rewrite. Each work session picks the next unchecked step in [§7](#7-steps), does it on a branch off `v2`, and checks the box in the same PR.
 
-Status: plan approved on 2026-11-26. Steps 1–3 (skeleton, reference tests, zmanim calculation) done.
+Status: plan approved on 2026-11-26. Steps 1–4 (skeleton, reference tests, zmanim calculation, storage) done.
 
 ## 1. Goals
 
@@ -173,6 +173,13 @@ docs/v2/     this plan
 
 Writes: temporary file → `fsync` → `rename`, previous version kept as `.bak`. Reads: zod validation with migrations keyed on `schemaVersion`; fall back to `.bak`, then to defaults, logging each fallback.
 
+Implemented in step 4: schemas and defaults in `packages/shared/src/persisted/`, the store in `apps/desktop/src/main/store/` (`createStore(userData/data, logger)`). Details:
+
+- `migrations[n]` upgrades a version-`n` document to `n + 1`; a document from a newer app version, or with no migration path, is treated as unreadable.
+- Writes are validated first and serialised per document. A current file that is unreadable is moved to `<file>.invalid` instead of becoming the backup, so a corruption never destroys the good `.bak`.
+- A crash between the two renames leaves only `.bak`, which the next read uses.
+- The store is not wired into the main process yet: the v1 import (step 7) must still see `userData/data/` missing on first launch.
+
 ## 5. v1 data import
 
 Runs on first launch when `userData/data/` does not exist.
@@ -207,7 +214,7 @@ One session per step, each on its own branch and PR into `v2`.
 - [x] **1. Skeleton** — pnpm workspace (`packages/core`, `packages/shared`, `apps/desktop` with electron-vite, `apps/web` with Vite + React), strict TS, electron-builder NSIS, ESLint + Prettier, Vitest, CI running `typecheck`, `lint`, `test`, `build`; minimal tRPC server and one window loading it over `127.0.0.1`. Pick the UI component library (§9).
 - [x] **2. Reference tests** — capture v1 outputs as described in §6.
 - [x] **3. Zmanim calculation** — `packages/core` for any location: zmanim, candle lighting, Motzei Shabbat, daf yomi, parasha, Hebrew date; all reference tests green.
-- [ ] **4. Storage** — zod schemas, atomic writes, `.bak`, defaults, schema migrations, tests.
+- [x] **4. Storage** — zod schemas, atomic writes, `.bak`, defaults, schema migrations, tests.
 - [ ] **5. Display** — layout registry, `DisplayState` + SSE subscription, `classic-portrait` layout faithful to v1, clock, multi-page slideshow, kiosk window.
 - [ ] **6. Admin** — times, slides (pdf.js worker, all pages, original kept, ordering, enable/disable), location, "Screens" card (layout, options, live preview), phone access (LAN listening, PIN, QR code); UI rules in §9.
 - [ ] **7. v1 import** — §5, tested against a copy of a real v1 `userData`.
