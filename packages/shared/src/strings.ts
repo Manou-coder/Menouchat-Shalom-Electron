@@ -6,6 +6,13 @@ export const strings = {
     save: 'שמירה',
     saving: 'שומר…',
     saved: 'נשמר',
+    unsaved: 'יש שינויים שלא נשמרו',
+    leave: {
+      message: 'יש שינויים שלא נשמרו',
+      detail: 'אם תצאו עכשיו, השינויים יאבדו.',
+      leave: 'לצאת בלי לשמור',
+      stay: 'להישאר',
+    },
     cancel: 'ביטול',
     loading: 'טוען…',
     connectionLost: 'החיבור לשרת נותק, מנסה שוב…',
@@ -30,7 +37,6 @@ export const strings = {
       choose: 'בחירת קובץ',
       replace: 'החלפה',
       converting: 'מעלה…',
-      added: 'התמונה נשמרה',
       conversionFailed: 'לא ניתן לקרוא את הקובץ',
       shown: 'להציג',
       interval: 'שניות לכל תמונה',
@@ -38,6 +44,7 @@ export const strings = {
     phone: {
       address: 'לעריכה מהטלפון (באותה רשת Wi-Fi):',
       noNetwork: 'המחשב אינו מחובר לרשת, אין גישה מהטלפון.',
+      or: 'או',
     },
   },
   display: {

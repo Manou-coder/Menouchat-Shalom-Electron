@@ -10,8 +10,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource-variable/heebo": "^5.3.0",
     "@menouchat/shared": "workspace:*",
     "@trpc/client": "^11.31.3",
+    "lucide-react": "~1.80.0",
     "pdfjs-dist": "^6.5.438",
     "react": "^19.3.1",
     "react-aria-components": "^1.22.1",

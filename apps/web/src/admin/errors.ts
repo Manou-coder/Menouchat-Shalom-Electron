@@ -15,7 +15,7 @@ export function errorCode(error: unknown): string | undefined {
     : undefined;
 }
 
-/** A Hebrew sentence for a failed request, shown in a toast. */
+/** A Hebrew sentence for a failed request, shown in the card where it happened. */
 export function errorMessage(error: unknown): string {
   const messages = strings.admin.errors;
   switch (errorCode(error)) {

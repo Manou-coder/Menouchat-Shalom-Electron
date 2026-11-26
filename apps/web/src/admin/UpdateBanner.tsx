@@ -2,6 +2,7 @@ import { strings, type UpdateStatus } from '@menouchat/shared';
 
 import { useApiClient } from '../api/api-client.ts';
 import { Button } from '../components/Button.tsx';
+import { ErrorMessage } from './ui/Card.tsx';
 import { useAction } from './use-action.ts';
 
 const labels = strings.admin.update;
@@ -16,7 +17,7 @@ export function UpdateBanner({ update }: { update: UpdateStatus }) {
   return (
     <div
       role="status"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent bg-surface px-4 py-3"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-accent-soft px-4 py-3"
     >
       <span>
         {update.status === 'ready'
@@ -28,6 +29,7 @@ export function UpdateBanner({ update }: { update: UpdateStatus }) {
           {labels.installNow}
         </Button>
       )}
+      <ErrorMessage message={install.error} />
     </div>
   );
 }

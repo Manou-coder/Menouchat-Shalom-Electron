@@ -22,12 +22,14 @@
     "@trpc/server": "^11.31.3",
     "electron-log": "^5.4.4",
     "electron-updater": "~6.8.11",
-    "fastify": "^5.12.8"
+    "fastify": "^5.12.8",
+    "multicast-dns": "~7.2.5"
   },
   "devDependencies": {
     "@menouchat/core": "workspace:*",
     "@menouchat/shared": "workspace:*",
     "@trpc/client": "^11.31.3",
+    "@types/multicast-dns": "~7.2.4",
     "@types/node": "~24.19.2",
     "electron": "~41.10.7",
     "electron-builder": "^26.18.0",

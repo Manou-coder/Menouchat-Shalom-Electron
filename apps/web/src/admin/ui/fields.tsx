@@ -1,8 +1,11 @@
 import { useId, type InputHTMLAttributes, type ReactNode } from 'react';
 import { SwitchButton, SwitchField } from 'react-aria-components';
 
-const inputClass =
-  'min-h-11 w-full rounded-lg border border-border bg-background px-3 text-text outline-none focus-visible:ring-3 focus-visible:ring-focus user-invalid:border-danger disabled:opacity-60';
+const fieldClass =
+  'min-h-11 w-full min-w-0 rounded-xl border px-3 text-text shadow-xs outline-none transition-colors focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-focus/40 user-invalid:border-danger disabled:opacity-60';
+const inputClass = `${fieldClass} border-border bg-surface`;
+/** A field the user changed but has not saved yet. */
+const changedInputClass = `${fieldClass} border-accent bg-accent-soft`;
 
 interface FieldProps {
   label: string;
@@ -16,8 +19,8 @@ function Field({ label, description, children }: FieldProps) {
   const id = useId();
   const descriptionId = `${id}-description`;
   return (
-    <div className="grid gap-1">
-      <label htmlFor={id} className="text-sm font-medium">
+    <div className="grid min-w-0 gap-1">
+      <label htmlFor={id} className="text-sm font-medium text-text-muted">
         {label}
       </label>
       {children({ id, describedBy: description === undefined ? undefined : descriptionId })}
@@ -36,10 +39,12 @@ export function TimeInput({
   label,
   value,
   onChange,
+  changed = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  changed?: boolean;
 }) {
   return (
     <Field label={label}>
@@ -53,7 +58,7 @@ export function TimeInput({
           onChange={(event) => {
             onChange(event.target.value);
           }}
-          className={`${inputClass} tabular-nums`}
+          className={`${changed ? changedInputClass : inputClass} text-xl font-medium tabular-nums`}
         />
       )}
     </Field>
