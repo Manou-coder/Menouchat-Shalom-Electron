@@ -3,65 +3,32 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import type { FastifyInstance } from 'fastify';
-import { afterEach, beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import {
-  createDefaultDisplays,
-  createDefaultSchedule,
-  createDefaultSettings,
-  createDefaultSlides,
-  displayStateSchema,
-  healthSchema,
-} from '@menouchat/shared';
+import { displayStateSchema, healthSchema } from '@menouchat/shared';
 
-import { createDisplayStateService } from '../services/display-state-service.ts';
+import { createTestApp, TEST_TOKEN, TEST_VERSION, type TestApp } from '../testing/test-app.ts';
 
-import { createServer } from './create-server.ts';
-
-const token = 'test-token-'.padEnd(43, 'x');
-const version = '2.0.0-test';
-
-const servers: FastifyInstance[] = [];
-
-let slidesRoot: string;
+const token = TEST_TOKEN;
+const version = TEST_VERSION;
 const slideId = '00000000-0000-4000-8000-00000000000a';
+const FRIDAY_NOON = Date.UTC(2026, 10, 27, 10);
 
-beforeAll(async () => {
-  slidesRoot = await mkdtemp(join(tmpdir(), 'menouchat-slides-'));
-  await mkdir(join(slidesRoot, slideId));
-  await writeFile(join(slidesRoot, slideId, 'page-1.jpg'), 'jpeg bytes');
-});
-
-afterAll(async () => {
-  await rm(slidesRoot, { recursive: true, force: true });
-});
-
-const displayStates = createDisplayStateService({
-  readInputs: () =>
-    Promise.resolve({
-      settings: createDefaultSettings(),
-      schedule: createDefaultSchedule(),
-      slides: createDefaultSlides(),
-      displays: createDefaultDisplays(),
-    }),
-  now: () => Date.UTC(2026, 10, 27, 10),
-});
+const apps: TestApp[] = [];
 
 async function startServer(webRoot?: string): Promise<FastifyInstance> {
-  const server = await createServer({
-    version,
-    token,
-    displayStates,
-    slidesRoot,
-    onError: vi.fn(),
+  const app = await createTestApp({
+    now: () => FRIDAY_NOON,
     ...(webRoot === undefined ? {} : { webRoot }),
   });
-  servers.push(server);
-  return server;
+  apps.push(app);
+  await mkdir(join(app.slidesRoot, slideId), { recursive: true });
+  await writeFile(join(app.slidesRoot, slideId, 'page-1.jpg'), 'jpeg bytes');
+  return app.server;
 }
 
 afterEach(async () => {
-  await Promise.all(servers.splice(0).map((server) => server.close()));
+  await Promise.all(apps.splice(0).map((app) => app.dispose()));
 });
 
 async function getHealth(server: FastifyInstance, authorization?: string) {

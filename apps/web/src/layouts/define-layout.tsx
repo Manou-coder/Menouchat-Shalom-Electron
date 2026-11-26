@@ -1,5 +1,5 @@
 import type { ComponentType, ReactElement } from 'react';
-import type { z } from 'zod';
+import { z } from 'zod';
 
 import type { DisplayState } from '@menouchat/shared';
 
@@ -12,19 +12,26 @@ export interface LayoutProps<Options> {
 export interface Layout {
   id: string;
   /** Every option has a default, so `{}` is always valid (plan §4.5). */
-  optionsSchema: z.ZodType;
+  optionsSchema: z.ZodType<Record<string, unknown>>;
+  /** On/off options, which the admin's Screens card shows as switches. */
+  booleanOptions: readonly string[];
   render(state: DisplayState): ReactElement;
 }
 
-export function defineLayout<Options>(definition: {
+export function defineLayout<Shape extends z.ZodRawShape>(definition: {
   id: string;
-  optionsSchema: z.ZodType<Options>;
-  Component: ComponentType<LayoutProps<Options>>;
+  optionsSchema: z.ZodObject<Shape>;
+  Component: ComponentType<LayoutProps<z.output<z.ZodObject<Shape>>>>;
 }): Layout {
   const { Component, optionsSchema } = definition;
   return {
     id: definition.id,
     optionsSchema,
+    booleanOptions: Object.entries(optionsSchema.shape)
+      .filter(
+        ([, field]) => field instanceof z.ZodDefault && field.unwrap() instanceof z.ZodBoolean,
+      )
+      .map(([key]) => key),
     render(state) {
       // Options saved by an older version may no longer validate: fall back to defaults
       // rather than leaving the synagogue screen blank.
