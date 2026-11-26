@@ -1,5 +1,0 @@
-{
-  "shacharitChol": "06:20",
-  "minchaChol": "17:50",
-  "arvitChol": "20:10"
-}
