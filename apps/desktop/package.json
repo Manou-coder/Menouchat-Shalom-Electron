@@ -26,6 +26,7 @@
   "devDependencies": {
     "@menouchat/core": "workspace:*",
     "@menouchat/shared": "workspace:*",
+    "@trpc/client": "^11.31.3",
     "@types/node": "~24.19.2",
     "electron": "~41.10.7",
     "electron-builder": "^26.18.0",

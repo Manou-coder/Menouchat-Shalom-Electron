@@ -1,21 +1,43 @@
+import { useCallback, useEffect, useState } from 'react';
+
 import { strings } from '@menouchat/shared';
 
-import { Button } from '../components/Button.tsx';
-import { Card } from '../components/Card.tsx';
-import { Page } from '../components/Page.tsx';
-import { HealthStatus } from '../health/HealthStatus.tsx';
-import { useHealth } from '../health/use-health.ts';
+import { Dashboard } from '../admin/Dashboard.tsx';
+import { LoginForm } from '../admin/LoginForm.tsx';
+import { Toasts } from '../admin/toasts.tsx';
+import { useApiClient } from '../api/api-client.ts';
 
+type Access = 'checking' | 'signed-in' | 'sign-in' | 'disabled';
+
+/** Local windows go straight in; phones sign in with the PIN (plan §4.4). */
 export function AdminPage() {
-  const { state, recheck } = useHealth();
+  const api = useApiClient();
+  const [access, setAccess] = useState<Access>('checking');
+
+  const check = useCallback(() => {
+    void api.auth.status.query().then(
+      ({ signedIn, pinSet }) => {
+        setAccess(signedIn ? 'signed-in' : pinSet ? 'sign-in' : 'disabled');
+      },
+      () => {
+        setAccess('sign-in');
+      },
+    );
+  }, [api]);
+
+  useEffect(check, [check]);
+
   return (
-    <Page title={`${strings.appName} · ${strings.admin.title}`}>
-      <Card>
-        <HealthStatus state={state} />
-        <Button onPress={recheck} isDisabled={state.status === 'checking'}>
-          {strings.admin.checkConnection}
-        </Button>
-      </Card>
-    </Page>
+    <>
+      {access === 'checking' && (
+        <p role="status" className="p-6">
+          {strings.admin.loading}
+        </p>
+      )}
+      {access === 'signed-in' && <Dashboard onSignedOut={check} />}
+      {access === 'sign-in' && <LoginForm onSignedIn={check} />}
+      {access === 'disabled' && <p className="p-6">{strings.admin.login.notEnabled}</p>}
+      <Toasts />
+    </>
   );
 }

@@ -1,4 +1,23 @@
 export {
+  adminStateSchema,
+  displayInputSchema,
+  locationInputSchema,
+  phoneAccessSchema,
+  pinSchema,
+  scheduleInputSchema,
+  SLIDE_UPLOAD_FIELDS,
+  SLIDE_UPLOAD_LIMITS,
+  slideIdInputSchema,
+  slideOrderInputSchema,
+  slideRenameInputSchema,
+  slideToggleInputSchema,
+  type AdminState,
+  type DisplayInput,
+  type LocationInput,
+  type PhoneAccess,
+  type ScheduleInput,
+} from './admin.ts';
+export {
   decodeDesktopBridge,
   DESKTOP_BRIDGE_GLOBAL,
   DESKTOP_BRIDGE_SWITCH,

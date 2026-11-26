@@ -2,7 +2,7 @@
 
 This document is the project memory for the v2 rewrite. Each work session picks the next unchecked step in [§7](#7-steps), does it on a branch off `v2`, and checks the box in the same PR.
 
-Status: plan approved on 2026-11-26. Steps 1–5 (skeleton, reference tests, zmanim calculation, storage, display) done.
+Status: plan approved on 2026-11-26. Steps 1–6 (skeleton, reference tests, zmanim calculation, storage, display, admin) done.
 
 ## 1. Goals
 
@@ -228,7 +228,7 @@ One session per step, each on its own branch and PR into `v2`.
 - [x] **3. Zmanim calculation** — `packages/core` for any location: zmanim, candle lighting, Motzei Shabbat, daf yomi, parasha, Hebrew date; all reference tests green.
 - [x] **4. Storage** — zod schemas, atomic writes, `.bak`, defaults, schema migrations, tests.
 - [x] **5. Display** — layout registry, `DisplayState` + SSE subscription, `classic-portrait` layout faithful to v1, clock, multi-page slideshow, kiosk window.
-- [ ] **6. Admin** — times, slides (pdf.js worker, all pages, original kept, ordering, enable/disable), location, "Screens" card (layout, options, live preview), phone access (LAN listening, PIN, QR code); UI rules in §9.
+- [x] **6. Admin** — times, slides (pdf.js worker, all pages, original kept, ordering, enable/disable), location, "Screens" card (layout, options, live preview), phone access (LAN listening, PIN, QR code); UI rules in §9.
 - [ ] **7. v1 import** — §5, tested against a copy of a real v1 `userData`.
 - [ ] **8. Reliability and auto-update** — start at login, crash recovery, sleep prevention, `electron-updater`, "Check for updates".
 - [ ] **9. Release workflow** — Windows NSIS build with `latest.yml`; version read from `package.json` (2.0.0) instead of always bumping the patch; v2.0.0 published when `v2` is merged into `main`; manual pre-release builds from `v2` for testing on the synagogue PC.
@@ -262,3 +262,22 @@ One session per step, each on its own branch and PR into `v2`.
 - **Accessible drag and drop.** The Slides card needs reordering; React Aria's `GridList` drag and drop includes keyboard and screen-reader alternatives. Radix has no drag and drop, so it would need a second library.
 - **Forms, validation and toasts** come from the same library with consistent ARIA wiring (labels, descriptions, inline errors), covering the rules above.
 - **Tailwind rather than CSS Modules.** Vite types CSS-module classes as an index signature, which conflicts with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` (every class becomes `string | undefined`). Tailwind needs no generated types, its logical utilities (`ps-*`, `me-*`, `start-*`) suit RTL, its `data-*` variants target React Aria's state attributes (`data-pressed`, `data-focus-visible`), and dark mode is a set of semantic colour tokens switched in one place (`apps/web/src/styles/global.css`). Class order is kept stable by `prettier-plugin-tailwindcss`.
+
+### 9.2 Admin as built (step 6)
+
+- **Cards:** weekday times, Shabbat times, slides, one screen card per display, location, phone access. The Updates card comes with step 8.
+- **Saving:** each form card has a draft that follows the server until edited, and a Save button enabled only when something changed. Slide actions (show/hide, reorder, delete) apply at once. Every result shows as a toast.
+- **Live state:** the admin state is pushed by `admin.onState` (SSE), so edits made from another device appear immediately.
+- **Slides:**
+  - `slide-conversion.worker.ts` renders every PDF page (pdf.js legacy build, `OffscreenCanvas`, fonts drawn as paths) or the image to JPEG at 150 dpi, longest side ≤ 2400 px.
+  - The original and the pages go up in one `multipart/form-data` tRPC mutation.
+  - The server checks types, sizes and JPEG signatures, then writes `slides/<id>/original.<ext>` and `page-<n>.jpg` through a temporary folder.
+  - Reordering works by keyboard-accessible drag and drop or with up/down buttons.
+- **Screens card:** pick the layout, switch its on/off options (read from the layout's zod schema), set the slide interval. The preview is the real `/display/<id>` page in a frame.
+- **Access** (plan §4.4):
+  - The app's own windows present the launch token: a header, or a connection parameter for SSE. They are always admin.
+  - Phones sign in with the PIN (4–8 digits, scrypt N=2¹⁷), which sets an `HttpOnly`, `SameSite=Strict` session cookie valid for 30 days, kept in memory.
+  - Five wrong PINs lock a device out for 15 minutes. Changing the PIN signs every phone out.
+- **Phone access:** it needs a PIN first. Switching it restarts the HTTP server on `0.0.0.0` (or back on `127.0.0.1`) on the same port; the displays' event streams reconnect by themselves. The port stays 3741 in v2.0 (not editable), because the kiosk window's URL depends on it. Windows will ask once to allow the app through its firewall.
+- **CSP:** scripts come only from the app (plus WebAssembly for pdf.js). Inline styles are allowed, for React Aria's touch handling. The admin may frame the display.
+- **Step 7:** the store now writes as soon as something is edited, so the v1 import must run at startup before anything else touches `userData/data/`.

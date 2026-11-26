@@ -9,6 +9,7 @@ import {
 } from '@menouchat/shared';
 
 import type { DisplayInputs } from './build-display-state.ts';
+import { createChangeHub } from './change-hub.ts';
 import { createDisplayStateService } from './display-state-service.ts';
 
 let inputs: DisplayInputs;
@@ -27,8 +28,14 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+const changes = createChangeHub();
+
 function createService() {
-  return createDisplayStateService({ readInputs: () => Promise.resolve(inputs), now: Date.now });
+  return createDisplayStateService({
+    readInputs: () => Promise.resolve(inputs),
+    now: Date.now,
+    changes,
+  });
 }
 
 describe('display state service', () => {
@@ -49,7 +56,7 @@ describe('display state service', () => {
       weekday: { ...inputs.schedule.weekday, shacharit: '06:45' },
     };
     const next = states.next();
-    service.notifyChanged();
+    changes.notify();
     expect(((await next).value as DisplayState).schedule.weekday.shacharit).toBe('06:45');
     controller.abort();
   });
@@ -84,7 +91,7 @@ describe('display state service', () => {
     await states.next();
     inputs.displays = { ...inputs.displays, displays: [] };
     const next = states.next();
-    service.notifyChanged();
+    changes.notify();
     await expect(next).resolves.toEqual({ done: true, value: undefined });
   });
 });

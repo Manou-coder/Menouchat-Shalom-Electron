@@ -4,14 +4,23 @@ import Fastify, { type FastifyInstance } from 'fastify';
 
 import { SLIDES_PATH, TRPC_PATH } from '@menouchat/shared';
 
-import { createAppRouter, type AppRouter, type DisplayStateApi } from '../api/router.ts';
-import { resolveClientKind } from './client-kind.ts';
+import {
+  createAppRouter,
+  type AdminApi,
+  type AppRouter,
+  type AuthApi,
+  type DisplayStateApi,
+} from '../api/router.ts';
+import { bearerToken, resolveClientKind } from './client-kind.ts';
+import { readSessionCookie, sessionCookieHeader } from './session-cookie.ts';
 
 export interface ServerOptions {
   version: string;
   /** Per-launch secret that identifies the desktop app's own windows. */
   token: string;
   displayStates: DisplayStateApi;
+  admin: AdminApi;
+  auth: AuthApi;
   /** `userData/slides`, served read-only under `/slides`. */
   slidesRoot: string;
   /** Built web app to serve; omitted in development, where Vite serves it. */
@@ -21,15 +30,21 @@ export interface ServerOptions {
 
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
+  // pdf.js decodes some images with WebAssembly.
+  "script-src 'self' 'wasm-unsafe-eval'",
+  // React Aria injects a small stylesheet (touch handling); styles cannot run code.
+  "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "object-src 'none'",
   "base-uri 'none'",
-  "frame-ancestors 'none'",
+  // The admin previews the display in a frame.
+  "frame-ancestors 'self'",
   "form-action 'self'",
 ].join('; ');
 
 export async function createServer(options: ServerOptions): Promise<FastifyInstance> {
-  const server = Fastify({ logger: false });
+  // Closing must not wait for server-sent event streams, which never end on their own.
+  const server = Fastify({ logger: false, forceCloseConnections: true });
 
   server.addHook('onSend', async (_request, reply) => {
     reply.header('Content-Security-Policy', CONTENT_SECURITY_POLICY);
@@ -38,12 +53,30 @@ export async function createServer(options: ServerOptions): Promise<FastifyInsta
   });
 
   const trpcOptions: FastifyTRPCPluginOptions<AppRouter>['trpcOptions'] = {
-    router: createAppRouter({ version: options.version, displayStates: options.displayStates }),
-    createContext: ({ req }) => ({
-      client: resolveClientKind(req.headers.authorization, options.token),
+    router: createAppRouter({
+      version: options.version,
+      displayStates: options.displayStates,
+      admin: options.admin,
+      auth: options.auth,
+    }),
+    createContext: ({ req, res, info }) => ({
+      // Server-sent events cannot carry headers, so subscriptions pass the token as a
+      // connection parameter instead.
+      client: resolveClientKind(
+        bearerToken(req.headers.authorization) ?? info.connectionParams?.['token'],
+        options.token,
+      ),
+      remoteAddress: req.ip,
+      sessionId: readSessionCookie(req.headers.cookie),
+      setSessionCookie: (sessionId) => {
+        void res.header('Set-Cookie', sessionCookieHeader(sessionId));
+      },
     }),
     onError: ({ error, path }) => {
-      options.onError(error, path);
+      // Refused PINs, unknown displays and the like are expected answers, not faults.
+      if (error.code === 'INTERNAL_SERVER_ERROR') {
+        options.onError(error, path);
+      }
     },
   };
   await server.register(fastifyTRPCPlugin, { prefix: TRPC_PATH, trpcOptions });

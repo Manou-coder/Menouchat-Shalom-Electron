@@ -70,6 +70,13 @@ docs/v2           rewrite plan
 
 A display renders a `DisplayState` pushed by the server (`display.onState`, SSE) through the layout named by `layoutId`. To add a layout, create `apps/web/src/layouts/<id>/` with a component and a zod options schema whose every field has a default, and register it in `layouts/registry.ts`. Anything that changes settings, schedule, slides or displays must call the display-state service's `notifyChanged()`.
 
+## Admin and access
+
+- Admin procedures use `adminProcedure` (in `apps/desktop/src/main/api/router.ts`). It lets through local windows, which present the launch token, and phones signed in with the PIN session cookie. Display procedures stay public and read-only.
+- Business logic lives in `apps/desktop/src/main/services/admin-service.ts`. Every write goes through its queue and wakes the display and admin streams (`ChangeHub.notify()`). Business-rule failures throw `AdminError` (`NOT_FOUND`, `BAD_REQUEST`, `PRECONDITION_FAILED`), which the API turns into the matching status.
+- Admin UI code is in `apps/web/src/admin/`: cards, `useDraft`, `useAction` (toasts), and fields that follow the plan §9 rules.
+- `pnpm dev` writes to this machine's real `userData` as soon as you save in the admin. Delete `data/` and `slides/` there to get back to a first launch.
+
 ## Data
 
 Stored in Electron `userData/data/` (`settings.json`, `schedule.json`, `slides.json`, `displays.json`) and `userData/slides/<id>/`. Schemas and defaults live in `packages/shared/src/persisted/`; every read and write goes through `createStore()` in `apps/desktop/src/main/store/`. Bumping a document's `schemaVersion` requires a migration in its definition (`store.ts`) and a test. On first launch, v1 data in `userData/db/` and `userData/images/` is imported, never modified. Schemas and migration rules are in `docs/v2/plan.md` §4.7 and §5.

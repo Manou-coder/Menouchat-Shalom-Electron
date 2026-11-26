@@ -1,7 +1,9 @@
 import {
   createTRPCClient,
   httpBatchLink,
+  httpLink,
   httpSubscriptionLink,
+  isNonJsonSerializable,
   splitLink,
   type TRPCClient,
 } from '@trpc/client';
@@ -18,10 +20,19 @@ export function createApiClient({ url, token }: ApiConfig): ApiClient {
   return createTRPCClient<AppRouter>({
     links: [
       splitLink({
-        // Subscriptions are server-sent events, which reconnect by themselves.
+        // Server-sent events reconnect by themselves; they cannot carry headers, so the
+        // token travels as a connection parameter.
         condition: (operation) => operation.type === 'subscription',
-        true: httpSubscriptionLink({ url }),
-        false: httpBatchLink({ url, headers }),
+        true: httpSubscriptionLink({
+          url,
+          ...(token === undefined ? {} : { connectionParams: { token } }),
+        }),
+        false: splitLink({
+          // File uploads (FormData) cannot be batched.
+          condition: (operation) => isNonJsonSerializable(operation.input),
+          true: httpLink({ url, headers }),
+          false: httpBatchLink({ url, headers }),
+        }),
       }),
     ],
   });
