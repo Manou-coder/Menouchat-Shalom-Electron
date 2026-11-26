@@ -7,40 +7,37 @@ import { clock } from './placements.ts';
 /** The hand artwork points to about 10:27; rotations are measured from there. */
 const ARTWORK_ANGLE = -47;
 
-function Hand({ src, size, angle }: { src: string; size: number; angle: number }) {
+interface Placement {
+  x: number;
+  y: number;
+  size: number;
+}
+
+function ClockImage({ src, at, angle = 0 }: { src: string; at: Placement; angle?: number }) {
   return (
     <img
       src={src}
       alt=""
       className="absolute max-w-none"
       style={{
-        left: -size / 2,
-        top: -size / 2,
-        width: size,
-        height: size,
-        rotate: `${String(angle - ARTWORK_ANGLE)}deg`,
+        left: at.x - at.size / 2,
+        top: at.y - at.size / 2,
+        width: at.size,
+        height: at.size,
+        rotate: `${String(angle)}deg`,
       }}
     />
   );
 }
 
-/** Hands drawn over the clock face of the background, centred on its pivot. */
+/** Hands drawn over the clock face of the background, as v1 placed them. */
 export function AnalogClock({ timeZoneId }: { timeZoneId: string }) {
   const angles = handAngles(useClock(timeZoneId));
   return (
-    <div
-      className="absolute size-0"
-      style={{ left: clock.centerX, top: clock.centerY }}
-      aria-hidden
-    >
-      <Hand src={hourHand} size={clock.hour} angle={angles.hour} />
-      <Hand src={minuteHand} size={clock.minute} angle={angles.minute} />
-      <img
-        src={clockPin}
-        alt=""
-        className="absolute max-w-none"
-        style={{ left: -clock.pin / 2, top: -clock.pin / 2, width: clock.pin, height: clock.pin }}
-      />
+    <div aria-hidden>
+      <ClockImage src={hourHand} at={clock.hour} angle={angles.hour - ARTWORK_ANGLE} />
+      <ClockImage src={minuteHand} at={clock.minute} angle={angles.minute - ARTWORK_ANGLE} />
+      <ClockImage src={clockPin} at={clock.pin} />
     </div>
   );
 }
