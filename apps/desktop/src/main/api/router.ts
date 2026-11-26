@@ -5,22 +5,17 @@ import { z } from 'zod';
 
 import {
   adminStateSchema,
-  displayInputSchema,
   displayStateSchema,
   healthSchema,
-  locationInputSchema,
   pinSchema,
   scheduleInputSchema,
-  slideIdInputSchema,
-  slideOrderInputSchema,
-  slideRenameInputSchema,
+  slideIntervalInputSchema,
   slideToggleInputSchema,
   type AdminState,
-  type DisplayInput,
   type DisplayState,
-  type LocationInput,
   type ScheduleInput,
   type Slide,
+  type SlideSlot,
 } from '@menouchat/shared';
 
 import { parseSlideUpload, type SlideUpload } from './slide-upload.ts';
@@ -35,13 +30,9 @@ export interface AdminApi {
   getState(): Promise<AdminState>;
   watch(signal: AbortSignal): AsyncIterable<AdminState>;
   updateSchedule(input: ScheduleInput): Promise<void>;
-  updateLocation(input: LocationInput): Promise<void>;
-  updateDisplay(input: DisplayInput): Promise<void>;
-  addSlide(upload: SlideUpload): Promise<Slide>;
-  setSlideEnabled(slideId: string, enabled: boolean): Promise<void>;
-  renameSlide(slideId: string, title: string): Promise<void>;
-  reorderSlides(slideIds: readonly string[]): Promise<void>;
-  deleteSlide(slideId: string): Promise<void>;
+  uploadSlide(upload: SlideUpload): Promise<Slide>;
+  setSlideEnabled(slot: SlideSlot, enabled: boolean): Promise<void>;
+  setSlideInterval(seconds: number): Promise<void>;
   setPin(pin: string): Promise<void>;
   setPhoneAccess(enabled: boolean): Promise<void>;
 }
@@ -145,30 +136,16 @@ export function createAppRouter({ version, displayStates, admin, auth }: AppRout
         .input(scheduleInputSchema)
         .mutation(({ input }) => admin.updateSchedule(input)),
 
-      updateLocation: adminProcedure
-        .input(locationInputSchema)
-        .mutation(({ input }) => admin.updateLocation(input)),
-
-      updateDisplay: adminProcedure
-        .input(displayInputSchema)
-        .mutation(({ input }) => admin.updateDisplay(input)),
-
       slides: router({
-        add: adminProcedure
+        upload: adminProcedure
           .input(z.instanceof(FormData))
-          .mutation(({ input }) => admin.addSlide(parseSlideUpload(input))),
+          .mutation(({ input }) => admin.uploadSlide(parseSlideUpload(input))),
         setEnabled: adminProcedure
           .input(slideToggleInputSchema)
-          .mutation(({ input }) => admin.setSlideEnabled(input.slideId, input.enabled)),
-        rename: adminProcedure
-          .input(slideRenameInputSchema)
-          .mutation(({ input }) => admin.renameSlide(input.slideId, input.title)),
-        reorder: adminProcedure
-          .input(slideOrderInputSchema)
-          .mutation(({ input }) => admin.reorderSlides(input.slideIds)),
-        delete: adminProcedure
-          .input(slideIdInputSchema)
-          .mutation(({ input }) => admin.deleteSlide(input.slideId)),
+          .mutation(({ input }) => admin.setSlideEnabled(input.slot, input.enabled)),
+        setInterval: adminProcedure
+          .input(slideIntervalInputSchema)
+          .mutation(({ input }) => admin.setSlideInterval(input.slideIntervalSec)),
       }),
 
       phone: router({

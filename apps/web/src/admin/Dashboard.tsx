@@ -4,10 +4,8 @@ import { strings, type ClientKind } from '@menouchat/shared';
 
 import { useApiClient } from '../api/api-client.ts';
 import { Button } from '../components/Button.tsx';
-import { LocationCard } from './cards/LocationCard.tsx';
 import { PhoneAccessCard } from './cards/PhoneAccessCard.tsx';
 import { ShabbatTimesCard, WeekdayTimesCard } from './cards/ScheduleCards.tsx';
-import { ScreensCards } from './cards/ScreensCard.tsx';
 import { SlidesCard } from './cards/SlidesCard.tsx';
 import { useAdminState } from './use-admin-state.ts';
 
@@ -33,7 +31,7 @@ export function Dashboard({ onSignedOut }: { onSignedOut: () => void }) {
   }, [unauthorized, onSignedOut]);
 
   return (
-    <main className="mx-auto grid max-w-7xl gap-4 px-4 py-4 sm:py-6">
+    <main className="mx-auto grid max-w-5xl gap-4 px-4 py-4 sm:py-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">
           {strings.appName} · {strings.admin.title}
@@ -59,12 +57,10 @@ export function Dashboard({ onSignedOut }: { onSignedOut: () => void }) {
       {state === undefined ? (
         <p role="status">{strings.admin.loading}</p>
       ) : (
-        <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid items-start gap-4 md:grid-cols-2">
           <WeekdayTimesCard schedule={state.schedule} />
           <ShabbatTimesCard schedule={state.schedule} />
-          <SlidesCard slides={state.slides} />
-          <ScreensCards displays={state.displays} />
-          <LocationCard location={state.location} />
+          <SlidesCard slides={state.slides} slideIntervalSec={state.slideIntervalSec} />
           <PhoneAccessCard access={state.phoneAccess} />
         </div>
       )}

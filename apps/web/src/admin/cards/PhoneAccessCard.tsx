@@ -1,5 +1,4 @@
-import QRCode from 'qrcode';
-import { useEffect, useState, type SubmitEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 
 import { pinSchema, strings, type PhoneAccess } from '@menouchat/shared';
 
@@ -10,24 +9,6 @@ import { TextInput, Toggle } from '../ui/fields.tsx';
 import { useAction } from '../use-action.ts';
 
 const labels = strings.admin.phone;
-
-function QrCode({ url }: { url: string }) {
-  const [image, setImage] = useState<string>();
-  useEffect(() => {
-    let cancelled = false;
-    void QRCode.toDataURL(url, { margin: 1, width: 192 }).then((dataUrl) => {
-      if (!cancelled) {
-        setImage(dataUrl);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [url]);
-  return image === undefined ? null : (
-    <img src={image} alt={url} width={192} height={192} className="rounded bg-white p-1" />
-  );
-}
 
 function PinForm({ pinSet }: { pinSet: boolean }) {
   const api = useApiClient();
@@ -83,7 +64,7 @@ function PinForm({ pinSet }: { pinSet: boolean }) {
   );
 }
 
-/** Editing from a phone on the synagogue Wi-Fi, protected by a PIN (plan §4.4). */
+/** Editing from a phone on the synagogue Wi-Fi, with a PIN (plan §4.4). */
 export function PhoneAccessCard({ access }: { access: PhoneAccess }) {
   const api = useApiClient();
   const toggle = useAction((enabled: boolean) => api.admin.phone.setEnabled.mutate({ enabled }));
@@ -102,16 +83,17 @@ export function PhoneAccessCard({ access }: { access: PhoneAccess }) {
         (access.urls.length === 0 ? (
           <p>{labels.noNetwork}</p>
         ) : (
-          <div className="grid justify-items-start gap-2">
-            <p>{labels.scan}</p>
-            {access.urls[0] !== undefined && <QrCode url={access.urls[0]} />}
-            <ul className="grid gap-1" dir="ltr">
-              {access.urls.map((url) => (
-                <li key={url} className="font-mono text-sm select-all">
-                  {url}
-                </li>
-              ))}
-            </ul>
+          <div className="grid gap-1">
+            <p>{labels.address}</p>
+            {access.urls.map((url) => (
+              <p
+                key={url}
+                dir="ltr"
+                className="rounded-lg bg-background px-3 py-2 text-center font-mono text-lg select-all"
+              >
+                {url}
+              </p>
+            ))}
           </div>
         ))}
       <PinForm pinSet={access.pinSet} />

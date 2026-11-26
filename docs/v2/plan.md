@@ -19,16 +19,17 @@ Rewrite Menouchat Chalom (synagogue prayer-times display) in strict TypeScript, 
 
 Answers given by the owner on 2026-11-26:
 
-| Question                     | Answer                                       | Consequence                                                                                                                         |
-| ---------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Edit from a phone?           | Yes, on the local Wi-Fi                      | Keep an embedded HTTP server, PIN-protected, mobile-friendly admin                                                                  |
-| How many places?             | One synagogue, city configurable             | Location lives in settings, Jerusalem by default                                                                                    |
-| Screens on the synagogue PC? | One PC, one screen                           | Public display is full screen; admin opens on demand                                                                                |
-| Operating system             | Windows                                      | NSIS installer + `electron-updater`                                                                                                 |
-| v1 calculation bugs (§3.4)   | Fix both                                     | Reference tests flag candle lighting as a known v1 bug (parasha turned out correct, see §3.4); two display defects fixed too (§6.1) |
-| Future "several screens"     | Several layouts, chosen from the admin       | Displays and layouts are first-class in the data model from v2.0                                                                    |
-| Code style                   | Everything in English, professional quality  | See §8                                                                                                                              |
-| Admin UI                     | Clean and simple on desktop and small phones | See §9                                                                                                                              |
+| Question                               | Answer                                          | Consequence                                                                                                                                                                             |
+| -------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Edit from a phone?                     | Yes, on the local Wi-Fi                         | Keep an embedded HTTP server, PIN-protected, mobile-friendly admin                                                                                                                      |
+| How many places?                       | One synagogue, city configurable                | Location lives in settings, Jerusalem by default                                                                                                                                        |
+| Screens on the synagogue PC?           | One PC, one screen                              | Public display is full screen; admin opens on demand                                                                                                                                    |
+| Operating system                       | Windows                                         | NSIS installer + `electron-updater`                                                                                                                                                     |
+| v1 calculation bugs (§3.4)             | Fix both                                        | Reference tests flag candle lighting as a known v1 bug (parasha turned out correct, see §3.4); two display defects fixed too (§6.1)                                                     |
+| Future "several screens"               | Several layouts, chosen from the admin          | Displays and layouts are first-class in the data model from v2.0                                                                                                                        |
+| Code style                             | Everything in English, professional quality     | See §8                                                                                                                                                                                  |
+| Admin UI                               | Clean and simple on desktop and small phones    | See §9                                                                                                                                                                                  |
+| Admin scope (2026-11-26, after step 6) | Exactly v1's features with a mobile-friendly UI | See §9.2: weekday and Shabbat times, four slide slots (first PDF page), seconds per slide, phone access with a PIN and the full address; no location, screen or ordering UI, no QR code |
 
 Decisions taken earlier, with their reasons:
 
@@ -141,7 +142,7 @@ docs/v2/     this plan
 
 ### 4.4 Network and security
 
-- Listens on `127.0.0.1` by default; on `0.0.0.0` only when "Phone access" is enabled in the admin. The admin shows the LAN address and a QR code.
+- Listens on `127.0.0.1` by default; on `0.0.0.0` only when "Phone access" is enabled in the admin. The admin shows the full LAN address to type on the phone.
 - Admin protected by a PIN (hashed with scrypt) exchanged for an `HttpOnly`, `SameSite=Strict` session cookie; rate-limited PIN attempts.
 - Local Electron windows receive a per-launch token through the preload script.
 - Display routes are read-only.
@@ -150,14 +151,14 @@ docs/v2/     this plan
 ### 4.5 Displays and layouts
 
 - A **layout** is a React component in `apps/web/layouts/<id>/` plus a zod schema of its options (e.g. show daf yomi, show clock, show slideshow). A registry maps `layoutId` to component and schema.
-- A **display** is `{ id, name, layoutId, layoutOptions, slideIds, slideIntervalSec }`. The admin's "Screens" card lets the user pick the layout, set its options and see a live preview.
+- A **display** is `{ id, name, layoutId, layoutOptions, slideIntervalSec }`. It shows the enabled slide slots in slot order. Layout and options exist in the data model but are not exposed in the admin (owner's decision, §9.2): only the seconds per slide are.
 - The kiosk window on the PC shows display `main`. Adding monitors (`screen.getAllDisplays()`) or network TVs (`/display/:id` with a pairing code) later needs no redesign.
 - **`DisplayState` snapshot**: entered times, today's zmanim already formatted in the location's time zone, Hebrew calendar info, the display's slides and layout options. Rebuilt at local midnight (location time) and on every change. The display keeps the last snapshot if the server restarts.
 
 Implemented in step 5:
 
 - `DisplayState` (zod schema in `packages/shared/src/display-state.ts`) is built by `buildDisplayState()` in `apps/desktop/src/main/services/`. The display-state service pushes it through the `display.onState` tRPC subscription (SSE): first on connection, then after every `notifyChanged()` and just after local midnight. `display.state` is the one-off query.
-- Slide pages are served read-only from `userData/slides/<id>/<file>` under `/slides/`. A display with an empty `slideIds` shows every enabled slide in library order.
+- Slide pages are served read-only from `userData/slides/<id>/<file>` under `/slides/`. A display shows the enabled slide slots in slot order.
 - Layouts live in `apps/web/src/layouts/<id>/`, registered in `layouts/registry.ts` through `defineLayout({ id, optionsSchema, Component })`. Options that no longer validate fall back to the defaults instead of blanking the screen.
 - `classic-portrait` uses v1's background, Guttman Mantova fonts and clock hands. The synagogue screen is a 46" TV in portrait (1080 × 1920) with Windows scaling at 150 %, so v1's page was a 720 × 1280 viewport, and v1's pixel offsets only line up in that configuration. Every text box, the clock pivot, the hand sizes and the slide box were measured on v1's own page there and recorded in `layouts/classic-portrait/placements.ts`, including the half-moon indent of the times around the clock. v2 draws on that 720 × 1280 surface and scales it uniformly to any window (letterboxed), so a small window, a maximised one and the kiosk all show the same picture whatever the Windows scaling.
 - Differences from v1:
@@ -179,7 +180,7 @@ Implemented in step 5:
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `settings.json`         | `schemaVersion`; `location { name, latitude, longitude, elevation, timeZoneId, inIsrael }`; `candleLightingMinutes` (40); `motzashArvitOffsetMinutes` (1); `lan { enabled, port, pinHash }` |
 | `schedule.json`         | `weekday { shacharit, mincha, arvit }`; `shabbat { shirHashirim, minchaErev, shacharit, mincha }` — `"HH:MM"`                                                                               |
-| `slides.json`           | ordered library of `{ id, title, originalFile, pages[], enabled }`                                                                                                                          |
+| `slides.json`           | the filled slots of v1's four: `{ id, slot (1–4), title, originalFile, image, enabled }`                                                                                                    |
 | `displays.json`         | displays as in §4.5; only `main` in v2.0                                                                                                                                                    |
 | `userData/slides/<id>/` | original file + one JPEG per page                                                                                                                                                           |
 
@@ -211,7 +212,7 @@ Implemented in step 7 (`apps/desktop/src/main/v1-import/`), run at startup befor
   - an empty or out-of-range `secInterval`, clamped to 3–300;
   - unreadable or missing documents;
   - slot images that are missing or not JPEG.
-- Slide titles are the v1 file names without extension. A slot with no name gets "שקופית N".
+- Each v1 slot becomes the same v2 slot; its title is the v1 file name without extension, or "שקופית N" when v1 had none.
 - Tested against `tests/fixtures/v1-userdata/`, a copy of a real v1 `userData` (its `db/` byte for byte); the tests also check that v1's files are unchanged.
 
 ## 6. Reference tests
@@ -239,7 +240,7 @@ One session per step, each on its own branch and PR into `v2`.
 - [x] **3. Zmanim calculation** — `packages/core` for any location: zmanim, candle lighting, Motzei Shabbat, daf yomi, parasha, Hebrew date; all reference tests green.
 - [x] **4. Storage** — zod schemas, atomic writes, `.bak`, defaults, schema migrations, tests.
 - [x] **5. Display** — layout registry, `DisplayState` + SSE subscription, `classic-portrait` layout faithful to v1, clock, multi-page slideshow, kiosk window.
-- [x] **6. Admin** — times, slides (pdf.js worker, all pages, original kept, ordering, enable/disable), location, "Screens" card (layout, options, live preview), phone access (LAN listening, PIN, QR code); UI rules in §9.
+- [x] **6. Admin** (simplified afterwards with the owner, see §9.2) — times, slides (pdf.js worker, all pages, original kept, ordering, enable/disable), location, "Screens" card (layout, options, live preview), phone access (LAN listening, PIN, QR code); UI rules in §9.
 - [x] **7. v1 import** — §5, tested against a copy of a real v1 `userData`.
 - [ ] **8. Reliability and auto-update** — start at login, crash recovery, sleep prevention, `electron-updater`, "Check for updates".
 - [ ] **9. Release workflow** — Windows NSIS build with `latest.yml`; version read from `package.json` (2.0.0) instead of always bumping the patch; v2.0.0 published when `v2` is merged into `main`; manual pre-release builds from `v2` for testing on the synagogue PC.
@@ -256,11 +257,10 @@ One session per step, each on its own branch and PR into `v2`.
 ## 9. Admin UI rules
 
 - Mobile first: usable from 320 px wide with no horizontal scrolling; the same cards laid out in a grid on desktop.
-- One card per topic: Weekday times, Shabbat times, Slides, Screens, Location, Phone access, Updates.
+- One card per topic: Weekday times, Shabbat times, Pictures, Phone access, then Updates (step 8). See §9.2.
 - Touch targets ≥ 44 px, native time inputs, inline validation, one Save button per card, disabled until something changes.
 - Immediate toast feedback (saved / error with the reason); never a page reload.
-- Slides: thumbnails, drag to reorder (up/down buttons on touch screens), per-slide toggle, progress bar during PDF conversion.
-- Live preview of the public display.
+- Slides: v1's four slots, each with a thumbnail, the file name, a "show" switch and a button to choose or replace the file.
 - Accessible: sufficient contrast, visible focus, a label on every field, full keyboard navigation; light and dark themes.
 - Components: **React Aria Components**, styled with **Tailwind CSS v4** (chosen in step 1, see below).
 
@@ -274,21 +274,27 @@ One session per step, each on its own branch and PR into `v2`.
 - **Forms, validation and toasts** come from the same library with consistent ARIA wiring (labels, descriptions, inline errors), covering the rules above.
 - **Tailwind rather than CSS Modules.** Vite types CSS-module classes as an index signature, which conflicts with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` (every class becomes `string | undefined`). Tailwind needs no generated types, its logical utilities (`ps-*`, `me-*`, `start-*`) suit RTL, its `data-*` variants target React Aria's state attributes (`data-pressed`, `data-focus-visible`), and dark mode is a set of semantic colour tokens switched in one place (`apps/web/src/styles/global.css`). Class order is kept stable by `prettier-plugin-tailwindcss`.
 
-### 9.2 Admin as built (step 6)
+### 9.2 Admin as built (step 6, simplified with the owner)
 
-- **Cards:** weekday times, Shabbat times, slides, one screen card per display, location, phone access. The Updates card comes with step 8.
-- **Saving:** each form card has a draft that follows the server until edited, and a Save button enabled only when something changed. Slide actions (show/hide, reorder, delete) apply at once. Every result shows as a toast.
-- **Live state:** the admin state is pushed by `admin.onState` (SSE), so edits made from another device appear immediately.
-- **Slides:**
-  - `slide-conversion.worker.ts` renders every PDF page (pdf.js legacy build, `OffscreenCanvas`, fonts drawn as paths) or the image to JPEG at 150 dpi, longest side ≤ 2400 px.
-  - The original and the pages go up in one `multipart/form-data` tRPC mutation.
-  - The server checks types, sizes and JPEG signatures, then writes `slides/<id>/original.<ext>` and `page-<n>.jpg` through a temporary folder.
-  - Reordering works by keyboard-accessible drag and drop or with up/down buttons.
-- **Screens card:** pick the layout, switch its on/off options (read from the layout's zod schema), set the slide interval. The preview is the real `/display/<id>` page in a frame.
+After step 6 the owner asked for exactly v1's features, with a better, mobile-friendly UI (2026-11-26). The admin therefore has four cards:
+
+- **Weekday times** and **Shabbat times**: native time inputs, one Save button each.
+- **Pictures:**
+  - v1's four slots. Each has a thumbnail, the file name, a "show" switch and "choose / replace".
+  - A PDF contributes its first page, as in v1, rendered to JPEG in a Web Worker: pdf.js legacy build, `OffscreenCanvas`, pdf.js parsing in its own nested worker. The original file is kept.
+  - Replacing a slot's file keeps whether it was shown. There is no ordering and no deletion: slots show in order 1–4, as in v1.
+  - The seconds per picture (3–300) are saved with their own button.
+- **Phone access:** set a 4–8 digit PIN, switch access on, then type the full address shown (e.g. `http://192.168.1.20:3741/admin`) in the phone's browser. There is no QR code.
+
+Not in the admin, by decision: location (Jerusalem with v1's coordinates stays fixed, but remains configurable in `settings.json`), layout choice and options, preview, slide ordering.
+
+Unchanged from step 6:
+
+- The admin state is pushed by `admin.onState` (SSE).
+- Each card keeps a draft that follows the server until edited, and results show as toasts.
 - **Access** (plan §4.4):
-  - The app's own windows present the launch token: a header, or a connection parameter for SSE. They are always admin.
-  - Phones sign in with the PIN (4–8 digits, scrypt N=2¹⁷), which sets an `HttpOnly`, `SameSite=Strict` session cookie valid for 30 days, kept in memory.
-  - Five wrong PINs lock a device out for 15 minutes. Changing the PIN signs every phone out.
-- **Phone access:** it needs a PIN first. Switching it restarts the HTTP server on `0.0.0.0` (or back on `127.0.0.1`) on the same port; the displays' event streams reconnect by themselves. The port stays 3741 in v2.0 (not editable), because the kiosk window's URL depends on it. Windows will ask once to allow the app through its firewall.
-- **CSP:** scripts come only from the app (plus WebAssembly for pdf.js). Inline styles are allowed, for React Aria's touch handling. The admin may frame the display.
-- **Step 7:** the store now writes as soon as something is edited, so the v1 import must run at startup before anything else touches `userData/data/`.
+  - Local windows present the launch token and are always admin.
+  - Phones sign in with the PIN (scrypt), which sets an `HttpOnly`, `SameSite=Strict` session cookie valid for 30 days.
+  - Five wrong PINs lock a device out for 15 minutes, and a PIN change signs every phone out.
+- Phone access restarts the server on `0.0.0.0` (or `127.0.0.1`) on port 3741. Windows will ask once to allow the app through its firewall.
+- CSP: scripts from the app only (plus WebAssembly for pdf.js), inline styles allowed for React Aria.

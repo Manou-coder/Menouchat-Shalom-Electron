@@ -72,14 +72,6 @@ describe('classic-portrait layout', () => {
     expect(screen.getByText('ערכין י׳')).toBeTruthy();
   });
 
-  it('lists its on/off options for the admin', () => {
-    expect(findLayout('classic-portrait')?.booleanOptions).toEqual([
-      'showClock',
-      'showDafYomi',
-      'showSlideshow',
-    ]);
-  });
-
   it('accepts empty options, as every layout must', () => {
     expect(findLayout('classic-portrait')?.optionsSchema.safeParse({}).success).toBe(true);
   });
