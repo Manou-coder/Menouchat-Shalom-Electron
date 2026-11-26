@@ -1,5 +1,6 @@
 import { DafYomi, gematriya, Locale, Sedra } from '@hebcal/core';
 
+import { amudYomi } from './amud-yomi.ts';
 import { toHebrewDate, type CivilDate } from './civil-date.ts';
 import type { Location } from './location.ts';
 
@@ -12,6 +13,8 @@ export interface HebrewCalendarInfo {
   parasha: string;
   /** Tractate and page, e.g. `ערכין י׳`. */
   dafYomi: string;
+  /** Dirshu's Amud HaYomi, e.g. `סוכה כא:`; `null` before the program began (2023). */
+  amudYomi: string | null;
 }
 
 export function computeHebrewCalendarInfo(date: CivilDate, location: Location): HebrewCalendarInfo {
@@ -30,5 +33,6 @@ export function computeHebrewCalendarInfo(date: CivilDate, location: Location): 
     hebrewDate: hebrewDate.renderGematriya(true),
     parasha,
     dafYomi: `${Locale.gettext(daf.getName(), HEBREW_WITHOUT_NIKUD)} ${gematriya(daf.getBlatt())}`,
+    amudYomi: amudYomi(hebrewDate) ?? null,
   };
 }

@@ -54,6 +54,7 @@ describe('buildDisplayState', () => {
       hebrewDate: 'י״ז כסלו תשפ״ז',
       parasha: 'וישלח',
       dafYomi: 'ערכין י׳',
+      amudYomi: 'סוכה כב.',
     });
     expect(state.schedule.weekday.shacharit).toBe('06:20');
     expect(state.layoutId).toBe('classic-portrait');

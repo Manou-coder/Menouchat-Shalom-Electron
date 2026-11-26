@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { displaySchema } from './persisted/displays.ts';
+import { displaySchema, layoutIdSchema } from './persisted/displays.ts';
 import { scheduleSchema } from './persisted/schedule.ts';
 import { slideSchema, slideSlotSchema } from './persisted/slides.ts';
 
@@ -8,6 +8,8 @@ export const scheduleInputSchema = scheduleSchema.omit({ schemaVersion: true });
 export type ScheduleInput = z.infer<typeof scheduleInputSchema>;
 
 export const slideIntervalInputSchema = displaySchema.pick({ slideIntervalSec: true });
+
+export const layoutInputSchema = z.object({ layoutId: layoutIdSchema });
 
 /** A newer version found on GitHub: downloaded in the background, installed on restart. */
 export const updateStatusSchema = z.discriminatedUnion('status', [
@@ -22,6 +24,8 @@ export const adminStateSchema = z.object({
   schedule: scheduleInputSchema,
   slides: z.array(slideSchema),
   slideIntervalSec: displaySchema.shape.slideIntervalSec,
+  /** The main display's layout ("theme" in the admin). */
+  layoutId: displaySchema.shape.layoutId,
   /** Full addresses of the admin on this PC's local network, to type on a phone. */
   phoneUrls: z.array(z.string()),
   update: updateStatusSchema,

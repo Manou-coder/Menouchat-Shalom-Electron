@@ -5,9 +5,12 @@ export {
   displaySchema,
   displaysSchema,
   DISPLAYS_SCHEMA_VERSION,
+  LAYOUT_IDS,
+  layoutIdSchema,
   MAIN_DISPLAY_ID,
   type Display,
   type Displays,
+  type LayoutId,
 } from './displays.ts';
 export {
   createDefaultSchedule,

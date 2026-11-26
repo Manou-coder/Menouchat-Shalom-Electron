@@ -48,6 +48,7 @@ export const displayStateSchema = z.object({
     hebrewDate: z.string(),
     parasha: z.string(),
     dafYomi: z.string(),
+    amudYomi: z.string().nullable(),
   }),
   slideshow: z.object({
     intervalSec: z.number().int().positive(),

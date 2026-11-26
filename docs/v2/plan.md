@@ -152,7 +152,7 @@ docs/v2/     this plan
 ### 4.5 Displays and layouts
 
 - A **layout** is a React component in `apps/web/layouts/<id>/` plus a zod schema of its options (e.g. show daf yomi, show clock, show slideshow). A registry maps `layoutId` to component and schema.
-- A **display** is `{ id, name, layoutId, layoutOptions, slideIntervalSec }`. It shows the enabled slide slots in slot order. Layout and options exist in the data model but are not exposed in the admin (owner's decision, §9.2): only the seconds per slide are.
+- A **display** is `{ id, name, layoutId, layoutOptions, slideIntervalSec }`. It shows the enabled slide slots in slot order. The admin chooses the main display's layout ("theme", §9.2) and its seconds per slide; layout options stay out of the admin and reset to the defaults when the layout changes.
 - The kiosk window on the PC shows display `main`. Adding monitors (`screen.getAllDisplays()`) or network TVs (`/display/:id` with a pairing code) later needs no redesign.
 - **`DisplayState` snapshot**: entered times, today's zmanim already formatted in the location's time zone, Hebrew calendar info, the display's slides and layout options. Rebuilt at local midnight (location time) and on every change. The display keeps the last snapshot if the server restarts.
 
@@ -162,6 +162,7 @@ Implemented in step 5:
 - Slide pages are served read-only from `userData/slides/<id>/<file>` under `/slides/`. A display shows the enabled slide slots in slot order.
 - Layouts live in `apps/web/src/layouts/<id>/`, registered in `layouts/registry.ts` through `defineLayout({ id, optionsSchema, Component })`. Options that no longer validate fall back to the defaults instead of blanking the screen.
 - `classic-portrait` uses v1's background, Guttman Mantova fonts and clock hands. The synagogue screen is a 46" TV in portrait (1080 × 1920) with Windows scaling at 150 %, so v1's page was a 720 × 1280 viewport, and v1's pixel offsets only line up in that configuration. Every text box, the clock pivot, the hand sizes and the slide box were measured on v1's own page there and recorded in `layouts/classic-portrait/placements.ts`, including the half-moon indent of the times around the clock. v2 draws on that 720 × 1280 surface and scales it uniformly to any window (letterboxed), so a small window, a maximised one and the kiosk all show the same picture whatever the Windows scaling.
+- `blue-gold` draws on the same 720 × 1280 surface. Its background (`assets/background.jpg`) was generated with an image model at 941 × 1672, then edited by hand (banner flourish removed, frames aligned, picture frame narrowed so its opening is exactly 594 × 280) and resized to 1080 × 1920; every box is measured in those 941 × 1672 pixels in `layouts/blue-gold/placements.ts`. The picture frame is drawn a second time over the slide, cut out of the same background with an SVG mask, so a slide sits under the frame's inner gold line. Text is David Libre (Fontsource, bundled).
 - Differences from v1:
   - The clock follows the location's time zone (v1 added a fixed 2 hours).
   - The bottom frame stays empty without slides: v1's fallback image is an error icon.
@@ -254,6 +255,7 @@ One session per step, each on its own branch and PR into `v2`.
 - [x] **7. v1 import** — §5, tested against a copy of a real v1 `userData`.
 - [x] **8. Reliability and auto-update** (as decided with the owner, see §4.6) — start at login, crash recovery, sleep prevention, `electron-updater`, "Check for updates".
 - [x] **9. Release workflow** (as decided with the owner, see below) — Windows NSIS build with `latest.yml`; version read from `package.json` (2.0.0) instead of always bumping the patch; v2.0.0 published when `v2` is merged into `main`; manual pre-release builds from `v2` for testing on the synagogue PC.
+- [x] **10. Screen themes** (owner's request after 2.0.3) — `blue-gold` layout: an AI-drawn parchment, navy and gold background with the text written over it, v1's slide size (594 × 280) under a picture frame redrawn from the background, David Libre; theme choice in the admin (§9.2). Its daf yomi tile alternates every 5 s with Dirshu's Amud HaYomi (`packages/core/src/amud-yomi.ts`: one amud a day from Berachot 2a on 15 October 2023, Vilna lengths from Sefaria, checked against the Yoma siyum on 17 October 2026).
 
 ## 8. Code quality rules
 
@@ -294,9 +296,10 @@ After step 6 the owner asked for exactly v1's features, with a better, mobile-fr
   - A PDF contributes its first page, as in v1, rendered to JPEG in a Web Worker: pdf.js legacy build, `OffscreenCanvas`, pdf.js parsing in its own nested worker. The original file is kept.
   - Replacing a slot's file keeps whether it was shown. There is no ordering and no deletion: slots show in order 1–4, as in v1.
   - The seconds per picture (3–300) are saved with their own button.
+- **Screen theme** (added after 2.0.3, owner's request, 2026-11-26): two picture choices, "קלאסי" (`classic-portrait`, the v1 look, still the default) and "כחול וזהב" (`blue-gold`). Picking one saves it at once (`admin.setLayout`) and the screen follows; the ids the admin may choose are `LAYOUT_IDS` in `packages/shared`.
 - **Phone address** (simplified again after 2.0.0): no card, no PIN, no switch. The address to type on a phone (e.g. `http://192.168.1.20:3741/admin`) is shown under the admin's title.
 
-Not in the admin, by decision: location (Jerusalem with v1's coordinates stays fixed, but remains configurable in `settings.json`), layout choice and options, preview, slide ordering.
+Not in the admin, by decision: location (Jerusalem with v1's coordinates stays fixed, but remains configurable in `settings.json`), layout options, live preview, slide ordering.
 
 Unchanged from step 6:
 

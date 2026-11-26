@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@fontsource-variable/heebo": "^5.3.0",
+    "@fontsource/david-libre": "^5.3.0",
     "@menouchat/shared": "workspace:*",
     "@trpc/client": "^11.31.3",
     "lucide-react": "~1.80.0",

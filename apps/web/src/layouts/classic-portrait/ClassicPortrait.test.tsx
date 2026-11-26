@@ -34,7 +34,12 @@ const state: DisplayState = {
     motzeiShabbatArvit: zman('17:15'),
     rabbeinuTam: zman('17:52'),
   },
-  calendar: { hebrewDate: 'י״ז כסלו תשפ״ז', parasha: 'וישלח', dafYomi: 'ערכין י׳' },
+  calendar: {
+    hebrewDate: 'י״ז כסלו תשפ״ז',
+    parasha: 'וישלח',
+    dafYomi: 'ערכין י׳',
+    amudYomi: 'סוכה כא:',
+  },
   slideshow: { intervalSec: 10, pages: [] },
 };
 

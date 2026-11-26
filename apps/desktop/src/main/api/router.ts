@@ -7,11 +7,13 @@ import {
   adminStateSchema,
   displayStateSchema,
   healthSchema,
+  layoutInputSchema,
   scheduleInputSchema,
   slideIntervalInputSchema,
   slideToggleInputSchema,
   type AdminState,
   type DisplayState,
+  type LayoutId,
   type ScheduleInput,
   type Slide,
   type SlideSlot,
@@ -32,6 +34,7 @@ export interface AdminApi {
   uploadSlide(upload: SlideUpload): Promise<Slide>;
   setSlideEnabled(slot: SlideSlot, enabled: boolean): Promise<void>;
   setSlideInterval(seconds: number): Promise<void>;
+  setLayout(layoutId: LayoutId): Promise<void>;
 }
 
 /** What only the app's own windows may ask of the desktop app. */
@@ -114,6 +117,10 @@ export function createAppRouter({ version, displayStates, admin, desktop }: AppR
       updateSchedule: adminProcedure
         .input(scheduleInputSchema)
         .mutation(({ input }) => admin.updateSchedule(input)),
+
+      setLayout: adminProcedure
+        .input(layoutInputSchema)
+        .mutation(({ input }) => admin.setLayout(input.layoutId)),
 
       slides: router({
         upload: adminProcedure

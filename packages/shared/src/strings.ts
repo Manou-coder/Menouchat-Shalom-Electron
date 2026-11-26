@@ -41,6 +41,10 @@ export const strings = {
       shown: 'להציג',
       interval: 'שניות לכל תמונה',
     },
+    layout: {
+      title: 'עיצוב המסך',
+      names: { 'classic-portrait': 'קלאסי', 'blue-gold': 'כחול וזהב' },
+    },
     phone: {
       address: 'לעריכה מהטלפון (באותה רשת Wi-Fi):',
       noNetwork: 'המחשב אינו מחובר לרשת, אין גישה מהטלפון.',
@@ -70,11 +74,17 @@ export const strings = {
       tzais: 'צאת הכוכבים',
     },
     dafYomi: 'דף היומי',
+    amudYomi: 'עמוד היומי',
     parasha: 'פרשת השבוע',
     candleLighting: 'הדלקת נרות',
     rabbeinuTam: 'מוצ״ש ר״ת',
     missingTime: '—',
     slideAlt: 'שקופית',
+    /** Titles and lines of the blue-gold layout. */
+    weekdayTitle: 'ימי חול',
+    shabbatTitle: 'שבת קודש',
+    parashaOf: (parasha: string) => `פרשת ${parasha}`,
+    association: 'ע״י עמותת ׳מקוה אסתר ירושלים׳ · רח׳ בית וגן 6 ירושלים',
   },
   notFound: 'הדף לא נמצא',
   defaults: {

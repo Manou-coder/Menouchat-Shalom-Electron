@@ -4,6 +4,7 @@ import { strings } from '@menouchat/shared';
 
 import { useApiClient } from '../api/api-client.ts';
 import logo from '../assets/logo.png';
+import { LayoutCard } from './cards/LayoutCard.tsx';
 import { ShabbatTimesCard, WeekdayTimesCard } from './cards/ScheduleCards.tsx';
 import { SlidesCard } from './cards/SlidesCard.tsx';
 import { PhoneAddress } from './PhoneAddress.tsx';
@@ -63,6 +64,9 @@ export function Dashboard() {
             <ShabbatTimesCard schedule={state.schedule} />
             <div className="md:col-span-2">
               <SlidesCard slides={state.slides} slideIntervalSec={state.slideIntervalSec} />
+            </div>
+            <div className="md:col-span-2">
+              <LayoutCard layoutId={state.layoutId} />
             </div>
           </div>
         )}

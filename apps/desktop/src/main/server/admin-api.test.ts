@@ -137,6 +137,26 @@ describe('editing', () => {
   });
 });
 
+describe('theme', () => {
+  it('switches the main display to another layout, which the display follows', async () => {
+    await expect(local().admin.state.query()).resolves.toMatchObject({
+      layoutId: 'classic-portrait',
+    });
+    await local().admin.setLayout.mutate({ layoutId: 'blue-gold' });
+    await expect(local().admin.state.query()).resolves.toMatchObject({ layoutId: 'blue-gold' });
+    await expect(client().display.state.query({ displayId: 'main' })).resolves.toMatchObject({
+      layoutId: 'blue-gold',
+      layoutOptions: {},
+    });
+  });
+
+  it('refuses a layout that does not exist', async () => {
+    await expect(
+      errorCode(local().admin.setLayout.mutate({ layoutId: 'neon' as 'blue-gold' })),
+    ).resolves.toBe('BAD_REQUEST');
+  });
+});
+
 describe('slides', () => {
   it('stores a picture in its slot with the original file, then serves it', async () => {
     const slide = await local().admin.slides.upload.mutate(uploadForm(2));

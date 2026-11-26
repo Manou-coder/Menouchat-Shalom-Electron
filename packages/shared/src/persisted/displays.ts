@@ -7,8 +7,13 @@ export const DISPLAYS_SCHEMA_VERSION = 1;
 /** The display shown full screen on the synagogue PC. */
 export const MAIN_DISPLAY_ID = 'main';
 
-/** The v1 look, the only layout in v2.0. */
-export const DEFAULT_LAYOUT_ID = 'classic-portrait';
+/** Layouts the admin can choose for the main display; each is registered in the web app. */
+export const LAYOUT_IDS = ['classic-portrait', 'blue-gold'] as const;
+export const layoutIdSchema = z.enum(LAYOUT_IDS);
+export type LayoutId = z.infer<typeof layoutIdSchema>;
+
+/** The v1 look, kept as the default. */
+export const DEFAULT_LAYOUT_ID: LayoutId = 'classic-portrait';
 
 const slugSchema = z.string().regex(/^[a-z0-9][a-z0-9-]{0,49}$/, 'Expected a lowercase slug');
 

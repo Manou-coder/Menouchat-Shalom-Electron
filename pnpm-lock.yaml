@@ -93,6 +93,9 @@ importers:
       '@fontsource-variable/heebo':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/david-libre':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@menouchat/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -421,6 +424,9 @@ packages:
 
   '@fontsource-variable/heebo@5.3.0':
     resolution: {integrity: sha512-gaCKIbnx83+Za844O2dn4XYoAitS2jjBSj08bELHfCIL5gKMBDWl82oWte2CEBrnXwNMVJNd3ojZqFOd9+mCFg==}
+
+  '@fontsource/david-libre@5.3.0':
+    resolution: {integrity: sha512-esxHLO+pEmhnCb4HG4gRUfICz1xQyF+8EMH1rY76kaDl+IbqJmOTl3QuD9ddMnjElv48cCa5msmQymDA5vqr5Q==}
 
   '@hebcal/core@3.50.4':
     resolution: {integrity: sha512-VUQMLGcrtWEwGjUOftWADtPcXBhLZG8/a33ySB5TYxoRlVmrHURL7H/oefAH857hj0h1mIBB0HWhdS/ApBviJg==}
@@ -3235,6 +3241,8 @@ snapshots:
       glob: 14.0.6
 
   '@fontsource-variable/heebo@5.3.0': {}
+
+  '@fontsource/david-libre@5.3.0': {}
 
   '@hebcal/core@3.50.4': {}
 

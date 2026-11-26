@@ -1,5 +1,6 @@
 export {
   adminStateSchema,
+  layoutInputSchema,
   scheduleInputSchema,
   SLIDE_UPLOAD_FIELDS,
   SLIDE_UPLOAD_LIMITS,

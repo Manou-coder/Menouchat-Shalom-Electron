@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  DEFAULT_LAYOUT_ID,
   MAIN_DISPLAY_ID,
   type AdminState,
+  type LayoutId,
   type ScheduleInput,
   type Slide,
   type SlideSlot,
@@ -35,6 +37,8 @@ export interface AdminService {
   uploadSlide(upload: SlideUpload): Promise<Slide>;
   setSlideEnabled(slot: SlideSlot, enabled: boolean): Promise<void>;
   setSlideInterval(seconds: number): Promise<void>;
+  /** Switches the main display to another layout; its options start from the defaults. */
+  setLayout(layoutId: LayoutId): Promise<void>;
 }
 
 export function createAdminService(dependencies: AdminServiceDependencies): AdminService {
@@ -64,6 +68,7 @@ export function createAdminService(dependencies: AdminServiceDependencies): Admi
       schedule: { weekday: schedule.weekday, shabbat: schedule.shabbat },
       slides: slides.slides.toSorted((a, b) => a.slot - b.slot),
       slideIntervalSec: main?.slideIntervalSec ?? 10,
+      layoutId: main?.layoutId ?? DEFAULT_LAYOUT_ID,
       phoneUrls: dependencies.phoneUrls(settings.lan.port),
       update: dependencies.updateStatus(),
     };
@@ -132,6 +137,17 @@ export function createAdminService(dependencies: AdminServiceDependencies): Admi
           ...document,
           displays: document.displays.map((display) =>
             display.id === MAIN_DISPLAY_ID ? { ...display, slideIntervalSec: seconds } : display,
+          ),
+        });
+      }),
+
+    setLayout: (layoutId) =>
+      exclusive(async () => {
+        const document = await store.displays.read();
+        await store.displays.write({
+          ...document,
+          displays: document.displays.map((display) =>
+            display.id === MAIN_DISPLAY_ID ? { ...display, layoutId, layoutOptions: {} } : display,
           ),
         });
       }),
