@@ -9,6 +9,12 @@ export const strings = {
     cancel: 'ביטול',
     loading: 'טוען…',
     connectionLost: 'החיבור לשרת נותק, מנסה שוב…',
+    openAdmin: 'ניהול',
+    update: {
+      downloading: (version: string) => `מורידים גרסה חדשה (${version})…`,
+      ready: (version: string) => `גרסה חדשה (${version}) מוכנה. היא תותקן בהפעלה הבאה.`,
+      installNow: 'התקנה עכשיו',
+    },
     errors: {
       generic: 'השמירה נכשלה',
       invalid: 'אחד הערכים אינו תקין',

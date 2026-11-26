@@ -23,7 +23,7 @@ Requires Node.js 24+ and pnpm (version pinned in the root `package.json`).
 
 - `pnpm install` — install the workspace (Electron downloads its binary in a postinstall script).
 - `pnpm dev` — run the Vite dev server for `apps/web` and the Electron app (`electron-vite dev --watch`) in parallel. The HTTP server listens on `127.0.0.1:3741`; the window loads the Vite server on `127.0.0.1:5173`, which proxies `/trpc` to it.
-- In `pnpm dev`, the `main` display opens as a 540×960 window and the admin opens too; in production the display is a full-screen kiosk and the admin opens with Ctrl+Alt+A.
+- Only the `main` display opens at launch: a 540×960 window in `pnpm dev`, plain full screen in production. Move the mouse over it for the "ניהול" button, or press Ctrl+Alt+A, to open the admin. Updates are only checked in packaged builds.
 - `pnpm build` — bundle `apps/desktop` (main + preload into `out/`) and `apps/web` (into `dist/`).
 - `pnpm test` — run Vitest across every package (`vitest.config.ts` lists them as projects).
 - `pnpm lint` — ESLint (`strict-type-checked`) and `prettier --check`; `pnpm format` rewrites formatting.

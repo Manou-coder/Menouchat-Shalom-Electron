@@ -7,6 +7,7 @@ import { Button } from '../components/Button.tsx';
 import { PhoneAccessCard } from './cards/PhoneAccessCard.tsx';
 import { ShabbatTimesCard, WeekdayTimesCard } from './cards/ScheduleCards.tsx';
 import { SlidesCard } from './cards/SlidesCard.tsx';
+import { UpdateBanner } from './UpdateBanner.tsx';
 import { useAdminState } from './use-admin-state.ts';
 
 function useServerInfo(): { version: string; client: ClientKind } | undefined {
@@ -53,6 +54,8 @@ export function Dashboard({ onSignedOut }: { onSignedOut: () => void }) {
           {strings.admin.connectionLost}
         </p>
       )}
+
+      {state !== undefined && <UpdateBanner update={state.update} />}
 
       {state === undefined ? (
         <p role="status">{strings.admin.loading}</p>

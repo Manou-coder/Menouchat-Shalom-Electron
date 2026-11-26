@@ -146,6 +146,23 @@ describe('admin access', () => {
   });
 });
 
+describe('desktop actions', () => {
+  it("lets only the app's own windows open the admin on the PC", async () => {
+    await expect(errorCode(client().desktop.showAdmin.mutate())).resolves.toBe('FORBIDDEN');
+    await local().desktop.showAdmin.mutate();
+    expect(app.desktopCalls).toEqual(['showAdmin']);
+  });
+
+  it('shows a ready update in the admin and installs it on request', async () => {
+    await expect(local().admin.state.query()).resolves.toMatchObject({
+      update: { status: 'ready', version: '2.0.1' },
+    });
+    await expect(errorCode(client().admin.installUpdate.mutate())).resolves.toBe('UNAUTHORIZED');
+    await local().admin.installUpdate.mutate();
+    expect(app.desktopCalls).toEqual(['installUpdate']);
+  });
+});
+
 describe('phone access', () => {
   it('requires a PIN first, then asks the main process to listen on the network', async () => {
     await expect(errorCode(local().admin.phone.setEnabled.mutate({ enabled: true }))).resolves.toBe(
