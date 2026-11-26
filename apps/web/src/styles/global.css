@@ -1,33 +1,42 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/heebo';
 
-/* Semantic colours, switched as a whole for the dark theme. */
+/*
+ * Warm gold-and-wood palette taken from the synagogue display's artwork, switched as a
+ * whole for the dark theme.
+ */
 @theme {
-  --color-background: #f6f7f9;
+  --font-sans: 'Heebo Variable', system-ui, 'Segoe UI', Arial, sans-serif;
+  --color-background: #f6f2ea;
   --color-surface: #ffffff;
-  --color-border: #d9dde3;
-  --color-text: #1a1d21;
-  --color-text-muted: #4a515b;
-  --color-accent: #1f5fbf;
-  --color-accent-hover: #194f9f;
+  --color-border: #e7dfd0;
+  --color-text: #2b2219;
+  --color-text-muted: #7a6a57;
+  --color-accent: #9a6b22;
+  --color-accent-hover: #835a1b;
+  --color-accent-soft: #f4e9d4;
   --color-on-accent: #ffffff;
-  --color-focus: #f0a500;
-  --color-pending: #8a929c;
-  --color-success: #1e8e3e;
-  --color-danger: #c5221f;
+  --color-focus: #d6a64d;
+  --color-pending: #a59a8c;
+  --color-success: #2f7d4f;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fbe9e7;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background: #121417;
-    --color-surface: #1c1f24;
-    --color-border: #353a42;
-    --color-text: #eceef1;
-    --color-text-muted: #b2b8c0;
-    --color-accent: #5b9bf0;
-    --color-accent-hover: #7aaef3;
-    --color-on-accent: #0b1220;
-    --color-success: #4cc26a;
-    --color-danger: #f26b67;
+    --color-background: #15110d;
+    --color-surface: #201a14;
+    --color-border: #3a3026;
+    --color-text: #f3ece2;
+    --color-text-muted: #b5a690;
+    --color-accent: #d6a64d;
+    --color-accent-hover: #e3b763;
+    --color-accent-soft: #3a2d18;
+    --color-on-accent: #1d1509;
+    --color-success: #5cc185;
+    --color-danger: #f2766c;
+    --color-danger-soft: #3a1d1a;
   }
 }
 
@@ -37,6 +46,20 @@
   }
 
   body {
-    @apply bg-background font-sans text-text;
+    @apply bg-background font-sans text-text antialiased;
+  }
+
+  /*
+   * Safari on iPhone gives time inputs a native look with a minimum width wider than a
+   * phone column, and aligns their value inside a pseudo-element of its own. The value
+   * sits on the right, under its Hebrew label, like the rest of the page.
+   */
+  input[type='time'] {
+    appearance: none;
+    text-align: right;
+  }
+
+  input[type='time']::-webkit-date-and-time-value {
+    text-align: right;
   }
 }

@@ -52,8 +52,16 @@ export const rightPanel = {
   tzais: { top: 836.3, labelRight: 699.7, valueLeft: 467 },
 } satisfies Record<string, Placement>;
 
-/** Clock pivot on the background's clock face, and the sizes of v1's hand images. */
-export const clock = { centerX: 357.5, centerY: 725.5, hour: 113, minute: 177, pin: 15 } as const;
+/**
+ * v1's clock hands, from its stylesheet: each image is a square of `size` pixels centred
+ * on (x, y), the pivot drawn in the artwork. (Their on-screen boxes look larger only
+ * because the images are rotated.)
+ */
+export const clock = {
+  hour: { x: 357.5, y: 725.5, size: 105 },
+  minute: { x: 355, y: 725, size: 140 },
+  pin: { x: 357.5, y: 725.5, size: 15 },
+} as const;
 
 /** v1's slide box: 280 px high from (63, 934), within the bottom frame. */
 export const slideshow = { left: 63, top: 934, width: 594, height: 280 } as const;

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { strings } from '@menouchat/shared';
 
 import { useApiClient } from '../api/api-client.ts';
+import logo from '../assets/logo.png';
 import { ShabbatTimesCard, WeekdayTimesCard } from './cards/ScheduleCards.tsx';
 import { SlidesCard } from './cards/SlidesCard.tsx';
 import { PhoneAddress } from './PhoneAddress.tsx';
@@ -29,39 +30,49 @@ export function Dashboard() {
   const version = useVersion();
 
   return (
-    <main className="mx-auto grid max-w-5xl gap-4 px-4 py-4 sm:py-6">
-      <header className="grid gap-1">
-        <h1 className="text-2xl font-semibold">
-          {strings.appName} · {strings.admin.title}
-        </h1>
-        {state !== undefined && <PhoneAddress urls={state.phoneUrls} />}
-      </header>
-
-      {reconnecting && (
-        <p role="status" className="rounded-lg bg-danger px-4 py-2 text-white">
-          {strings.admin.connectionLost}
-        </p>
-      )}
-
-      {state !== undefined && <UpdateBanner update={state.update} />}
-
-      {state === undefined ? (
-        <p role="status">{strings.admin.loading}</p>
-      ) : (
-        <div className="grid items-start gap-4 md:grid-cols-2">
-          <WeekdayTimesCard schedule={state.schedule} />
-          <ShabbatTimesCard schedule={state.schedule} />
-          <div className="md:col-span-2">
-            <SlidesCard slides={state.slides} slideIntervalSec={state.slideIntervalSec} />
-          </div>
+    <>
+      <header className="sticky top-0 z-10 border-b border-border/70 bg-surface/85 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">
+          <img src={logo} alt="" className="size-11 shrink-0" />
+          <h1 className="min-w-0 flex-1 text-xl font-bold">
+            {strings.appName} ·{' '}
+            <span className="font-medium text-text-muted">{strings.admin.title}</span>
+          </h1>
+          {state !== undefined && (
+            // Its own full-width line, so the addresses do not break beside the logo.
+            <div className="w-full">
+              <PhoneAddress urls={state.phoneUrls} />
+            </div>
+          )}
         </div>
-      )}
+      </header>
+      <main className="mx-auto grid max-w-5xl grid-cols-1 gap-5 px-4 py-5 sm:py-8">
+        {reconnecting && (
+          <p role="status" className="rounded-lg bg-danger px-4 py-2 text-white">
+            {strings.admin.connectionLost}
+          </p>
+        )}
 
-      {version !== undefined && (
-        <footer className="text-center text-sm text-text-muted" dir="ltr">
-          v{version}
-        </footer>
-      )}
-    </main>
+        {state !== undefined && <UpdateBanner update={state.update} />}
+
+        {state === undefined ? (
+          <p role="status">{strings.admin.loading}</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <WeekdayTimesCard schedule={state.schedule} />
+            <ShabbatTimesCard schedule={state.schedule} />
+            <div className="md:col-span-2">
+              <SlidesCard slides={state.slides} slideIntervalSec={state.slideIntervalSec} />
+            </div>
+          </div>
+        )}
+
+        {version !== undefined && (
+          <footer className="text-center text-sm text-text-muted" dir="ltr">
+            v{version}
+          </footer>
+        )}
+      </main>
+    </>
   );
 }

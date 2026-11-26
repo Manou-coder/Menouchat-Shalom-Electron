@@ -1,8 +1,13 @@
 import { join } from 'node:path';
 
-import { BrowserWindow, type BrowserWindowConstructorOptions } from 'electron';
+import { BrowserWindow, dialog, type BrowserWindowConstructorOptions } from 'electron';
 
-import { encodeDesktopBridge, DESKTOP_BRIDGE_SWITCH, type DesktopBridge } from '@menouchat/shared';
+import {
+  DESKTOP_BRIDGE_SWITCH,
+  encodeDesktopBridge,
+  strings,
+  type DesktopBridge,
+} from '@menouchat/shared';
 
 const PRELOAD_PATH = join(import.meta.dirname, '../preload/index.cjs');
 
@@ -50,6 +55,21 @@ export function createWindowManager(options: WindowManagerOptions): WindowManage
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.webContents.on('will-navigate', (event, target) => {
       if (new URL(target).origin !== allowedOrigin) {
+        event.preventDefault();
+      }
+    });
+    // The admin warns before unsaved changes are lost; Electron leaves the asking to us.
+    window.webContents.on('will-prevent-unload', (event) => {
+      const labels = strings.admin.leave;
+      const choice = dialog.showMessageBoxSync(window, {
+        type: 'question',
+        buttons: [labels.stay, labels.leave],
+        defaultId: 0,
+        cancelId: 0,
+        message: labels.message,
+        detail: labels.detail,
+      });
+      if (choice === 1) {
         event.preventDefault();
       }
     });

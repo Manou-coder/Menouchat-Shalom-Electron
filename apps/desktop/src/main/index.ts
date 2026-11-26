@@ -11,7 +11,8 @@ import { createServer } from './server/create-server.ts';
 import { createAdminService } from './services/admin-service.ts';
 import { createChangeHub } from './services/change-hub.ts';
 import { createDisplayStateService } from './services/display-state-service.ts';
-import { localNetworkAddresses } from './services/network-addresses.ts';
+import { announceLocalHostname } from './services/local-hostname.ts';
+import { LOCAL_HOSTNAME, localNetworkAddresses } from './services/network-addresses.ts';
 import { createUpdateService } from './services/update-service.ts';
 import { createStore } from './store/store.ts';
 import { importV1IfNeeded } from './v1-import/import-v1.ts';
@@ -94,8 +95,12 @@ async function start(): Promise<void> {
     store,
     slidesRoot,
     changes,
-    phoneUrls: (listeningPort) =>
-      localNetworkAddresses().map((address) => `http://${address}:${String(listeningPort)}/admin`),
+    phoneUrls: (listeningPort) => {
+      const addresses = localNetworkAddresses();
+      // The fixed name only helps when the PC is on a network at all.
+      const hosts = addresses.length === 0 ? [] : [LOCAL_HOSTNAME, ...addresses];
+      return hosts.map((host) => `http://${host}:${String(listeningPort)}/admin`);
+    },
     updateStatus: () => updates.status(),
   });
 
@@ -136,7 +141,12 @@ async function start(): Promise<void> {
   await server.listen({ host: ALL_INTERFACES_HOST, port });
   log.info(`HTTP server listening on port ${String(port)}, all interfaces`);
 
+  const stopAnnouncing = announceLocalHostname((error) => {
+    log.warn(`mDNS: ${LOCAL_HOSTNAME} may not resolve on phones:`, error);
+  });
+
   app.on('before-quit', () => {
+    stopAnnouncing();
     void server.close();
   });
 
