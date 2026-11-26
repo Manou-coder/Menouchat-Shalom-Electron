@@ -1,32 +1,45 @@
 import { handAngles, useClock } from '../../display/use-clock.ts';
+import clockPin from './assets/clock-pin.png';
 import hourHand from './assets/hour-hand.png';
 import minuteHand from './assets/minute-hand.png';
-import clockPin from './assets/clock-pin.png';
+import { clock } from './placements.ts';
 
 /** The hand artwork points to about 10:27; rotations are measured from there. */
 const ARTWORK_ANGLE = -47;
+
+function Hand({ src, size, angle }: { src: string; size: number; angle: number }) {
+  return (
+    <img
+      src={src}
+      alt=""
+      className="absolute max-w-none"
+      style={{
+        left: -size / 2,
+        top: -size / 2,
+        width: size,
+        height: size,
+        rotate: `${String(angle - ARTWORK_ANGLE)}deg`,
+      }}
+    />
+  );
+}
 
 /** Hands drawn over the clock face of the background, centred on its pivot. */
 export function AnalogClock({ timeZoneId }: { timeZoneId: string }) {
   const angles = handAngles(useClock(timeZoneId));
   return (
-    <div className="absolute top-[546px] left-[266px] size-0" aria-hidden>
-      <img
-        src={hourHand}
-        alt=""
-        className="absolute -top-[44px] -left-[44px] size-[88px] max-w-none"
-        style={{ rotate: `${String(angles.hour - ARTWORK_ANGLE)}deg` }}
-      />
-      <img
-        src={minuteHand}
-        alt=""
-        className="absolute -top-[62px] -left-[62px] size-[124px] max-w-none"
-        style={{ rotate: `${String(angles.minute - ARTWORK_ANGLE)}deg` }}
-      />
+    <div
+      className="absolute size-0"
+      style={{ left: clock.centerX, top: clock.centerY }}
+      aria-hidden
+    >
+      <Hand src={hourHand} size={clock.hour} angle={angles.hour} />
+      <Hand src={minuteHand} size={clock.minute} angle={angles.minute} />
       <img
         src={clockPin}
         alt=""
-        className="absolute -top-[6px] -left-[6px] size-[12px] max-w-none"
+        className="absolute max-w-none"
+        style={{ left: -clock.pin / 2, top: -clock.pin / 2, width: clock.pin, height: clock.pin }}
       />
     </div>
   );

@@ -11,31 +11,34 @@
   font-display: block;
 }
 
-.classic-portrait-mantova {
+/* Prayer times on the parchment frames: dark, bold, with a light halo. */
+.classic-portrait-frame {
   font-family: 'Guttman Mantova', serif;
   font-weight: bold;
-}
-
-.classic-portrait-decor {
-  font-family: 'Guttman Mantova Decor', 'Guttman Mantova', serif;
-}
-
-/* Dark text with a light halo on the parchment frames. */
-.classic-portrait-on-parchment {
   color: #000000;
   text-shadow:
     0.25px 0.1px 0 #ffffcc,
     0.5px 0.2px 0 #ffffcc,
     0.75px 0.3px 0 #ffffcc,
+    0.75px 0.4px 0 #ffffcc,
     1px 0.5px 0 #ffffcc;
 }
 
-/* Light text with a dark halo on the wooden panels. */
-.classic-portrait-on-wood {
+/* Zmanim and calendar on the wooden panels: light, with a dark halo. */
+.classic-portrait-panel {
   color: #ffffcc;
   text-shadow:
     0.25px 0.1px 0 #000000,
     0.5px 0.2px 0 #000000,
     0.75px 0.3px 0 #000000,
+    0.75px 0.4px 0 #000000,
     1px 0.5px 0 #000000;
+}
+
+.classic-portrait-mantova {
+  font-family: 'Guttman Mantova', serif;
+}
+
+.classic-portrait-decor {
+  font-family: 'Guttman Mantova Decor', 'Guttman Mantova', serif;
 }

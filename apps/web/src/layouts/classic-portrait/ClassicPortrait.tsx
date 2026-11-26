@@ -1,5 +1,3 @@
-import type { ReactNode } from 'react';
-
 import { strings, type ZmanSnapshot } from '@menouchat/shared';
 
 import { Slideshow } from '../../display/Slideshow.tsx';
@@ -8,11 +6,16 @@ import type { LayoutProps } from '../define-layout.tsx';
 import { AnalogClock } from './AnalogClock.tsx';
 import background from './assets/background.jpg';
 import type { ClassicPortraitOptions } from './options.ts';
+import {
+  leftPanel,
+  rightPanel,
+  shabbat as shabbatPlacements,
+  slideshow,
+  SURFACE,
+  weekday as weekdayPlacements,
+  type Placement,
+} from './placements.ts';
 import './classic-portrait.css';
-
-/** The v1 design surface; positions below are in its pixels, measured on the background. */
-const WIDTH = 540;
-const HEIGHT = 960;
 
 const labels = strings.display;
 
@@ -20,94 +23,153 @@ function timeOf(zman: ZmanSnapshot | null): string {
   return zman?.time ?? labels.missingTime;
 }
 
-/** A label and its value on one line: label at the start (right), value at the end. */
-function Row({
+/** The two styles of v1: dark bold text on the parchment frames, light text on the wood. */
+type Style = 'frame' | 'frame-small' | 'frame-large' | 'panel';
+
+const labelClasses: Record<Style, string> = {
+  'frame-large': 'classic-portrait-frame text-[32px]',
+  frame: 'classic-portrait-frame text-[28.8px]',
+  'frame-small': 'classic-portrait-frame text-[22.464px]',
+  panel: 'classic-portrait-panel classic-portrait-decor text-[21.6px]',
+};
+
+const valueClasses: Record<Style, string> = {
+  ...labelClasses,
+  panel: 'classic-portrait-panel classic-portrait-mantova text-[21.6px]',
+};
+
+function Entry({
+  placement,
   label,
   value,
-  labelClassName = '',
+  style,
 }: {
+  placement: Placement;
   label: string;
   value: string;
-  labelClassName?: string;
+  style: Style;
 }) {
   return (
-    <div className="flex items-baseline justify-between gap-2">
-      <span className={labelClassName}>{label}</span>
-      <bdi className="classic-portrait-mantova tabular-nums">{value}</bdi>
-    </div>
+    <>
+      <div
+        className={`absolute whitespace-nowrap ${labelClasses[style]}`}
+        style={{ top: placement.top, right: SURFACE.width - placement.labelRight }}
+      >
+        {label}
+      </div>
+      <div
+        dir="ltr"
+        className={`absolute whitespace-nowrap ${valueClasses[style]}`}
+        style={{ top: placement.top, left: placement.valueLeft }}
+      >
+        {value}
+      </div>
+    </>
   );
 }
 
-/** A label above its value, for values too long to share a line. */
-function Stacked({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="text-center leading-tight">
-      <div className="classic-portrait-decor text-[15px]">{label}</div>
-      <div className="classic-portrait-mantova text-[19px]">{value}</div>
-    </div>
-  );
-}
-
-function Area({ className, children }: { className: string; children: ReactNode }) {
-  return <div className={`absolute flex flex-col ${className}`}>{children}</div>;
-}
-
-/** The v1 look: two prayer-time frames, side panels around a clock, a slideshow below. */
+/**
+ * The v1 look, placed exactly where v1 put everything on the synagogue screen (see
+ * placements.ts), and scaled to whatever screen it runs on.
+ */
 export function ClassicPortrait({ state, options }: LayoutProps<ClassicPortraitOptions>) {
-  const scale = useFitScale(WIDTH, HEIGHT);
+  const scale = useFitScale(SURFACE.width, SURFACE.height);
   const { schedule, dailyZmanim, shabbat, calendar } = state;
 
   return (
     <div className="flex h-dvh w-dvw items-center justify-center overflow-hidden bg-black">
       <div
-        className="relative shrink-0 origin-center"
+        className="relative shrink-0 leading-normal"
         style={{
-          width: WIDTH,
-          height: HEIGHT,
+          width: SURFACE.width,
+          height: SURFACE.height,
           scale: String(scale),
           backgroundImage: `url(${background})`,
           backgroundSize: '100% 100%',
         }}
       >
-        <Area className="classic-portrait-mantova classic-portrait-on-parchment top-[222px] left-[56px] h-[160px] w-[148px] justify-around text-[19px]">
-          <Row label={labels.shabbat.shirHashirim} value={schedule.shabbat.shirHashirim} />
-          <Row label={labels.shabbat.minchaErev} value={schedule.shabbat.minchaErev} />
-          <Row label={labels.shabbat.shacharit} value={schedule.shabbat.shacharit} />
-          <Row label={labels.shabbat.mincha} value={schedule.shabbat.mincha} />
-          <Row label={labels.shabbat.arvit} value={timeOf(shabbat.motzeiShabbatArvit)} />
-        </Area>
+        {(['shacharit', 'mincha', 'arvit'] as const).map((key) => (
+          <Entry
+            key={key}
+            placement={weekdayPlacements[key]}
+            label={labels.weekday[key]}
+            value={schedule.weekday[key]}
+            style="frame-large"
+          />
+        ))}
 
-        <Area className="classic-portrait-mantova classic-portrait-on-parchment top-[228px] left-[340px] h-[148px] w-[144px] justify-around text-[27px]">
-          <Row label={labels.weekday.shacharit} value={schedule.weekday.shacharit} />
-          <Row label={labels.weekday.mincha} value={schedule.weekday.mincha} />
-          <Row label={labels.weekday.arvit} value={schedule.weekday.arvit} />
-        </Area>
+        <Entry
+          placement={shabbatPlacements.shirHashirim}
+          label={labels.shabbat.shirHashirim}
+          value={schedule.shabbat.shirHashirim}
+          style="frame-small"
+        />
+        {(['minchaErev', 'shacharit', 'mincha'] as const).map((key) => (
+          <Entry
+            key={key}
+            placement={shabbatPlacements[key]}
+            label={labels.shabbat[key]}
+            value={schedule.shabbat[key]}
+            style="frame"
+          />
+        ))}
+        <Entry
+          placement={shabbatPlacements.arvit}
+          label={labels.shabbat.arvit}
+          value={timeOf(shabbat.motzeiShabbatArvit)}
+          style="frame"
+        />
 
-        <Area className="classic-portrait-on-wood top-[458px] left-[24px] h-[182px] w-[136px] justify-around">
-          {options.showDafYomi && <Stacked label={labels.dafYomi} value={calendar.dafYomi} />}
-          <Stacked label={labels.parasha} value={calendar.parasha} />
-          <Stacked label={labels.candleLighting} value={timeOf(shabbat.candleLighting)} />
-          <Stacked label={labels.rabbeinuTam} value={timeOf(shabbat.rabbeinuTam)} />
-        </Area>
+        {options.showDafYomi && (
+          <Entry
+            placement={leftPanel.dafYomi}
+            label={labels.dafYomi}
+            value={calendar.dafYomi}
+            style="panel"
+          />
+        )}
+        <Entry
+          placement={leftPanel.parasha}
+          label={labels.parasha}
+          value={calendar.parasha}
+          style="panel"
+        />
+        <Entry
+          placement={leftPanel.candleLighting}
+          label={labels.candleLighting}
+          value={timeOf(shabbat.candleLighting)}
+          style="panel"
+        />
+        <Entry
+          placement={leftPanel.rabbeinuTam}
+          label={labels.rabbeinuTam}
+          value={timeOf(shabbat.rabbeinuTam)}
+          style="panel"
+        />
 
-        <Area className="classic-portrait-on-wood top-[458px] left-[372px] h-[182px] w-[146px] justify-around text-[15px]">
-          <div className="classic-portrait-mantova text-center text-[17px]">
-            {calendar.hebrewDate}
-          </div>
-          {(Object.keys(labels.dailyZmanim) as (keyof typeof labels.dailyZmanim)[]).map((key) => (
-            <Row
-              key={key}
-              label={labels.dailyZmanim[key]}
-              value={timeOf(dailyZmanim[key])}
-              labelClassName="classic-portrait-decor"
-            />
-          ))}
-        </Area>
+        <div
+          className={`absolute whitespace-nowrap ${labelClasses.panel}`}
+          style={{
+            top: rightPanel.hebrewDate.top,
+            right: SURFACE.width - rightPanel.hebrewDate.labelRight,
+          }}
+        >
+          {calendar.hebrewDate}
+        </div>
+        {(Object.keys(labels.dailyZmanim) as (keyof typeof labels.dailyZmanim)[]).map((key) => (
+          <Entry
+            key={key}
+            placement={rightPanel[key]}
+            label={labels.dailyZmanim[key]}
+            value={timeOf(dailyZmanim[key])}
+            style="panel"
+          />
+        ))}
 
         {options.showClock && <AnalogClock timeZoneId={state.timeZoneId} />}
 
         {options.showSlideshow && (
-          <div className="absolute top-[694px] left-[44px] h-[222px] w-[452px]">
+          <div className="absolute" style={slideshow}>
             <Slideshow pages={state.slideshow.pages} intervalSec={state.slideshow.intervalSec} />
           </div>
         )}
