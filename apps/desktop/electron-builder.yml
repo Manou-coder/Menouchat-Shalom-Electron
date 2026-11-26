@@ -1,0 +1,16 @@
+appId: com.menouchat.chalom
+productName: Menouchat Chalom
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+extraResources:
+  - from: ../web/dist
+    to: web
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  artifactName: ${name}-setup-${version}.${ext}

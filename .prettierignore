@@ -1,0 +1,9 @@
+pnpm-lock.yaml
+dist/
+out/
+release/
+coverage/
+# Workflows inherited from main; left untouched until the release step.
+.github/workflows/build.yml
+.github/workflows/claude.yml
+.github/workflows/claude-code-review.yml

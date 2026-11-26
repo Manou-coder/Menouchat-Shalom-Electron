@@ -1,0 +1,16 @@
+{
+  "name": "@menouchat/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "zod schemas, derived types, API contracts and Hebrew UI strings shared by every app.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}

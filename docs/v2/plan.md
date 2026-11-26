@@ -2,7 +2,7 @@
 
 This document is the project memory for the v2 rewrite. Each work session picks the next unchecked step in [§7](#7-steps), does it on a branch off `v2`, and checks the box in the same PR.
 
-Status: plan approved on 2026-11-26. No v2 code exists yet.
+Status: plan approved on 2026-11-26. Step 1 (skeleton) done.
 
 ## 1. Goals
 
@@ -19,16 +19,16 @@ Rewrite Menouchat Chalom (synagogue prayer-times display) in strict TypeScript, 
 
 Answers given by the owner on 2026-11-26:
 
-| Question | Answer | Consequence |
-|---|---|---|
-| Edit from a phone? | Yes, on the local Wi-Fi | Keep an embedded HTTP server, PIN-protected, mobile-friendly admin |
-| How many places? | One synagogue, city configurable | Location lives in settings, Jerusalem by default |
-| Screens on the synagogue PC? | One PC, one screen | Public display is full screen; admin opens on demand |
-| Operating system | Windows | NSIS installer + `electron-updater` |
-| v1 calculation bugs (§3.4) | Fix both | Reference tests flag those two values as known v1 bugs |
-| Future "several screens" | Several layouts, chosen from the admin | Displays and layouts are first-class in the data model from v2.0 |
-| Code style | Everything in English, professional quality | See §8 |
-| Admin UI | Clean and simple on desktop and small phones | See §9 |
+| Question                     | Answer                                       | Consequence                                                        |
+| ---------------------------- | -------------------------------------------- | ------------------------------------------------------------------ |
+| Edit from a phone?           | Yes, on the local Wi-Fi                      | Keep an embedded HTTP server, PIN-protected, mobile-friendly admin |
+| How many places?             | One synagogue, city configurable             | Location lives in settings, Jerusalem by default                   |
+| Screens on the synagogue PC? | One PC, one screen                           | Public display is full screen; admin opens on demand               |
+| Operating system             | Windows                                      | NSIS installer + `electron-updater`                                |
+| v1 calculation bugs (§3.4)   | Fix both                                     | Reference tests flag those two values as known v1 bugs             |
+| Future "several screens"     | Several layouts, chosen from the admin       | Displays and layouts are first-class in the data model from v2.0   |
+| Code style                   | Everything in English, professional quality  | See §8                                                             |
+| Admin UI                     | Clean and simple on desktop and small phones | See §9                                                             |
 
 Decisions taken earlier, with their reasons:
 
@@ -50,15 +50,15 @@ v1 is about 1,800 lines of JavaScript: an Express server on port 3000 started in
 
 ### 3.1 Admin (`/admin` → `views/index.html`, `public/myApp.js`, Hebrew, RTL)
 
-| Feature | Behaviour | Endpoint |
-|---|---|---|
-| Weekday times | שחרית, מנחה, ערבית as `<input type="time">` | `POST /admin/zman-chol` |
-| Shabbat times | שיר השירים, מנחה ער״ש, שחרית, מנחה | `POST /admin/zman-shabat` |
-| 4 image slots | Pick a PDF/PNG/JPG; page 1 rendered to JPEG in the browser (150 dpi, quality 0.92) and uploaded; saved as `images/imageAffiche{N}.jpg`; file name shown next to the slot | `POST /admin/upload_pdf` |
-| Slideshow selection | One checkbox per slot + seconds per image (3–30) | `POST /admin/checkbox` |
-| Preview | Modal showing a slot's image; slideshow preview inside the admin | — |
-| Feedback | Spinner, then a "valid" or "error" icon, then a full page reload | — |
-| Display refresh | Every save toggles `reload.txt`; both pages poll it every second and reload when it changes | `POST /admin/reload` |
+| Feature             | Behaviour                                                                                                                                                                | Endpoint                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------- |
+| Weekday times       | שחרית, מנחה, ערבית as `<input type="time">`                                                                                                                              | `POST /admin/zman-chol`   |
+| Shabbat times       | שיר השירים, מנחה ער״ש, שחרית, מנחה                                                                                                                                       | `POST /admin/zman-shabat` |
+| 4 image slots       | Pick a PDF/PNG/JPG; page 1 rendered to JPEG in the browser (150 dpi, quality 0.92) and uploaded; saved as `images/imageAffiche{N}.jpg`; file name shown next to the slot | `POST /admin/upload_pdf`  |
+| Slideshow selection | One checkbox per slot + seconds per image (3–30)                                                                                                                         | `POST /admin/checkbox`    |
+| Preview             | Modal showing a slot's image; slideshow preview inside the admin                                                                                                         | —                         |
+| Feedback            | Spinner, then a "valid" or "error" icon, then a full page reload                                                                                                         | —                         |
+| Display refresh     | Every save toggles `reload.txt`; both pages poll it every second and reload when it changes                                                                              | `POST /admin/reload`      |
 
 ### 3.2 Public display (`/shoul` → `views/index-frontend.html`, `public/myApp-frontend.js`)
 
@@ -76,15 +76,15 @@ Frameless 540×960 portrait window. Absolute-positioned text over a background i
 
 ### 3.3 Data files (`userData/db/*.txt`, JSON)
 
-| File | Shape |
-|---|---|
-| `zmanChol.txt` | `{ shacharitChol, minchaChol, arvitChol }` — `"HH:MM"` strings |
-| `zmanShbt.txt` | `{ shirAshirim, minchaErevShbt, shaharitShbt, minchaShbt }` |
-| `checkbox.txt` | `{ image1, image2, image3, image4: boolean, secInterval: string }` |
+| File                 | Shape                                                                               |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `zmanChol.txt`       | `{ shacharitChol, minchaChol, arvitChol }` — `"HH:MM"` strings                      |
+| `zmanShbt.txt`       | `{ shirAshirim, minchaErevShbt, shaharitShbt, minchaShbt }`                         |
+| `checkbox.txt`       | `{ image1, image2, image3, image4: boolean, secInterval: string }`                  |
 | `images-display.txt` | `{ imageDisplay: [string, string, string, string] }` — original file names per slot |
-| `reload.txt` | `{ reload: boolean }` |
-| `userData/images/` | `imageAffiche0.jpg` (fallback) … `imageAffiche4.jpg` |
-| `userData/files/` | one file per upload, named after the original file |
+| `reload.txt`         | `{ reload: boolean }`                                                               |
+| `userData/images/`   | `imageAffiche0.jpg` (fallback) … `imageAffiche4.jpg`                                |
+| `userData/files/`    | one file per upload, named after the original file                                  |
 
 Read API: `GET /api/zmanim/{jerusalem,info,zman-chol,zman-shabat,get-reload,checkbox,images-display}`. `db/`, `images/` and `files/` are also served statically.
 
@@ -163,13 +163,13 @@ docs/v2/     this plan
 
 ### 4.7 Persisted data (`userData/data/`)
 
-| File | Content |
-|---|---|
-| `settings.json` | `schemaVersion`; `location { name, latitude, longitude, elevation, timeZoneId, inIsrael }`; `candleLightingMinutes` (40); `motzashArvitOffsetMinutes` (1); `lan { enabled, port, pinHash }` |
-| `schedule.json` | `weekday { shacharit, mincha, arvit }`; `shabbat { shirHashirim, minchaErev, shacharit, mincha }` — `"HH:MM"` |
-| `slides.json` | ordered library of `{ id, title, originalFile, pages[], enabled }` |
-| `displays.json` | displays as in §4.5; only `main` in v2.0 |
-| `userData/slides/<id>/` | original file + one JPEG per page |
+| File                    | Content                                                                                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `settings.json`         | `schemaVersion`; `location { name, latitude, longitude, elevation, timeZoneId, inIsrael }`; `candleLightingMinutes` (40); `motzashArvitOffsetMinutes` (1); `lan { enabled, port, pinHash }` |
+| `schedule.json`         | `weekday { shacharit, mincha, arvit }`; `shabbat { shirHashirim, minchaErev, shacharit, mincha }` — `"HH:MM"`                                                                               |
+| `slides.json`           | ordered library of `{ id, title, originalFile, pages[], enabled }`                                                                                                                          |
+| `displays.json`         | displays as in §4.5; only `main` in v2.0                                                                                                                                                    |
+| `userData/slides/<id>/` | original file + one JPEG per page                                                                                                                                                           |
 
 Writes: temporary file → `fsync` → `rename`, previous version kept as `.bak`. Reads: zod validation with migrations keyed on `schemaVersion`; fall back to `.bak`, then to defaults, logging each fallback.
 
@@ -196,7 +196,7 @@ Runs on first launch when `userData/data/` does not exist.
 
 One session per step, each on its own branch and PR into `v2`.
 
-- [ ] **1. Skeleton** — pnpm workspace (`packages/core`, `packages/shared`, `apps/desktop` with electron-vite, `apps/web` with Vite + React), strict TS, electron-builder NSIS, ESLint + Prettier, Vitest, CI running `typecheck`, `lint`, `test`, `build`; minimal tRPC server and one window loading it over `127.0.0.1`. Pick the UI component library (§9).
+- [x] **1. Skeleton** — pnpm workspace (`packages/core`, `packages/shared`, `apps/desktop` with electron-vite, `apps/web` with Vite + React), strict TS, electron-builder NSIS, ESLint + Prettier, Vitest, CI running `typecheck`, `lint`, `test`, `build`; minimal tRPC server and one window loading it over `127.0.0.1`. Pick the UI component library (§9).
 - [ ] **2. Reference tests** — capture v1 outputs as described in §6.
 - [ ] **3. Zmanim calculation** — `packages/core` for any location: zmanim, candle lighting, Motzei Shabbat, daf yomi, parasha, Hebrew date; all reference tests green.
 - [ ] **4. Storage** — zod schemas, atomic writes, `.bak`, defaults, schema migrations, tests.
@@ -210,7 +210,7 @@ One session per step, each on its own branch and PR into `v2`.
 
 - **Everything in English**: code, identifiers, comments, logs, internal error messages, commit messages, documentation. Only user-facing UI text is Hebrew (RTL), centralised in `packages/shared` strings.
 - TypeScript `strict` plus `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`; ESLint `strict-type-checked`; Prettier. No `any`, no dead code, no stray `console.log`.
-- Comments explain *why*, never restate *what*.
+- Comments explain _why_, never restate _what_.
 - Small single-purpose modules; pure functions in `core`; typed errors, always handled; zod validation at every boundary (disk, HTTP, preload).
 - Vitest for `core`, `store`, import and services. CI must pass `typecheck`, `lint`, `test` and `build` on every PR.
 - Conventional commits; one reviewed PR per step.
@@ -224,4 +224,14 @@ One session per step, each on its own branch and PR into `v2`.
 - Slides: thumbnails, drag to reorder (up/down buttons on touch screens), per-slide toggle, progress bar during PDF conversion.
 - Live preview of the public display.
 - Accessible: sufficient contrast, visible focus, a label on every field, full keyboard navigation; light and dark themes.
-- An accessible headless component library (Radix UI or React Aria) with CSS Modules or Tailwind, chosen in step 1.
+- Components: **React Aria Components**, styled with **Tailwind CSS v4** (chosen in step 1, see below).
+
+### 9.1 UI library decision (step 1)
+
+**React Aria Components + Tailwind CSS v4**, rather than Radix UI or CSS Modules:
+
+- **RTL and Hebrew built in.** React Aria takes the locale from `I18nProvider` (`he-IL`) and mirrors keyboard navigation, overlays and date/number formatting for RTL. Radix only offers a direction provider.
+- **Touch and pointer handling.** `usePress` gives consistent press behaviour across mouse, touch and keyboard (no stuck hover on phones, no 300 ms delays), which matters for an admin used from a phone.
+- **Accessible drag and drop.** The Slides card needs reordering; React Aria's `GridList` drag and drop includes keyboard and screen-reader alternatives. Radix has no drag and drop, so it would need a second library.
+- **Forms, validation and toasts** come from the same library with consistent ARIA wiring (labels, descriptions, inline errors), covering the rules above.
+- **Tailwind rather than CSS Modules.** Vite types CSS-module classes as an index signature, which conflicts with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` (every class becomes `string | undefined`). Tailwind needs no generated types, its logical utilities (`ps-*`, `me-*`, `start-*`) suit RTL, its `data-*` variants target React Aria's state attributes (`data-pressed`, `data-focus-visible`), and dark mode is a set of semantic colour tokens switched in one place (`apps/web/src/styles/global.css`). Class order is kept stable by `prettier-plugin-tailwindcss`.
