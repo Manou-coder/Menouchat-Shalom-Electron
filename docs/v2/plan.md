@@ -30,6 +30,7 @@ Answers given by the owner on 2026-11-26:
 | Code style                             | Everything in English, professional quality     | See §8                                                                                                                                                                                  |
 | Admin UI                               | Clean and simple on desktop and small phones    | See §9                                                                                                                                                                                  |
 | Admin scope (2026-11-26, after step 6) | Exactly v1's features with a mobile-friendly UI | See §9.2: weekday and Shabbat times, four slide slots (first PDF page), seconds per slide, phone access with a PIN and the full address; no location, screen or ordering UI, no QR code |
+| Phone access (2026-11-26, after 2.0.0) | Just the address, always on, no PIN             | The server always listens on the local network; anyone on the synagogue Wi-Fi can edit. The admin shows the address under its title (§4.4, §9.2)                                        |
 
 Decisions taken earlier, with their reasons:
 
@@ -142,8 +143,8 @@ docs/v2/     this plan
 
 ### 4.4 Network and security
 
-- Listens on `127.0.0.1` by default; on `0.0.0.0` only when "Phone access" is enabled in the admin. The admin shows the full LAN address to type on the phone.
-- Admin protected by a PIN (hashed with scrypt) exchanged for an `HttpOnly`, `SameSite=Strict` session cookie; rate-limited PIN attempts.
+- Listens on `0.0.0.0` (every interface) on port 3741, so phones on the local Wi-Fi reach the admin (owner's decision after 2.0.0). The admin shows the full address to type.
+- No PIN (owner's decision after 2.0.0): anyone on the synagogue's Wi-Fi can edit times and pictures. 2.0.0 had a PIN; 2.0.1 removed it, and settings schema 2 drops its fields.
 - Local Electron windows receive a per-launch token through the preload script.
 - Display routes are read-only.
 - Plain HTTP on the synagogue Wi-Fi is an accepted, documented risk.
@@ -266,7 +267,7 @@ One session per step, each on its own branch and PR into `v2`.
 ## 9. Admin UI rules
 
 - Mobile first: usable from 320 px wide with no horizontal scrolling; the same cards laid out in a grid on desktop.
-- One card per topic: Weekday times, Shabbat times, Pictures, Phone access, then Updates (step 8). See §9.2.
+- One card per topic: Weekday times, Shabbat times, Pictures, plus the update banner (step 8). See §9.2.
 - Touch targets ≥ 44 px, native time inputs, inline validation, one Save button per card, disabled until something changes.
 - Immediate toast feedback (saved / error with the reason); never a page reload.
 - Slides: v1's four slots, each with a thumbnail, the file name, a "show" switch and a button to choose or replace the file.
@@ -285,7 +286,7 @@ One session per step, each on its own branch and PR into `v2`.
 
 ### 9.2 Admin as built (step 6, simplified with the owner)
 
-After step 6 the owner asked for exactly v1's features, with a better, mobile-friendly UI (2026-11-26). The admin therefore has four cards:
+After step 6 the owner asked for exactly v1's features, with a better, mobile-friendly UI (2026-11-26). The admin therefore has these cards:
 
 - **Weekday times** and **Shabbat times**: native time inputs, one Save button each.
 - **Pictures:**
@@ -293,7 +294,7 @@ After step 6 the owner asked for exactly v1's features, with a better, mobile-fr
   - A PDF contributes its first page, as in v1, rendered to JPEG in a Web Worker: pdf.js legacy build, `OffscreenCanvas`, pdf.js parsing in its own nested worker. The original file is kept.
   - Replacing a slot's file keeps whether it was shown. There is no ordering and no deletion: slots show in order 1–4, as in v1.
   - The seconds per picture (3–300) are saved with their own button.
-- **Phone access:** set a 4–8 digit PIN, switch access on, then type the full address shown (e.g. `http://192.168.1.20:3741/admin`) in the phone's browser. There is no QR code.
+- **Phone address** (simplified again after 2.0.0): no card, no PIN, no switch. The address to type on a phone (e.g. `http://192.168.1.20:3741/admin`) is shown under the admin's title.
 
 Not in the admin, by decision: location (Jerusalem with v1's coordinates stays fixed, but remains configurable in `settings.json`), layout choice and options, preview, slide ordering.
 
@@ -301,11 +302,7 @@ Unchanged from step 6:
 
 - The admin state is pushed by `admin.onState` (SSE).
 - Each card keeps a draft that follows the server until edited, and results show as toasts.
-- **Access** (plan §4.4):
-  - Local windows present the launch token and are always admin.
-  - Phones sign in with the PIN (scrypt), which sets an `HttpOnly`, `SameSite=Strict` session cookie valid for 30 days.
-  - Five wrong PINs lock a device out for 15 minutes, and a PIN change signs every phone out.
-- Phone access restarts the server on `0.0.0.0` (or `127.0.0.1`) on port 3741. Windows will ask once to allow the app through its firewall.
+- **Access:** the server listens on `0.0.0.0` on port 3741, and every admin procedure is open to anyone who reaches it (no PIN, owner's decision). Windows will ask once to allow the app through its firewall. The app's own windows still present the launch token, which only `desktop.showAdmin` requires.
 - CSP: scripts from the app only (plus WebAssembly for pdf.js), inline styles allowed for React Aria.
 
 ## 10. Release (step 9, decided with the owner on 2026-11-26)

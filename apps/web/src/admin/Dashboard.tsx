@@ -1,52 +1,40 @@
 import { useEffect, useState } from 'react';
 
-import { strings, type ClientKind } from '@menouchat/shared';
+import { strings } from '@menouchat/shared';
 
 import { useApiClient } from '../api/api-client.ts';
-import { Button } from '../components/Button.tsx';
-import { PhoneAccessCard } from './cards/PhoneAccessCard.tsx';
 import { ShabbatTimesCard, WeekdayTimesCard } from './cards/ScheduleCards.tsx';
 import { SlidesCard } from './cards/SlidesCard.tsx';
+import { PhoneAddress } from './PhoneAddress.tsx';
 import { UpdateBanner } from './UpdateBanner.tsx';
 import { useAdminState } from './use-admin-state.ts';
 
-function useServerInfo(): { version: string; client: ClientKind } | undefined {
+function useVersion(): string | undefined {
   const api = useApiClient();
-  const [info, setInfo] = useState<{ version: string; client: ClientKind }>();
+  const [version, setVersion] = useState<string>();
   useEffect(() => {
-    void api.health.query().then(setInfo, () => undefined);
+    void api.health.query().then(
+      (health) => {
+        setVersion(health.version);
+      },
+      () => undefined,
+    );
   }, [api]);
-  return info;
+  return version;
 }
 
 /** Every card on one page: one column on a phone, a grid on wider screens (plan §9). */
-export function Dashboard({ onSignedOut }: { onSignedOut: () => void }) {
-  const api = useApiClient();
-  const { state, reconnecting, unauthorized } = useAdminState();
-  const info = useServerInfo();
-
-  useEffect(() => {
-    if (unauthorized) {
-      onSignedOut();
-    }
-  }, [unauthorized, onSignedOut]);
+export function Dashboard() {
+  const { state, reconnecting } = useAdminState();
+  const version = useVersion();
 
   return (
     <main className="mx-auto grid max-w-5xl gap-4 px-4 py-4 sm:py-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="grid gap-1">
         <h1 className="text-2xl font-semibold">
           {strings.appName} · {strings.admin.title}
         </h1>
-        {info?.client === 'remote' && (
-          <Button
-            variant="secondary"
-            onPress={() => {
-              void api.auth.logout.mutate().then(onSignedOut);
-            }}
-          >
-            {strings.admin.login.logout}
-          </Button>
-        )}
+        {state !== undefined && <PhoneAddress urls={state.phoneUrls} />}
       </header>
 
       {reconnecting && (
@@ -63,14 +51,15 @@ export function Dashboard({ onSignedOut }: { onSignedOut: () => void }) {
         <div className="grid items-start gap-4 md:grid-cols-2">
           <WeekdayTimesCard schedule={state.schedule} />
           <ShabbatTimesCard schedule={state.schedule} />
-          <SlidesCard slides={state.slides} slideIntervalSec={state.slideIntervalSec} />
-          <PhoneAccessCard access={state.phoneAccess} />
+          <div className="md:col-span-2">
+            <SlidesCard slides={state.slides} slideIntervalSec={state.slideIntervalSec} />
+          </div>
         </div>
       )}
 
-      {info !== undefined && (
+      {version !== undefined && (
         <footer className="text-center text-sm text-text-muted" dir="ltr">
-          v{info.version}
+          v{version}
         </footer>
       )}
     </main>

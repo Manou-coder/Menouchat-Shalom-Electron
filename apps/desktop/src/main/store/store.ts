@@ -1,5 +1,6 @@
 import {
   createDefaultDisplays,
+  DEFAULT_HTTP_PORT,
   createDefaultSchedule,
   createDefaultSettings,
   createDefaultSlides,
@@ -17,7 +18,12 @@ import {
   type Slides,
 } from '@menouchat/shared';
 
-import { createDocumentStore, type DocumentStore, type StoreLogger } from './document-store.ts';
+import {
+  createDocumentStore,
+  type DocumentStore,
+  type Migration,
+  type StoreLogger,
+} from './document-store.ts';
 
 /** The only way the app reads or writes its data (plan §4.7). */
 export interface Store {
@@ -27,7 +33,19 @@ export interface Store {
   displays: DocumentStore<Displays>;
 }
 
-/** `dataDirectory` is `userData/data`. Every document is at schema version 1: no migrations yet. */
+/**
+ * Settings 1 → 2 (2.0.0 → 2.0.1): phone access became always on without a PIN, so the
+ * switch and the PIN hash go; the port stays.
+ */
+export const migrateSettingsFrom1: Migration = ({ lan, ...rest }) => {
+  const port =
+    typeof lan === 'object' && lan !== null && 'port' in lan && typeof lan.port === 'number'
+      ? lan.port
+      : DEFAULT_HTTP_PORT;
+  return { ...rest, lan: { port } };
+};
+
+/** `dataDirectory` is `userData/data`. */
 export function createStore(dataDirectory: string, logger: StoreLogger): Store {
   return {
     settings: createDocumentStore(
@@ -36,7 +54,7 @@ export function createStore(dataDirectory: string, logger: StoreLogger): Store {
         fileName: 'settings.json',
         schema: settingsSchema,
         currentVersion: SETTINGS_SCHEMA_VERSION,
-        migrations: {},
+        migrations: { 1: migrateSettingsFrom1 },
         createDefault: createDefaultSettings,
       },
       logger,

@@ -4,11 +4,8 @@ import { join } from 'node:path';
 
 import type { FastifyInstance } from 'fastify';
 
-import { hashPin, verifyPin } from '../auth/pin-hash.ts';
-import { createLoginThrottle, createSessionStore } from '../auth/sessions.ts';
 import { createServer } from '../server/create-server.ts';
 import { createAdminService, type AdminService } from '../services/admin-service.ts';
-import { createAuthService } from '../services/auth-service.ts';
 import { createChangeHub, type ChangeHub } from '../services/change-hub.ts';
 import { createDisplayStateService } from '../services/display-state-service.ts';
 import { createStore, type Store } from '../store/store.ts';
@@ -22,8 +19,6 @@ export interface TestApp {
   admin: AdminService;
   changes: ChangeHub;
   slidesRoot: string;
-  /** Every phone-access switch the admin service asked the main process to apply. */
-  phoneAccessChanges: boolean[];
   /** Calls the API made to the desktop app (open admin, install update). */
   desktopCalls: string[];
   dispose(): Promise<void>;
@@ -41,20 +36,12 @@ export async function createTestApp(
   });
   const changes = createChangeHub();
   const now = options.now ?? Date.now;
-  const sessions = createSessionStore(now);
-  const phoneAccessChanges: boolean[] = [];
   const desktopCalls: string[] = [];
 
   const admin = createAdminService({
     store,
     slidesRoot,
     changes,
-    hashPin,
-    verifyPin,
-    onPinChanged: () => {
-      sessions.revokeAll();
-    },
-    onPhoneAccessChanged: (enabled) => phoneAccessChanges.push(enabled),
     phoneUrls: (port) => [`http://192.168.1.10:${String(port)}/admin`],
     updateStatus: () => ({ status: 'ready', version: '2.0.1' }),
   });
@@ -73,12 +60,6 @@ export async function createTestApp(
       changes,
     }),
     admin,
-    auth: createAuthService({
-      sessions,
-      throttle: createLoginThrottle(now),
-      verifyPin: (pin) => admin.verifyPin(pin),
-      isPinSet: async () => (await store.settings.read()).lan.pinHash !== null,
-    }),
     desktop: {
       showAdmin: () => desktopCalls.push('showAdmin'),
       installUpdate: () => desktopCalls.push('installUpdate'),
@@ -94,7 +75,6 @@ export async function createTestApp(
     admin,
     changes,
     slidesRoot,
-    phoneAccessChanges,
     desktopCalls,
     async dispose() {
       await server.close();

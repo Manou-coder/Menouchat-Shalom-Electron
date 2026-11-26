@@ -22,8 +22,6 @@ export function errorMessage(error: unknown): string {
     case 'BAD_REQUEST':
     case 'PRECONDITION_FAILED':
       return messages.invalid;
-    case 'UNAUTHORIZED':
-      return messages.unauthorized;
     case 'NOT_FOUND':
       return messages.notFound;
     case undefined:
