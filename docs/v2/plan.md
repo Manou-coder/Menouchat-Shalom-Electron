@@ -2,7 +2,7 @@
 
 This document is the project memory for the v2 rewrite. Each work session picks the next unchecked step in [§7](#7-steps), does it on a branch off `v2`, and checks the box in the same PR.
 
-Status: plan approved on 2026-11-26. Steps 1–6 (skeleton, reference tests, zmanim calculation, storage, display, admin) done.
+Status: plan approved on 2026-11-26. Steps 1–7 (skeleton, reference tests, zmanim calculation, storage, display, admin, v1 import) done.
 
 ## 1. Goals
 
@@ -203,6 +203,17 @@ Runs on first launch when `userData/data/` does not exist.
 - Location: Jerusalem with the v1 coordinates (31.770707215675863, 35.18218638465854, elevation 800, `Asia/Jerusalem`).
 - A `migration.log` records what was imported. v1 (portable zip) is removed by hand; v2 installs through NSIS.
 
+Implemented in step 7 (`apps/desktop/src/main/v1-import/`), run at startup before anything touches `userData/data/`:
+
+- Everything is written to `data.importing/` and renamed to `data/` at the end, so an interrupted import is redone on the next launch. Leftover `slides/` folders without `data/` are removed first.
+- v1 values that cannot be used are replaced by the defaults and noted in `data/migration.log`:
+  - times that are not `H:MM`, `HH:MM` or `HH:MM:SS`;
+  - an empty or out-of-range `secInterval`, clamped to 3–300;
+  - unreadable or missing documents;
+  - slot images that are missing or not JPEG.
+- Slide titles are the v1 file names without extension. A slot with no name gets "שקופית N".
+- Tested against `tests/fixtures/v1-userdata/`, a copy of a real v1 `userData` (its `db/` byte for byte); the tests also check that v1's files are unchanged.
+
 ## 6. Reference tests
 
 - `tests/reference/` (package `@menouchat/reference-tests`) holds verbatim copies of v1's `cities/zmanim.js` and `hebcal3.js` from `main` (commit `31850dd`), with the library versions v1 shipped: `kosher-zmanim` 0.8.2 and `@hebcal/core` 3.50.4.
@@ -229,7 +240,7 @@ One session per step, each on its own branch and PR into `v2`.
 - [x] **4. Storage** — zod schemas, atomic writes, `.bak`, defaults, schema migrations, tests.
 - [x] **5. Display** — layout registry, `DisplayState` + SSE subscription, `classic-portrait` layout faithful to v1, clock, multi-page slideshow, kiosk window.
 - [x] **6. Admin** — times, slides (pdf.js worker, all pages, original kept, ordering, enable/disable), location, "Screens" card (layout, options, live preview), phone access (LAN listening, PIN, QR code); UI rules in §9.
-- [ ] **7. v1 import** — §5, tested against a copy of a real v1 `userData`.
+- [x] **7. v1 import** — §5, tested against a copy of a real v1 `userData`.
 - [ ] **8. Reliability and auto-update** — start at login, crash recovery, sleep prevention, `electron-updater`, "Check for updates".
 - [ ] **9. Release workflow** — Windows NSIS build with `latest.yml`; version read from `package.json` (2.0.0) instead of always bumping the patch; v2.0.0 published when `v2` is merged into `main`; manual pre-release builds from `v2` for testing on the synagogue PC.
 

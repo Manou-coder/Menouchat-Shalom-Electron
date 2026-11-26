@@ -117,6 +117,7 @@ export const strings = {
   defaults: {
     locationName: 'ירושלים',
     mainDisplayName: 'מסך ראשי',
+    importedSlideTitle: (slot: number) => `שקופית ${String(slot)}`,
   },
   desktop: {
     startupFailed: 'הפעלת התוכנה נכשלה',

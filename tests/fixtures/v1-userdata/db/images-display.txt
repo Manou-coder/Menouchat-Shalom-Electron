@@ -1,0 +1,8 @@
+{
+  "imageDisplay": [
+    "ian-dooley-d1UPkiFd04A-unsplash.jpg",
+    "test-image2.pdf",
+    "test-image3.pdf",
+    "test-image4.pdf"
+  ]
+}

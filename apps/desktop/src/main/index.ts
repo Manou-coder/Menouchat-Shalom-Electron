@@ -20,6 +20,7 @@ import { createChangeHub } from './services/change-hub.ts';
 import { createDisplayStateService } from './services/display-state-service.ts';
 import { localNetworkAddresses } from './services/network-addresses.ts';
 import { createStore } from './store/store.ts';
+import { importV1IfNeeded } from './v1-import/import-v1.ts';
 import { waitForUrl } from './wait-for-url.ts';
 import { createWindowManager } from './window.ts';
 
@@ -49,6 +50,10 @@ async function start(): Promise<void> {
   });
 
   const userData = app.getPath('userData');
+  // Must run before anything reads or writes userData/data (plan §5).
+  const imported = await importV1IfNeeded(userData, log, () => new Date());
+  log.info(`v1 import: ${imported.status}`);
+
   const slidesRoot = join(userData, 'slides');
   const store = createStore(join(userData, 'data'), log);
   const changes = createChangeHub();
