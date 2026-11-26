@@ -1,0 +1,9 @@
+packages:
+  - packages/*
+  - apps/*
+  - tests/*
+
+# Electron downloads its binary in a postinstall script; nothing else needs to run scripts.
+allowBuilds:
+  electron: true
+  electron-winstaller: false

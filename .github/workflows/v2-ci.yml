@@ -1,0 +1,60 @@
+name: v2 CI
+
+on:
+  pull_request:
+    branches: [v2]
+  push:
+    branches: [v2]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v2-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    env:
+      # The Electron binary is not needed to type-check, lint, test or bundle.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      # Re-runs v1 over every captured day (~25 s): the fixture must match it byte for byte.
+      - run: pnpm --filter @menouchat/reference-tests check
+      - run: pnpm build
+
+  package:
+    name: Windows installer
+    needs: checks
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: menouchat-chalom-setup
+          # Also proves the files the release (and electron-updater) need are produced.
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.exe.blockmap
+            apps/desktop/release/latest.yml
+          if-no-files-found: error
+          retention-days: 7

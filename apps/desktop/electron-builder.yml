@@ -1,0 +1,22 @@
+appId: com.menouchat.chalom
+productName: Menouchat Chalom
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+extraResources:
+  - from: ../web/dist
+    to: web
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  artifactName: ${name}-setup-${version}.${ext}
+# Where electron-updater looks for new versions (written into app-update.yml); releases
+# are published by the release workflow (plan step 9), never by `pnpm dist`.
+publish:
+  provider: github
+  owner: Manou-coder
+  repo: Menouchat-Shalom-Electron

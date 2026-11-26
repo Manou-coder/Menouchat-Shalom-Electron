@@ -1,0 +1,23 @@
+{
+  "name": "@menouchat/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure calculations: zmanim, candle lighting, daf yomi, parasha, Hebrew date. No I/O.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hebcal/core": "3.50.4",
+    "kosher-zmanim": "0.8.2",
+    "luxon": "1.28.1"
+  },
+  "devDependencies": {
+    "@menouchat/reference-tests": "workspace:*",
+    "@types/luxon": "~1.27.1",
+    "@types/node": "~24.19.3"
+  }
+}

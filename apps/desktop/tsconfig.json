@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "electron-vite/node"],
+    // @hebcal/core 3.50.4 has no `types` condition in its `exports` (see packages/core).
+    "paths": {
+      "@hebcal/core": ["../../packages/core/node_modules/@hebcal/core/hebcal.d.ts"]
+    }
+  },
+  "include": ["src", "scripts", "electron.vite.config.ts"]
+}

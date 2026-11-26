@@ -1,0 +1,175 @@
+import { randomUUID } from 'node:crypto';
+
+import {
+  MAIN_DISPLAY_ID,
+  type AdminState,
+  type ScheduleInput,
+  type Slide,
+  type SlideSlot,
+  type UpdateStatus,
+} from '@menouchat/shared';
+
+import { AdminError } from '../api/errors.ts';
+import type { SlideUpload } from '../api/slide-upload.ts';
+import type { Store } from '../store/store.ts';
+import type { ChangeHub } from './change-hub.ts';
+import { removeSlideFiles, saveSlideFiles } from './slide-files.ts';
+
+/** The admin state has no daily rollover; this only bounds how long a stream sleeps. */
+const IDLE_REFRESH_MS = 3_600_000;
+
+export interface AdminServiceDependencies {
+  store: Store;
+  slidesRoot: string;
+  changes: ChangeHub;
+  hashPin: (pin: string) => Promise<string>;
+  verifyPin: (pin: string, hash: string) => Promise<boolean>;
+  /** Called after the PIN changes, so every phone signs in again. */
+  onPinChanged: () => void;
+  /** Applies phone access: listen on the local network or on this PC only. */
+  onPhoneAccessChanged: (enabled: boolean) => void;
+  /** Full admin addresses on this PC's local network, for the listening port. */
+  phoneUrls: (port: number) => string[];
+  updateStatus: () => UpdateStatus;
+}
+
+export interface AdminService {
+  getState(): Promise<AdminState>;
+  watch(signal: AbortSignal): AsyncGenerator<AdminState>;
+  updateSchedule(input: ScheduleInput): Promise<void>;
+  /** Puts a new picture in a slot, replacing what was there (as in v1). */
+  uploadSlide(upload: SlideUpload): Promise<Slide>;
+  setSlideEnabled(slot: SlideSlot, enabled: boolean): Promise<void>;
+  setSlideInterval(seconds: number): Promise<void>;
+  setPin(pin: string): Promise<void>;
+  setPhoneAccess(enabled: boolean): Promise<void>;
+  verifyPin(pin: string): Promise<boolean>;
+}
+
+export function createAdminService(dependencies: AdminServiceDependencies): AdminService {
+  const { store, changes } = dependencies;
+  // Every change is a read-modify-write of a document; running them one at a time keeps
+  // two quick edits from overwriting each other.
+  let queue: Promise<unknown> = Promise.resolve();
+
+  function exclusive<T>(change: () => Promise<T>): Promise<T> {
+    const result = queue.then(change);
+    queue = result.catch(() => undefined);
+    return result.then((value) => {
+      changes.notify();
+      return value;
+    });
+  }
+
+  async function getState(): Promise<AdminState> {
+    const [settings, schedule, slides, displays] = await Promise.all([
+      store.settings.read(),
+      store.schedule.read(),
+      store.slides.read(),
+      store.displays.read(),
+    ]);
+    const main = displays.displays.find((display) => display.id === MAIN_DISPLAY_ID);
+    return {
+      schedule: { weekday: schedule.weekday, shabbat: schedule.shabbat },
+      slides: slides.slides.toSorted((a, b) => a.slot - b.slot),
+      slideIntervalSec: main?.slideIntervalSec ?? 10,
+      phoneAccess: {
+        enabled: settings.lan.enabled,
+        pinSet: settings.lan.pinHash !== null,
+        urls: settings.lan.enabled ? dependencies.phoneUrls(settings.lan.port) : [],
+      },
+      update: dependencies.updateStatus(),
+    };
+  }
+
+  return {
+    getState,
+
+    async *watch(signal) {
+      while (!signal.aborted) {
+        yield await getState();
+        await changes.wait(IDLE_REFRESH_MS, signal);
+      }
+    },
+
+    updateSchedule: (input) =>
+      exclusive(() => store.schedule.write({ schemaVersion: 1, ...input })),
+
+    uploadSlide: (upload) =>
+      exclusive(async () => {
+        const id = randomUUID();
+        const files = await saveSlideFiles(dependencies.slidesRoot, id, upload);
+        const document = await store.slides.read();
+        const previous = document.slides.find((slide) => slide.slot === upload.slot);
+        // A new picture is shown, as ticking the slot was the point of choosing it.
+        const slide: Slide = {
+          id,
+          slot: upload.slot,
+          title: upload.title,
+          ...files,
+          enabled: previous?.enabled ?? true,
+        };
+        try {
+          await store.slides.write({
+            ...document,
+            slides: [...document.slides.filter((other) => other.slot !== upload.slot), slide],
+          });
+        } catch (error) {
+          await removeSlideFiles(dependencies.slidesRoot, id);
+          throw error;
+        }
+        if (previous !== undefined) {
+          await removeSlideFiles(dependencies.slidesRoot, previous.id);
+        }
+        return slide;
+      }),
+
+    setSlideEnabled: (slot, enabled) =>
+      exclusive(async () => {
+        const document = await store.slides.read();
+        if (!document.slides.some((slide) => slide.slot === slot)) {
+          throw new AdminError('NOT_FOUND', `Slot ${String(slot)} is empty`);
+        }
+        await store.slides.write({
+          ...document,
+          slides: document.slides.map((slide) =>
+            slide.slot === slot ? { ...slide, enabled } : slide,
+          ),
+        });
+      }),
+
+    setSlideInterval: (seconds) =>
+      exclusive(async () => {
+        const document = await store.displays.read();
+        await store.displays.write({
+          ...document,
+          displays: document.displays.map((display) =>
+            display.id === MAIN_DISPLAY_ID ? { ...display, slideIntervalSec: seconds } : display,
+          ),
+        });
+      }),
+
+    setPin: (pin) =>
+      exclusive(async () => {
+        const settings = await store.settings.read();
+        const pinHash = await dependencies.hashPin(pin);
+        await store.settings.write({ ...settings, lan: { ...settings.lan, pinHash } });
+        dependencies.onPinChanged();
+      }),
+
+    setPhoneAccess: (enabled) =>
+      exclusive(async () => {
+        const settings = await store.settings.read();
+        if (enabled && settings.lan.pinHash === null) {
+          throw new AdminError('PRECONDITION_FAILED', 'Set a PIN before enabling phone access');
+        }
+        await store.settings.write({ ...settings, lan: { ...settings.lan, enabled } });
+        dependencies.onPhoneAccessChanged(enabled);
+      }),
+
+    async verifyPin(pin) {
+      const { pinHash } = (await store.settings.read()).lan;
+      return pinHash !== null && dependencies.verifyPin(pin, pinHash);
+    },
+  };
+}

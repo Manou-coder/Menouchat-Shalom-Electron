@@ -1,3 +1,9 @@
-node_modules/*
-!node_modules/gm
-out
+node_modules/
+dist/
+out/
+release/
+coverage/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*

@@ -1,0 +1,24 @@
+{
+  "name": "@menouchat/reference-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Records v1's zmanim and calendar outputs as the fixture v2 must reproduce (plan \u00a76).",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "node src/generate-fixture.ts",
+    "check": "node src/generate-fixture.ts --check",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hebcal/core": "3.50.4",
+    "@sinonjs/fake-timers": "^15.5.0",
+    "kosher-zmanim": "0.8.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "~24.19.2"
+  }
+}
