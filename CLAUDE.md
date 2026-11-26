@@ -32,7 +32,7 @@ Requires Node.js 24+ and pnpm (version pinned in the root `package.json`).
 - `pnpm --filter @menouchat/reference-tests generate` / `check` — regenerate or verify `tests/fixtures/v1-reference.json` from the verbatim v1 code in `tests/reference/v1/` (about 25 s; `check` runs in CI). See plan §6.
 - `pnpm --filter menouchat-chalom preview` — run the production build in Electron, served by the embedded server.
 
-CI: `.github/workflows/v2-ci.yml` runs typecheck, lint, test and build on every PR and push to `v2`, then builds the installer on Windows. `.github/workflows/build.yml` is v1's release workflow on `main`; do not touch it before the release step.
+CI: `.github/workflows/v2-ci.yml` runs typecheck, lint, test and build on every PR and push to `v2`, then builds the installer, blockmap and `latest.yml` on Windows. `.github/workflows/build.yml` is the release workflow, triggered by pushes to `main`.
 
 ## Layout
 
@@ -95,4 +95,4 @@ Stored in Electron `userData/data/` (`settings.json`, `schedule.json`, `slides.j
 
 ## Release
 
-On `main`, every push triggers `.github/workflows/build.yml`, which bumps the version, tags and publishes a GitHub Release to the synagogue PC. Never push to `main` without the owner's explicit approval. Work on `v2` (or branches off it) until the release step of the plan.
+Every push to `main` triggers `.github/workflows/build.yml`. It computes the next version (patch bump, or the newer version in `apps/desktop/package.json`), commits it with `[skip ci]`, tags it, builds the Windows installer and publishes a GitHub Release that installed copies update to (plan §10). Never push to `main` without the owner's explicit approval: it releases to the synagogue PC. Work on `v2` or branches off it until it is merged.

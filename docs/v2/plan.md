@@ -2,7 +2,7 @@
 
 This document is the project memory for the v2 rewrite. Each work session picks the next unchecked step in [§7](#7-steps), does it on a branch off `v2`, and checks the box in the same PR.
 
-Status: plan approved on 2026-11-26. Steps 1–8 done; step 9 (release workflow) remains.
+Status: plan approved on 2026-11-26. All steps done; v2.0.0 is released when `v2` is merged into `main`.
 
 ## 1. Goals
 
@@ -252,7 +252,7 @@ One session per step, each on its own branch and PR into `v2`.
 - [x] **6. Admin** (simplified afterwards with the owner, see §9.2) — times, slides (pdf.js worker, all pages, original kept, ordering, enable/disable), location, "Screens" card (layout, options, live preview), phone access (LAN listening, PIN, QR code); UI rules in §9.
 - [x] **7. v1 import** — §5, tested against a copy of a real v1 `userData`.
 - [x] **8. Reliability and auto-update** (as decided with the owner, see §4.6) — start at login, crash recovery, sleep prevention, `electron-updater`, "Check for updates".
-- [ ] **9. Release workflow** — Windows NSIS build with `latest.yml`; version read from `package.json` (2.0.0) instead of always bumping the patch; v2.0.0 published when `v2` is merged into `main`; manual pre-release builds from `v2` for testing on the synagogue PC.
+- [x] **9. Release workflow** (as decided with the owner, see below) — Windows NSIS build with `latest.yml`; version read from `package.json` (2.0.0) instead of always bumping the patch; v2.0.0 published when `v2` is merged into `main`; manual pre-release builds from `v2` for testing on the synagogue PC.
 
 ## 8. Code quality rules
 
@@ -307,3 +307,12 @@ Unchanged from step 6:
   - Five wrong PINs lock a device out for 15 minutes, and a PIN change signs every phone out.
 - Phone access restarts the server on `0.0.0.0` (or `127.0.0.1`) on port 3741. Windows will ask once to allow the app through its firewall.
 - CSP: scripts from the app only (plus WebAssembly for pdf.js), inline styles allowed for React Aria.
+
+## 10. Release (step 9, decided with the owner on 2026-11-26)
+
+- **Workflow:** `.github/workflows/build.yml` runs on every push to `main`, as in v1.
+  - **Version and tag:** `apps/desktop/scripts/next-version.ts` (tested) bumps the patch of the latest `v*` tag, unless `apps/desktop/package.json` already names a newer version. The first v2 release is therefore 2.0.0 (after v1.1.11), then 2.0.1, 2.0.2… A minor or major bump is made by editing `package.json`. The version is committed to `main` with `[skip ci]` and tagged.
+  - **Build:** on `windows-latest`, `pnpm dist` produces the NSIS installer, its blockmap and `latest.yml`.
+  - **Publish:** a GitHub Release with those three files and generated notes. Installed copies find it through `electron-updater` (§4.6).
+- **Scope:** Windows only, with no Linux build. There are no pre-release or test builds: v2 is installed on the synagogue PC once it is merged and released. The v1 portable zip is removed by hand; v1's data is imported on first launch (§5).
+- **Pull requests:** `v2-ci.yml` checks every PR into `v2`, including building the installer, the blockmap and `latest.yml`.

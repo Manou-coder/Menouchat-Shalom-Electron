@@ -3,8 +3,7 @@ dist/
 out/
 release/
 coverage/
-# Workflows inherited from main; left untouched until the release step.
-.github/workflows/build.yml
+# Workflows inherited from main.
 .github/workflows/claude.yml
 .github/workflows/claude-code-review.yml
 # Verbatim copies of v1 and the generated fixture: never reformatted.
