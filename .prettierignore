@@ -7,3 +7,6 @@ coverage/
 .github/workflows/build.yml
 .github/workflows/claude.yml
 .github/workflows/claude-code-review.yml
+# Verbatim copies of v1 and the generated fixture: never reformatted.
+tests/reference/v1/
+tests/fixtures/

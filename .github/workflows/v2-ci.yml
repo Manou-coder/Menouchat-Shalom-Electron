@@ -31,6 +31,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
+      # Re-runs v1 over every captured day (~25 s): the fixture must match it byte for byte.
+      - run: pnpm --filter @menouchat/reference-tests check
       - run: pnpm build
 
   package:

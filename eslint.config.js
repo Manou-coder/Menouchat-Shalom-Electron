@@ -5,7 +5,14 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  globalIgnores(['**/dist/', '**/out/', '**/release/', '**/coverage/']),
+  globalIgnores([
+    '**/dist/',
+    '**/out/',
+    '**/release/',
+    '**/coverage/',
+    // Verbatim copy of v1, the reference the fixture is generated from.
+    'tests/reference/v1/',
+  ]),
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,

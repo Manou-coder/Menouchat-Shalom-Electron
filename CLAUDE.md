@@ -28,6 +28,7 @@ Requires Node.js 24+ and pnpm (version pinned in the root `package.json`).
 - `pnpm lint` — ESLint (`strict-type-checked`) and `prettier --check`; `pnpm format` rewrites formatting.
 - `pnpm typecheck` — `tsc --noEmit` in every package.
 - `pnpm dist` — build, then produce the Windows NSIS installer in `apps/desktop/release/`. `makensis` only runs on Windows or x64 Linux/macOS; CI builds the installer on `windows-latest`.
+- `pnpm --filter @menouchat/reference-tests generate` / `check` — regenerate or verify `tests/fixtures/v1-reference.json` from the verbatim v1 code in `tests/reference/v1/` (about 25 s; `check` runs in CI). See plan §6.
 - `pnpm --filter menouchat-chalom preview` — run the production build in Electron, served by the embedded server.
 
 CI: `.github/workflows/v2-ci.yml` runs typecheck, lint, test and build on every PR and push to `v2`, then builds the installer on Windows. `.github/workflows/build.yml` is v1's release workflow on `main`; do not touch it before the release step.
@@ -39,7 +40,8 @@ packages/core     pure calculations (zmanim, candle lighting, daf yomi, parasha,
 packages/shared   zod schemas, derived types, API contracts, Hebrew UI strings
 apps/desktop      Electron main + preload: store, services, HTTP server, windows, updates, v1 import
 apps/web          React SPA: /admin, /display/:id, layouts/, workers/
-tests/fixtures    v1 reference outputs
+tests/reference   verbatim v1 code and the fixture generator
+tests/fixtures    v1 reference outputs (generated, never edited)
 docs/v2           rewrite plan
 ```
 
@@ -67,7 +69,7 @@ Stored in Electron `userData/data/` (`settings.json`, `schedule.json`, `slides.j
 
 ## Reference tests
 
-`tests/fixtures/v1-reference.json` records v1 outputs. v2 must match them exactly, except parasha and candle lighting (known v1 bugs, checked against corrected expectations). Never edit fixtures by hand or loosen a comparison to make a test pass.
+`tests/fixtures/v1-reference.json` records v1 outputs. v2 must match them exactly, except candle lighting (known v1 bug, checked against `correctedV1Bugs`). Parasha turned out correct in v1; two display quirks are open questions for step 3 (plan §6.1). Never edit fixtures by hand or loosen a comparison to make a test pass.
 
 ## Conventions
 

@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    // @hebcal/core 3.50.4 declares `typings` but its `exports` map has no `types` condition,
+    // so bundler resolution cannot find its declarations without this mapping.
+    "paths": {
+      "@hebcal/core": ["./node_modules/@hebcal/core/hebcal.d.ts"]
+    }
+  },
+  "include": ["src"]
+}

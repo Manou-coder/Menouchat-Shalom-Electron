@@ -2,7 +2,7 @@
 
 This document is the project memory for the v2 rewrite. Each work session picks the next unchecked step in [§7](#7-steps), does it on a branch off `v2`, and checks the box in the same PR.
 
-Status: plan approved on 2026-11-26. Step 1 (skeleton) done.
+Status: plan approved on 2026-11-26. Steps 1 (skeleton) and 2 (reference tests) done.
 
 ## 1. Goals
 
@@ -19,16 +19,16 @@ Rewrite Menouchat Chalom (synagogue prayer-times display) in strict TypeScript, 
 
 Answers given by the owner on 2026-11-26:
 
-| Question                     | Answer                                       | Consequence                                                        |
-| ---------------------------- | -------------------------------------------- | ------------------------------------------------------------------ |
-| Edit from a phone?           | Yes, on the local Wi-Fi                      | Keep an embedded HTTP server, PIN-protected, mobile-friendly admin |
-| How many places?             | One synagogue, city configurable             | Location lives in settings, Jerusalem by default                   |
-| Screens on the synagogue PC? | One PC, one screen                           | Public display is full screen; admin opens on demand               |
-| Operating system             | Windows                                      | NSIS installer + `electron-updater`                                |
-| v1 calculation bugs (§3.4)   | Fix both                                     | Reference tests flag those two values as known v1 bugs             |
-| Future "several screens"     | Several layouts, chosen from the admin       | Displays and layouts are first-class in the data model from v2.0   |
-| Code style                   | Everything in English, professional quality  | See §8                                                             |
-| Admin UI                     | Clean and simple on desktop and small phones | See §9                                                             |
+| Question                     | Answer                                       | Consequence                                                                                   |
+| ---------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Edit from a phone?           | Yes, on the local Wi-Fi                      | Keep an embedded HTTP server, PIN-protected, mobile-friendly admin                            |
+| How many places?             | One synagogue, city configurable             | Location lives in settings, Jerusalem by default                                              |
+| Screens on the synagogue PC? | One PC, one screen                           | Public display is full screen; admin opens on demand                                          |
+| Operating system             | Windows                                      | NSIS installer + `electron-updater`                                                           |
+| v1 calculation bugs (§3.4)   | Fix both                                     | Reference tests flag candle lighting as a known v1 bug (parasha turned out correct, see §3.4) |
+| Future "several screens"     | Several layouts, chosen from the admin       | Displays and layouts are first-class in the data model from v2.0                              |
+| Code style                   | Everything in English, professional quality  | See §8                                                                                        |
+| Admin UI                     | Clean and simple on desktop and small phones | See §9                                                                                        |
 
 Decisions taken earlier, with their reasons:
 
@@ -90,7 +90,7 @@ Read API: `GET /api/zmanim/{jerusalem,info,zman-chol,zman-shabat,get-reload,chec
 
 ### 3.4 v1 defects not to reproduce
 
-- **Parasha** uses the hard-coded year 5782 (`new Sedra(5782, true)`), so it is wrong in some weeks. **Fixed in v2.**
+- **Parasha** uses the hard-coded year 5782 (`new Sedra(5782, true)`). _Finding from step 2:_ this is harmless for any date from 5782 on, because `Sedra.lookup` in `@hebcal/core` moves on to the following years by itself; the reference test proves v1's parasha equals the one computed for the actual year on every captured day. v2 computes it for the actual year and must match v1 exactly.
 - **Candle lighting** is computed from Saturday's sunset instead of Friday's (about one minute off). **Fixed in v2.**
 - The clock adds a hard-coded 2 hours (`getHours() + 2`); all times are formatted in the PC's time zone rather than the location's.
 - The "original" kept in `files/` is the converted JPEG renamed with the original extension: the real PDF is lost.
@@ -186,18 +186,26 @@ Runs on first launch when `userData/data/` does not exist.
 
 ## 6. Reference tests
 
-- A script loads v1's `cities/zmanim.js` and `hebcal3.js` (copied into `tests/reference/v1/` from `main`) with a faked system date and `TZ=Asia/Jerusalem`.
-- Dates: every day of one full Hebrew year, plus both DST transitions and the main holidays.
-- Output: `tests/fixtures/v1-reference.json` with raw ISO values and the `HH:MM` strings shown on screen.
-- v2's `core` must match every value exactly, except parasha and candle lighting, which are flagged as v1 bugs and checked against corrected expectations (Friday sunset − 40 min; parasha for the actual year).
-- Fixtures are never edited by hand; regenerating them requires a deliberate, reviewed change.
+- `tests/reference/` (package `@menouchat/reference-tests`) holds verbatim copies of v1's `cities/zmanim.js` and `hebcal3.js` from `main` (commit `31850dd`), with the library versions v1 shipped: `kosher-zmanim` 0.8.2 and `@hebcal/core` 3.50.4.
+- `src/generate-fixture.ts` loads them under a fake clock (`@sinonjs/fake-timers`) with `TZ=Asia/Jerusalem`, calls v1's two API functions at noon Israel time for each day, and formats times exactly as the v1 display did (`toLocaleTimeString()` in French, first five characters: **truncated** to the minute, not rounded).
+- Dates: every day of Hebrew years 5787 (leap) and 5788 (common), 12 Sep 2026 – 20 Sep 2028: 740 days, all holidays, four DST transitions (checked by the test).
+- Output: `tests/fixtures/v1-reference.json` (schema in `src/fixture-schema.ts`): per day, the seven daily zmanim, the coming Shabbat's candle lighting, Motzei Shabbat arvit and Rabbeinu Tam, the parasha, daf yomi and Hebrew date, each time with its raw ISO value and its displayed `HH:MM`.
+- v2's `core` must match every value exactly, except candle lighting, which is checked against `correctedV1Bugs.candleLighting` (Friday's sunset − 40 min, computed by v1's own code path with only that defect fixed).
+- Fixtures are never edited by hand. `pnpm --filter @menouchat/reference-tests generate` rewrites the fixture; `… check` fails if it differs from v1's output and runs in CI. Regenerating requires a deliberate, reviewed change.
+
+### 6.1 v1 display quirks found while capturing (to settle in step 3)
+
+The fixture records them as v1 showed them. Step 3 must either reproduce them or, with the owner's approval, list them as corrected like candle lighting:
+
+- **Daf yomi tractate name in English:** v1 replaces the rendered event with its English `desc` and only converts the page number, so the screen shows e.g. `Arachin  י׳` (Latin tractate name, two spaces).
+- **Multi-word parashot joined with commas:** `Array.prototype.toString()` turns `חיי שרה` into `חיי,שרה` (also `אחרי,מות`, `כי,תשא`, `ראש,השנה`, `פסח,שבת,חול,המועד`…).
 
 ## 7. Steps
 
 One session per step, each on its own branch and PR into `v2`.
 
 - [x] **1. Skeleton** — pnpm workspace (`packages/core`, `packages/shared`, `apps/desktop` with electron-vite, `apps/web` with Vite + React), strict TS, electron-builder NSIS, ESLint + Prettier, Vitest, CI running `typecheck`, `lint`, `test`, `build`; minimal tRPC server and one window loading it over `127.0.0.1`. Pick the UI component library (§9).
-- [ ] **2. Reference tests** — capture v1 outputs as described in §6.
+- [x] **2. Reference tests** — capture v1 outputs as described in §6.
 - [ ] **3. Zmanim calculation** — `packages/core` for any location: zmanim, candle lighting, Motzei Shabbat, daf yomi, parasha, Hebrew date; all reference tests green.
 - [ ] **4. Storage** — zod schemas, atomic writes, `.bak`, defaults, schema migrations, tests.
 - [ ] **5. Display** — layout registry, `DisplayState` + SSE subscription, `classic-portrait` layout faithful to v1, clock, multi-page slideshow, kiosk window.
