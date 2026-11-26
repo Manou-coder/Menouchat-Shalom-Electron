@@ -12,7 +12,6 @@ describe('errorMessage', () => {
   it.each([
     ['BAD_REQUEST', strings.admin.errors.invalid],
     ['PRECONDITION_FAILED', strings.admin.errors.invalid],
-    ['UNAUTHORIZED', strings.admin.errors.unauthorized],
     ['NOT_FOUND', strings.admin.errors.notFound],
     ['INTERNAL_SERVER_ERROR', strings.admin.errors.generic],
   ])('explains %s in Hebrew', (code, message) => {

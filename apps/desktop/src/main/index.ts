@@ -7,16 +7,8 @@ import electronUpdater from 'electron-updater';
 
 import { MAIN_DISPLAY_ID, strings, WEB_DEV_SERVER_PORT } from '@menouchat/shared';
 
-import { hashPin, verifyPin } from './auth/pin-hash.ts';
-import { createLoginThrottle, createSessionStore } from './auth/sessions.ts';
 import { createServer } from './server/create-server.ts';
-import {
-  ALL_INTERFACES_HOST,
-  createServerListener,
-  LOOPBACK_HOST,
-} from './server/server-listener.ts';
 import { createAdminService } from './services/admin-service.ts';
-import { createAuthService } from './services/auth-service.ts';
 import { createChangeHub } from './services/change-hub.ts';
 import { createDisplayStateService } from './services/display-state-service.ts';
 import { localNetworkAddresses } from './services/network-addresses.ts';
@@ -27,8 +19,11 @@ import { waitForUrl } from './wait-for-url.ts';
 import { createWindowManager } from './window.ts';
 
 const DEV_SERVER_TIMEOUT_MS = 30_000;
+const LOOPBACK_HOST = '127.0.0.1';
+/** Every interface: phones on the synagogue's Wi-Fi reach the admin (plan §9.2). */
+const ALL_INTERFACES_HOST = '0.0.0.0';
 const ADMIN_SHORTCUT = 'CommandOrControl+Alt+A';
-/** Lets the answer to a request reach the page before the server or the app restarts. */
+/** Lets the answer to a request reach the page before the app restarts. */
 const RESTART_DELAY_MS = 250;
 const UPDATE_CHECK_INTERVAL_MS = 6 * 3_600_000;
 /** A crash this soon after starting is not retried, so a broken start cannot loop. */
@@ -43,8 +38,6 @@ function resolveWebRoot(): string {
     ? join(process.resourcesPath, 'web')
     : join(app.getAppPath(), '..', 'web', 'dist');
 }
-
-const hostFor = (phoneAccess: boolean) => (phoneAccess ? ALL_INTERFACES_HOST : LOOPBACK_HOST);
 
 async function start(): Promise<void> {
   await app.whenReady();
@@ -65,7 +58,6 @@ async function start(): Promise<void> {
   const slidesRoot = join(userData, 'slides');
   const store = createStore(join(userData, 'data'), log);
   const changes = createChangeHub();
-  const sessions = createSessionStore(Date.now);
   const settings = await store.settings.read();
   const { port } = settings.lan;
 
@@ -102,33 +94,9 @@ async function start(): Promise<void> {
     store,
     slidesRoot,
     changes,
-    hashPin,
-    verifyPin,
-    onPinChanged: () => {
-      sessions.revokeAll();
-    },
-    onPhoneAccessChanged: (enabled) => {
-      setTimeout(() => {
-        listener
-          .listen(hostFor(enabled))
-          .then((address) => {
-            log.info(`HTTP server now listening on ${address}`);
-          })
-          .catch((error: unknown) => {
-            log.error('Could not switch phone access:', error);
-          });
-      }, RESTART_DELAY_MS);
-    },
     phoneUrls: (listeningPort) =>
       localNetworkAddresses().map((address) => `http://${address}:${String(listeningPort)}/admin`),
     updateStatus: () => updates.status(),
-  });
-
-  const auth = createAuthService({
-    sessions,
-    throttle: createLoginThrottle(Date.now),
-    verifyPin: (pin) => admin.verifyPin(pin),
-    isPinSet: async () => (await store.settings.read()).lan.pinHash !== null,
   });
 
   // Local windows always use the loopback address, whichever interfaces the server is on.
@@ -144,37 +112,32 @@ async function start(): Promise<void> {
       log.error(`Page crashed, reloading: ${details}`);
     },
   });
-  const listener = createServerListener(
-    () =>
-      createServer({
-        version: app.getVersion(),
-        token,
-        displayStates,
-        admin,
-        auth,
-        desktop: {
-          showAdmin: () => {
-            windows.showAdmin();
-          },
-          installUpdate: () => {
-            setTimeout(() => {
-              updates.installNow();
-            }, RESTART_DELAY_MS);
-          },
-        },
-        slidesRoot,
-        ...(import.meta.env.DEV ? {} : { webRoot: resolveWebRoot() }),
-        onError: (error, path) => {
-          log.error(`API error on ${path ?? 'unknown procedure'}:`, error);
-        },
-      }),
-    port,
-  );
-  const serverUrl = await listener.listen(hostFor(settings.lan.enabled));
-  log.info(`HTTP server listening on ${serverUrl}`);
+  const server = await createServer({
+    version: app.getVersion(),
+    token,
+    displayStates,
+    admin,
+    desktop: {
+      showAdmin: () => {
+        windows.showAdmin();
+      },
+      installUpdate: () => {
+        setTimeout(() => {
+          updates.installNow();
+        }, RESTART_DELAY_MS);
+      },
+    },
+    slidesRoot,
+    ...(import.meta.env.DEV ? {} : { webRoot: resolveWebRoot() }),
+    onError: (error, path) => {
+      log.error(`API error on ${path ?? 'unknown procedure'}:`, error);
+    },
+  });
+  await server.listen({ host: ALL_INTERFACES_HOST, port });
+  log.info(`HTTP server listening on port ${String(port)}, all interfaces`);
 
   app.on('before-quit', () => {
-    void listener.close();
+    void server.close();
   });
 
   if (import.meta.env.DEV) {

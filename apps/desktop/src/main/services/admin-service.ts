@@ -22,12 +22,6 @@ export interface AdminServiceDependencies {
   store: Store;
   slidesRoot: string;
   changes: ChangeHub;
-  hashPin: (pin: string) => Promise<string>;
-  verifyPin: (pin: string, hash: string) => Promise<boolean>;
-  /** Called after the PIN changes, so every phone signs in again. */
-  onPinChanged: () => void;
-  /** Applies phone access: listen on the local network or on this PC only. */
-  onPhoneAccessChanged: (enabled: boolean) => void;
   /** Full admin addresses on this PC's local network, for the listening port. */
   phoneUrls: (port: number) => string[];
   updateStatus: () => UpdateStatus;
@@ -41,9 +35,6 @@ export interface AdminService {
   uploadSlide(upload: SlideUpload): Promise<Slide>;
   setSlideEnabled(slot: SlideSlot, enabled: boolean): Promise<void>;
   setSlideInterval(seconds: number): Promise<void>;
-  setPin(pin: string): Promise<void>;
-  setPhoneAccess(enabled: boolean): Promise<void>;
-  verifyPin(pin: string): Promise<boolean>;
 }
 
 export function createAdminService(dependencies: AdminServiceDependencies): AdminService {
@@ -73,11 +64,7 @@ export function createAdminService(dependencies: AdminServiceDependencies): Admi
       schedule: { weekday: schedule.weekday, shabbat: schedule.shabbat },
       slides: slides.slides.toSorted((a, b) => a.slot - b.slot),
       slideIntervalSec: main?.slideIntervalSec ?? 10,
-      phoneAccess: {
-        enabled: settings.lan.enabled,
-        pinSet: settings.lan.pinHash !== null,
-        urls: settings.lan.enabled ? dependencies.phoneUrls(settings.lan.port) : [],
-      },
+      phoneUrls: dependencies.phoneUrls(settings.lan.port),
       update: dependencies.updateStatus(),
     };
   }
@@ -148,28 +135,5 @@ export function createAdminService(dependencies: AdminServiceDependencies): Admi
           ),
         });
       }),
-
-    setPin: (pin) =>
-      exclusive(async () => {
-        const settings = await store.settings.read();
-        const pinHash = await dependencies.hashPin(pin);
-        await store.settings.write({ ...settings, lan: { ...settings.lan, pinHash } });
-        dependencies.onPinChanged();
-      }),
-
-    setPhoneAccess: (enabled) =>
-      exclusive(async () => {
-        const settings = await store.settings.read();
-        if (enabled && settings.lan.pinHash === null) {
-          throw new AdminError('PRECONDITION_FAILED', 'Set a PIN before enabling phone access');
-        }
-        await store.settings.write({ ...settings, lan: { ...settings.lan, enabled } });
-        dependencies.onPhoneAccessChanged(enabled);
-      }),
-
-    async verifyPin(pin) {
-      const { pinHash } = (await store.settings.read()).lan;
-      return pinHash !== null && dependencies.verifyPin(pin, pinHash);
-    },
   };
 }

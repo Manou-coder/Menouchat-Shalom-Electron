@@ -4,21 +4,10 @@ import { displaySchema } from './persisted/displays.ts';
 import { scheduleSchema } from './persisted/schedule.ts';
 import { slideSchema, slideSlotSchema } from './persisted/slides.ts';
 
-/** The admin PIN: 4 to 8 digits, typed on a phone keypad. */
-export const pinSchema = z.string().regex(/^\d{4,8}$/, 'Expected 4 to 8 digits');
-
 export const scheduleInputSchema = scheduleSchema.omit({ schemaVersion: true });
 export type ScheduleInput = z.infer<typeof scheduleInputSchema>;
 
 export const slideIntervalInputSchema = displaySchema.pick({ slideIntervalSec: true });
-
-export const phoneAccessSchema = z.object({
-  enabled: z.boolean(),
-  pinSet: z.boolean(),
-  /** Full addresses of the admin on this PC's local network, to type on a phone. */
-  urls: z.array(z.string()),
-});
-export type PhoneAccess = z.infer<typeof phoneAccessSchema>;
 
 /** A newer version found on GitHub: downloaded in the background, installed on restart. */
 export const updateStatusSchema = z.discriminatedUnion('status', [
@@ -28,12 +17,13 @@ export const updateStatusSchema = z.discriminatedUnion('status', [
 ]);
 export type UpdateStatus = z.infer<typeof updateStatusSchema>;
 
-/** Everything the admin shows, pushed again after every change. The PIN hash never leaves. */
+/** Everything the admin shows, pushed again after every change. */
 export const adminStateSchema = z.object({
   schedule: scheduleInputSchema,
   slides: z.array(slideSchema),
   slideIntervalSec: displaySchema.shape.slideIntervalSec,
-  phoneAccess: phoneAccessSchema,
+  /** Full addresses of the admin on this PC's local network, to type on a phone. */
+  phoneUrls: z.array(z.string()),
   update: updateStatusSchema,
 });
 export type AdminState = z.infer<typeof adminStateSchema>;

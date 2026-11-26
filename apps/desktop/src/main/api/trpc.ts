@@ -7,12 +7,6 @@ import { AdminError } from './errors.ts';
 export interface RequestContext {
   /** `local` when the caller presented this launch's token: a window of this app. */
   client: ClientKind;
-  /** Network address of the caller, for login throttling. */
-  remoteAddress: string;
-  /** Session id from the cookie, if any; validity is checked by the auth service. */
-  sessionId: string | undefined;
-  /** Sets (or clears, with `null`) the admin session cookie on the response. */
-  setSessionCookie: (sessionId: string | null) => void;
 }
 
 const t = initTRPC.context<RequestContext>().create();

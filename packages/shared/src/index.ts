@@ -1,7 +1,5 @@
 export {
   adminStateSchema,
-  phoneAccessSchema,
-  pinSchema,
   scheduleInputSchema,
   SLIDE_UPLOAD_FIELDS,
   SLIDE_UPLOAD_LIMITS,
@@ -9,7 +7,6 @@ export {
   slideToggleInputSchema,
   updateStatusSchema,
   type AdminState,
-  type PhoneAccess,
   type ScheduleInput,
   type UpdateStatus,
 } from './admin.ts';

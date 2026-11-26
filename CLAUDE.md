@@ -54,7 +54,7 @@ docs/v2           rewrite plan
 - Zmanim are computed on the server and sent as a `DisplayState` snapshot; displays only render and animate.
 - Times are always formatted in the configured location's time zone, never the PC's.
 - A display layout is a React component plus a zod options schema, registered by id. Displays reference layouts by id.
-- The server binds to `127.0.0.1` unless phone access is enabled; admin routes require the PIN session.
+- The server listens on every interface (port 3741) so phones on the synagogue Wi-Fi reach the admin; there is no PIN, by the owner's decision. Only `desktop.*` procedures require the app's own windows (launch token).
 
 ## Workspace notes
 
@@ -72,9 +72,9 @@ A display renders a `DisplayState` pushed by the server (`display.onState`, SSE)
 
 ## Admin and access
 
-- Admin procedures use `adminProcedure` (in `apps/desktop/src/main/api/router.ts`). It lets through local windows, which present the launch token, and phones signed in with the PIN session cookie. Display procedures stay public and read-only.
+- Admin procedures (`adminProcedure` in `apps/desktop/src/main/api/router.ts`) are open to any caller, by the owner's decision. `localProcedure` (the launch token) guards what acts on the PC itself, such as opening the admin window.
 - Business logic lives in `apps/desktop/src/main/services/admin-service.ts`. Every write goes through its queue and wakes the display and admin streams (`ChangeHub.notify()`). Business-rule failures throw `AdminError` (`NOT_FOUND`, `BAD_REQUEST`, `PRECONDITION_FAILED`), which the API turns into the matching status.
-- Admin UI code is in `apps/web/src/admin/`: cards, `useDraft`, `useAction` (toasts), and fields that follow the plan §9 rules. The admin offers exactly v1's features (plan §9.2): times, four slide slots, seconds per slide, phone access. Ask the owner before adding anything to it.
+- Admin UI code is in `apps/web/src/admin/`: cards, `useDraft`, `useAction` (toasts), and fields that follow the plan §9 rules. The admin offers exactly v1's features (plan §9.2): times, four slide slots, seconds per slide, and the phone address under its title. Ask the owner before adding anything to it.
 - `pnpm dev` writes to this machine's real `userData` as soon as you save in the admin. Delete `data/` and `slides/` there to get back to a first launch.
 
 ## Data

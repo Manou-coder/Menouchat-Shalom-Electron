@@ -8,12 +8,10 @@ import {
   createAppRouter,
   type AdminApi,
   type AppRouter,
-  type AuthApi,
   type DesktopApi,
   type DisplayStateApi,
 } from '../api/router.ts';
 import { bearerToken, resolveClientKind } from './client-kind.ts';
-import { readSessionCookie, sessionCookieHeader } from './session-cookie.ts';
 
 export interface ServerOptions {
   version: string;
@@ -21,7 +19,6 @@ export interface ServerOptions {
   token: string;
   displayStates: DisplayStateApi;
   admin: AdminApi;
-  auth: AuthApi;
   desktop: DesktopApi;
   /** `userData/slides`, served read-only under `/slides`. */
   slidesRoot: string;
@@ -59,24 +56,18 @@ export async function createServer(options: ServerOptions): Promise<FastifyInsta
       version: options.version,
       displayStates: options.displayStates,
       admin: options.admin,
-      auth: options.auth,
       desktop: options.desktop,
     }),
-    createContext: ({ req, res, info }) => ({
+    createContext: ({ req, info }) => ({
       // Server-sent events cannot carry headers, so subscriptions pass the token as a
       // connection parameter instead.
       client: resolveClientKind(
         bearerToken(req.headers.authorization) ?? info.connectionParams?.['token'],
         options.token,
       ),
-      remoteAddress: req.ip,
-      sessionId: readSessionCookie(req.headers.cookie),
-      setSessionCookie: (sessionId) => {
-        void res.header('Set-Cookie', sessionCookieHeader(sessionId));
-      },
     }),
     onError: ({ error, path }) => {
-      // Refused PINs, unknown displays and the like are expected answers, not faults.
+      // Unknown displays, invalid input and the like are expected answers, not faults.
       if (error.code === 'INTERNAL_SERVER_ERROR') {
         options.onError(error, path);
       }

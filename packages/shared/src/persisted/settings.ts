@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { DEFAULT_HTTP_PORT } from '../network.ts';
 import { strings } from '../strings.ts';
 
-export const SETTINGS_SCHEMA_VERSION = 1;
+/** 2 since 2.0.1: phone access is always on, without a PIN (owner's decision). */
+export const SETTINGS_SCHEMA_VERSION = 2;
 
 export const locationSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -21,11 +22,9 @@ export const settingsSchema = z.object({
   location: locationSchema,
   candleLightingMinutes: z.number().int().min(0).max(120),
   motzashArvitOffsetMinutes: z.number().int().min(0).max(120),
+  /** The server listens on every interface, so phones on the local Wi-Fi reach the admin. */
   lan: z.object({
-    enabled: z.boolean(),
     port: z.number().int().min(1024).max(65535),
-    /** scrypt hash of the admin PIN; `null` until the owner sets one. */
-    pinHash: z.string().min(1).nullable(),
   }),
 });
 
@@ -54,6 +53,6 @@ export function createDefaultSettings(): Settings {
     },
     candleLightingMinutes: 40,
     motzashArvitOffsetMinutes: 1,
-    lan: { enabled: false, port: DEFAULT_HTTP_PORT, pinHash: null },
+    lan: { port: DEFAULT_HTTP_PORT },
   };
 }

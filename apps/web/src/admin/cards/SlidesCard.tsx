@@ -115,7 +115,7 @@ export function SlidesCard({
   return (
     <Card title={labels.title}>
       <p className="text-sm text-text-muted">{labels.accepted}</p>
-      <ul className="grid gap-2">
+      <ul className="grid gap-2 md:grid-cols-2">
         {SLIDE_SLOTS.map((slot) => (
           <SlotRow key={slot} slot={slot} slide={slides.find((slide) => slide.slot === slot)} />
         ))}

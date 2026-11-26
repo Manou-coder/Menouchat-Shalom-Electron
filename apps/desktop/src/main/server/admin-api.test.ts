@@ -21,35 +21,18 @@ afterEach(async () => {
   await app.dispose();
 });
 
-interface ClientOptions {
-  token?: string;
-  cookie?: string;
-  onSetCookie?: (value: string) => void;
-}
-
-function client({ token, cookie, onSetCookie }: ClientOptions = {}) {
-  const url = `${baseUrl}/trpc`;
+function client(token?: string) {
   return createTRPCClient<AppRouter>({
     links: [
       httpLink({
-        url,
-        headers: {
-          ...(token === undefined ? {} : { authorization: `Bearer ${token}` }),
-          ...(cookie === undefined ? {} : { cookie }),
-        },
-        fetch: async (input, init) => {
-          // httpLink always calls with the procedure URL as a string.
-          const response = await fetch(input as string, init as RequestInit | undefined);
-          const setCookie = response.headers.get('set-cookie');
-          if (setCookie !== null) onSetCookie?.(setCookie);
-          return response;
-        },
+        url: `${baseUrl}/trpc`,
+        headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
       }),
     ],
   });
 }
 
-const local = () => client({ token: TEST_TOKEN });
+const local = () => client(TEST_TOKEN);
 
 async function errorCode(promise: Promise<unknown>): Promise<string | undefined> {
   try {
@@ -84,65 +67,22 @@ function uploadForm(
 }
 
 describe('admin access', () => {
-  it('refuses callers that are neither a local window nor signed in', async () => {
-    await expect(errorCode(client().admin.state.query())).resolves.toBe('UNAUTHORIZED');
-    await expect(
-      errorCode(client({ token: 'wrong'.padEnd(43, 'x') }).admin.state.query()),
-    ).resolves.toBe('UNAUTHORIZED');
-  });
-
-  it('lets local windows in without a PIN', async () => {
-    const state = await local().admin.state.query();
-    expect(state.phoneAccess).toEqual({ enabled: false, pinSet: false, urls: [] });
-    await expect(local().auth.status.query()).resolves.toEqual({ signedIn: true, pinSet: false });
-  });
-
-  it('signs a phone in with the PIN and out again', async () => {
-    await local().admin.phone.setPin.mutate({ pin: '2580' });
-    let cookie = '';
-    const phone = client({ onSetCookie: (value) => (cookie = value.split(';')[0] ?? '') });
-
-    await expect(errorCode(phone.auth.login.mutate({ pin: '1111' }))).resolves.toBe('UNAUTHORIZED');
-    await phone.auth.login.mutate({ pin: '2580' });
-    expect(cookie).toMatch(/^menouchat_session=[\w-]{43}$/);
-
-    const signedIn = client({ cookie });
-    await expect(signedIn.auth.status.query()).resolves.toEqual({ signedIn: true, pinSet: true });
-    await expect(signedIn.admin.state.query()).resolves.toMatchObject({ slides: [] });
-
-    await signedIn.auth.logout.mutate();
-    await expect(errorCode(signedIn.admin.state.query())).resolves.toBe('UNAUTHORIZED');
-  });
-
-  it('signs every phone out when the PIN changes', async () => {
-    await local().admin.phone.setPin.mutate({ pin: '2580' });
-    let cookie = '';
-    await client({
-      onSetCookie: (value) => (cookie = value.split(';')[0] ?? ''),
-    }).auth.login.mutate({
-      pin: '2580',
-    });
-    await local().admin.phone.setPin.mutate({ pin: '1357' });
-    await expect(errorCode(client({ cookie }).admin.state.query())).resolves.toBe('UNAUTHORIZED');
-  });
-
-  it('locks a device out after five wrong PINs', async () => {
-    await local().admin.phone.setPin.mutate({ pin: '2580' });
+  it("lets any device on the network edit, without a PIN (owner's decision)", async () => {
     const phone = client();
-    for (let attempt = 0; attempt < 5; attempt++) {
-      await expect(errorCode(phone.auth.login.mutate({ pin: '0000' }))).resolves.toBe(
-        'UNAUTHORIZED',
-      );
-    }
-    await expect(errorCode(phone.auth.login.mutate({ pin: '2580' }))).resolves.toBe(
-      'TOO_MANY_REQUESTS',
-    );
+    const { schedule } = await phone.admin.state.query();
+    await phone.admin.updateSchedule.mutate({
+      ...schedule,
+      weekday: { ...schedule.weekday, arvit: '20:30' },
+    });
+    await expect(local().admin.state.query()).resolves.toMatchObject({
+      schedule: { weekday: { arvit: '20:30' } },
+    });
   });
 
-  it('rejects PINs that are not 4 to 8 digits', async () => {
-    await expect(errorCode(local().admin.phone.setPin.mutate({ pin: '12a4' }))).resolves.toBe(
-      'BAD_REQUEST',
-    );
+  it('shows the full address to type on a phone', async () => {
+    await expect(local().admin.state.query()).resolves.toMatchObject({
+      phoneUrls: ['http://192.168.1.10:3741/admin'],
+    });
   });
 });
 
@@ -157,25 +97,8 @@ describe('desktop actions', () => {
     await expect(local().admin.state.query()).resolves.toMatchObject({
       update: { status: 'ready', version: '2.0.1' },
     });
-    await expect(errorCode(client().admin.installUpdate.mutate())).resolves.toBe('UNAUTHORIZED');
     await local().admin.installUpdate.mutate();
     expect(app.desktopCalls).toEqual(['installUpdate']);
-  });
-});
-
-describe('phone access', () => {
-  it('requires a PIN first, then asks the main process to listen on the network', async () => {
-    await expect(errorCode(local().admin.phone.setEnabled.mutate({ enabled: true }))).resolves.toBe(
-      'PRECONDITION_FAILED',
-    );
-    expect(app.phoneAccessChanges).toEqual([]);
-
-    await local().admin.phone.setPin.mutate({ pin: '2580' });
-    await local().admin.phone.setEnabled.mutate({ enabled: true });
-    expect(app.phoneAccessChanges).toEqual([true]);
-    await expect(local().admin.state.query()).resolves.toMatchObject({
-      phoneAccess: { enabled: true, pinSet: true, urls: ['http://192.168.1.10:3741/admin'] },
-    });
   });
 });
 
@@ -271,12 +194,6 @@ describe('slides', () => {
       errorCode(local().admin.slides.setEnabled.mutate({ slot: 1, enabled: true })),
     ).resolves.toBe('NOT_FOUND');
   });
-
-  it('does not accept uploads from anonymous callers', async () => {
-    await expect(errorCode(client().admin.slides.upload.mutate(uploadForm()))).resolves.toBe(
-      'UNAUTHORIZED',
-    );
-  });
 });
 
 /** Reads a server-sent event stream until `done` accepts what has arrived. */
@@ -328,13 +245,5 @@ describe('admin state stream', () => {
     );
     expect(text).toContain('"arvit":"20:10"');
     expect(text).toContain('"arvit":"20:30"');
-  });
-
-  it('refuses the stream to anonymous callers', async () => {
-    const text = await readStream(adminStreamPath(), (received) =>
-      received.includes('UNAUTHORIZED'),
-    );
-    expect(text).toContain('UNAUTHORIZED');
-    expect(text).not.toContain('"schedule"');
   });
 });
