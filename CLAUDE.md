@@ -1,79 +1,68 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working in this repository.
 
 ## Project
 
-Desktop app that displays Jewish prayer times (zmanim) for a synagogue, packaged with Electron. An Express server (port 3000) serves both an admin UI and a public display UI; Electron opens two `BrowserWindow`s pointing at `http://localhost:3000` (admin) and `http://localhost:3000/shoul` (public display).
+Menouchat Chalom displays a synagogue's prayer times (zmanim), Hebrew calendar information and a slideshow on a full-screen display, with an admin to edit times, slides, location and display layout from the PC or from a phone on the local Wi-Fi.
+
+This branch (`v2`) is a full TypeScript rewrite. **`docs/v2/plan.md` is the project memory**: read it first, take the next unchecked step, and tick it in the same PR. The v1 code (plain JavaScript, Express + Electron Forge) lives on `main` until v2 is merged.
+
+## Stack
+
+- Electron 41+ (`contextIsolation`, `sandbox`, no `nodeIntegration`), built with electron-vite, packaged with electron-builder (Windows NSIS), updated with `electron-updater` from GitHub Releases.
+- TypeScript strict everywhere; React + Vite for the web app; zod for every schema; tRPC v11 on Fastify, SSE subscriptions for live updates.
+- `kosher-zmanim` and `@hebcal/core` (pinned, see the plan) for calculations.
+- pdf.js in a Web Worker for PDF → JPEG conversion.
+- Vitest, ESLint (`strict-type-checked`), Prettier, pnpm workspace.
 
 ## Commands
 
-- `npm run dev` — run the Express server standalone with nodemon (fastest loop when working on routes/controllers/views; no Electron shell).
-- `npm start` — launch the full Electron app via `electron-forge start` (this also boots the Express server through `main.js` → `server.js`).
-- `npm run make` — build distributable installers with `electron-forge make`, then run `postBuild.js` to flatten the output.
-- No test or lint scripts are configured.
+To be confirmed when step 1 (skeleton) lands; update this section then.
 
-## Architecture
+- `pnpm dev` — run the app in development.
+- `pnpm build` — build all packages.
+- `pnpm test` — run Vitest.
+- `pnpm lint` / `pnpm typecheck` — static checks.
+- `pnpm dist` — build the Windows installer.
 
-**Electron + Express hybrid.** `main.js` is the Electron entrypoint: it imports `./app` (to share the `path` handle) and `./server` (which starts the HTTP listener as a side effect), then opens two windows against the local server. The server is a normal Express app — nothing is wired through IPC, everything goes over HTTP on `localhost:3000`.
+## Layout
 
-**`main.js` startup sequence.**
-1. `electron-log` is wired up — redirects `console.log/error` to `userData/logs/main.log` in addition to stdout.
-2. `process.env.MENOUCHAT_USER_DATA = app.getPath('userData')` — must be set **before** `require('./server')` so that `paths.js` resolves to the correct runtime directories.
-3. `seedUserData()` copies the default `db/`, `images/`, `files/` bundle directories into `userData` on first launch.
+```
+packages/core     pure calculations (zmanim, candle lighting, daf yomi, parasha, Hebrew date)
+packages/shared   zod schemas, derived types, API contracts, Hebrew UI strings
+apps/desktop      Electron main + preload: store, services, HTTP server, windows, updates, v1 import
+apps/web          React SPA: /admin, /display/:id, layouts/, workers/
+tests/fixtures    v1 reference outputs
+docs/v2           rewrite plan
+```
 
-**Request flow.**
-- `app.js` mounts two routers: `/admin` (HTML form + POST handlers, in `routes/admin.js` → `controllers/admin.js`) and `/api/zmanim` (read-only JSON for the display, in `routes/zmanim.js` → `controllers/zmanim.js`). `/` redirects to `/admin`; `/shoul` serves `views/index-frontend.html`.
-- Static folders `views/`, `public/`, `files/`, `images/`, `db/`, and `/pdfjs` are all exposed directly via `express.static`.
+## Architecture rules
 
-**Path resolution (`paths.js`).** All references to `db/`, `images/`, and `files/` go through `paths.js`, never hardcoded:
-- In **production** (packaged Electron): `MENOUCHAT_USER_DATA` is set by `main.js` → directories resolve to `userData/db`, `userData/images`, `userData/files` (writable, outside the app bundle).
-- In **dev** (`npm run dev`): `MENOUCHAT_USER_DATA` is unset → directories fall back to the repo root (`db/`, `images/`, `files/`).
+- One typed HTTP API (tRPC) for every client: Electron windows, phone, future screens. Do not add IPC channels for business logic; the preload only passes the per-launch token and base URL.
+- `packages/core` is pure: no I/O, no `Date.now()` (the date is a parameter), no Electron or Node APIs.
+- All disk access goes through the `store` module in `apps/desktop`: zod-validated reads, atomic writes (temp file → fsync → rename, `.bak` kept).
+- Zmanim are computed on the server and sent as a `DisplayState` snapshot; displays only render and animate.
+- Times are always formatted in the configured location's time zone, never the PC's.
+- A display layout is a React component plus a zod options schema, registered by id. Displays reference layouts by id.
+- The server binds to `127.0.0.1` unless phone access is enabled; admin routes require the PIN session.
 
-**"Database" is flat JSON files.** `db/*.txt` are JSON documents read/written with `fs.readFileSync` / `fs.writeFileSync` on every request via `DB_DIR` from `paths.js`. Keys are hardcoded in the controllers:
-- `zmanChol.txt`, `zmanShbt.txt` — prayer time tables (weekday / shabbat)
-- `checkbox.txt` — display toggles + `secInterval`
-- `reload.txt` — `{ reload: bool }` flipped by `POST /admin/reload`, polled by the frontend to trigger a refresh
-- `images-display.txt` — names of uploaded display images
+## Data
 
-**Zmanim computation.** `cities/zmanim.js` wraps `kosher-zmanim` with hardcoded Jerusalem coordinates and returns the full zmanim JSON plus a custom `HadlakAndTzais` block (candle-lighting = sunset − 40 min). `hebcal3.js` wraps `@hebcal/core` to return today's events (parsha, daf yomi, omer, Hebrew date) in Hebrew without nikud.
+Stored in Electron `userData/data/` (`settings.json`, `schedule.json`, `slides.json`, `displays.json`) and `userData/slides/<id>/`. On first launch, v1 data in `userData/db/` and `userData/images/` is imported, never modified. Schemas and migration rules are in `docs/v2/plan.md` §4.7 and §5.
 
-**PDF/image upload pipeline.** `POST /admin/upload_pdf` works as follows:
-1. `multer-config.js` — receives the file and writes it to `files/`
-2. `gmshell-config.js` — copies the received JPEG to `images/imageAffiche{N}.jpg` and updates `db/images-display.txt`
-3. `controllers/admin.savePdf` — responds with success
+## Reference tests
 
-The conversion from PDF or image to JPEG happens **entirely in the browser** before upload:
-- `public/myApp.js` imports `pdfjs-dist` (v5) via ES module from `/pdfjs/pdf.mjs` (served from `node_modules/pdfjs-dist/build` via `express.static`)
-- `fileToJpegBlob(file)` renders page 1 of a PDF (or any image) onto a native browser Canvas, then calls `canvas.toBlob('image/jpeg')` — no server-side native module needed
-- The resulting JPEG blob is sent to the server; `gmshell-config.js` only does file I/O, no conversion
-
-No system dependencies (no GraphicsMagick, no Ghostscript, no `@napi-rs/canvas`) are required.
-
-**Compatibility notes.**
-- `pdfjs-dist` v5 requires a modern Chromium (Chrome 129+ for `Map.prototype.getOrInsertComputed`, 119+ for `Promise.withResolvers`, 128+ for `Promise.try`). Electron 33+ embeds Chromium 130+, so all these APIs are native — no polyfills needed. When bumping Electron, keep the minimum at 33+ as long as `pdfjs-dist` v5 is in use.
-
-## CI/CD
-
-`.github/workflows/build.yml` triggers on every push to `main`:
-1. **create-tag** — reads the latest `v*` tag, bumps the patch version, updates `package.json` via `node -e` (pnpm-compatible), commits `chore: bump version to X.X.X [skip ci]` on `main` using `git push origin HEAD:refs/heads/main`, then pushes the new tag. Outputs `tag` for downstream jobs.
-2. **build** — matrix job (ubuntu-latest + windows-latest): checks out the new tag, runs `pnpm install` then `electron-forge make`. Produces `.deb` (Linux) and `.zip` (Windows).
-3. **release** — downloads all artifacts and publishes a GitHub Release using `softprops/action-gh-release`.
-
-Key design decisions:
-- Everything runs in one workflow because `GITHUB_TOKEN`-pushed tags do not trigger new workflow runs (GitHub anti-loop protection).
-- `[skip ci]` in the version bump commit message prevents the push to `main` from re-triggering the workflow.
-- `ref: main` on checkout and `HEAD:refs/heads/main` on push avoid detached HEAD issues in CI.
-- `node -e` is used instead of `npm version` to avoid creating a `package-lock.json` in a pnpm project.
-
-## Platform notes
-
-- **`postBuild.js`** only handles `out/menouchat-chalom-win32-x64/`. Electron Forge on Linux produces `linux-x64` / `.deb` / `.rpm` artifacts; adjust the source path or guard by platform if you run `npm run make` locally.
-- The Electron main process sets `app.commandLine.appendSwitch('lang', 'fr')` — UI locale is French.
+`tests/fixtures/v1-reference.json` records v1 outputs. v2 must match them exactly, except parasha and candle lighting (known v1 bugs, checked against corrected expectations). Never edit fixtures by hand or loosen a comparison to make a test pass.
 
 ## Conventions
 
-- Code comments, log messages, and API response messages are in French. Keep that style when editing existing files; documentation files (like this one) are in English.
-- Controllers read/write `db/*.txt` with synchronous `fs` calls via `DB_DIR` from `paths.js` — there is no abstraction layer, and that is intentional for this project's size. Do not introduce a DB or ORM unless explicitly asked.
-- `public/myApp.js` is loaded as an **ES module** (`<script type="module">`). `public/myApp-frontend.js` is a plain browser script.
-- Upload logging uses the prefixes `[upload]` (server, `gmshell-config.js`) and `[upload]` / `[conversion]` (browser, `myApp.js`) — visible in the Electron DevTools console and Node.js stdout respectively.
+- **Everything in English**: code, identifiers, comments, logs, error messages, commits, docs. Only user-facing UI text is Hebrew (RTL), and it lives in one strings module in `packages/shared`.
+- No `any`, no dead code, no stray `console.log`; comments explain why, not what.
+- Small single-purpose modules; typed errors, always handled; zod at every boundary.
+- Admin UI is mobile first (usable from 320 px), accessible, one card per topic, toast feedback, no page reloads. Full rules in `docs/v2/plan.md` §9.
+- Conventional commits; one PR per plan step into `v2`; CI (`typecheck`, `lint`, `test`, `build`) must pass.
+
+## Release
+
+On `main`, every push triggers `.github/workflows/build.yml`, which bumps the version, tags and publishes a GitHub Release to the synagogue PC. Never push to `main` without the owner's explicit approval. Work on `v2` (or branches off it) until the release step of the plan.
