@@ -19,6 +19,10 @@ export const displaySchema = z.object({
   layoutId: slugSchema,
   /** Validated against the layout's own options schema when the display is rendered. */
   layoutOptions: z.record(z.string(), z.unknown()),
+  /**
+   * Slides shown on this display, in order. Empty means every enabled slide in library
+   * order, which is what the single display of v2.0 uses. Disabled slides never show.
+   */
   slideIds: z.array(slideIdSchema),
   slideIntervalSec: z.number().int().min(3).max(300),
 });

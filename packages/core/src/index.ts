@@ -14,4 +14,4 @@ export {
   parseTimeOfDay,
   type MinutesOfDay,
 } from './time-of-day.ts';
-export { InvalidTimeZoneError, type Zman } from './zman.ts';
+export { civilDateAt, InvalidTimeZoneError, startOfNextCivilDate, type Zman } from './zman.ts';

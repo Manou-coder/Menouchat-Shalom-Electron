@@ -1,4 +1,10 @@
-import { createTRPCClient, httpBatchLink, type TRPCClient } from '@trpc/client';
+import {
+  createTRPCClient,
+  httpBatchLink,
+  httpSubscriptionLink,
+  splitLink,
+  type TRPCClient,
+} from '@trpc/client';
 import { createContext, useContext } from 'react';
 
 import type { AppRouter } from 'menouchat-chalom/api';
@@ -9,7 +15,16 @@ export type ApiClient = TRPCClient<AppRouter>;
 
 export function createApiClient({ url, token }: ApiConfig): ApiClient {
   const headers = token === undefined ? {} : { Authorization: `Bearer ${token}` };
-  return createTRPCClient<AppRouter>({ links: [httpBatchLink({ url, headers })] });
+  return createTRPCClient<AppRouter>({
+    links: [
+      splitLink({
+        // Subscriptions are server-sent events, which reconnect by themselves.
+        condition: (operation) => operation.type === 'subscription',
+        true: httpSubscriptionLink({ url }),
+        false: httpBatchLink({ url, headers }),
+      }),
+    ],
+  });
 }
 
 export const ApiClientContext = createContext<ApiClient | null>(null);

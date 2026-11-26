@@ -29,6 +29,20 @@ export function startOfCivilDate(date: CivilDate, location: Location): DateTime 
   return start;
 }
 
+/** The civil date at `instant` in `timeZoneId`: what "today" means for the display. */
+export function civilDateAt(instant: number, timeZoneId: string): CivilDate {
+  const local = DateTime.fromMillis(instant, { zone: timeZoneId });
+  if (!local.isValid) {
+    throw new InvalidTimeZoneError(timeZoneId);
+  }
+  return { year: local.year, month: local.month, day: local.day };
+}
+
+/** The instant the day after `date` starts in the location's zone, when the display must refresh. */
+export function startOfNextCivilDate(date: CivilDate, location: Location): number {
+  return startOfCivilDate(date, location).plus({ days: 1 }).toMillis();
+}
+
 export function toZman(time: DateTime | null, location: Location, offsetMinutes = 0): Zman | null {
   if (time === null) {
     return null;

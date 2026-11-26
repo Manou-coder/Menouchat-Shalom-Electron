@@ -1,0 +1,41 @@
+/* Fonts and text effects of the v1 display, scoped to this layout. */
+@font-face {
+  font-family: 'Guttman Mantova';
+  src: url('./assets/guttman-mantova.ttf') format('truetype');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Guttman Mantova Decor';
+  src: url('./assets/guttman-mantova-decor.ttf') format('truetype');
+  font-display: block;
+}
+
+.classic-portrait-mantova {
+  font-family: 'Guttman Mantova', serif;
+  font-weight: bold;
+}
+
+.classic-portrait-decor {
+  font-family: 'Guttman Mantova Decor', 'Guttman Mantova', serif;
+}
+
+/* Dark text with a light halo on the parchment frames. */
+.classic-portrait-on-parchment {
+  color: #000000;
+  text-shadow:
+    0.25px 0.1px 0 #ffffcc,
+    0.5px 0.2px 0 #ffffcc,
+    0.75px 0.3px 0 #ffffcc,
+    1px 0.5px 0 #ffffcc;
+}
+
+/* Light text with a dark halo on the wooden panels. */
+.classic-portrait-on-wood {
+  color: #ffffcc;
+  text-shadow:
+    0.25px 0.1px 0 #000000,
+    0.5px 0.2px 0 #000000,
+    0.75px 0.3px 0 #000000,
+    1px 0.5px 0 #000000;
+}

@@ -2,15 +2,18 @@ import fastifyStatic from '@fastify/static';
 import { fastifyTRPCPlugin, type FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import Fastify, { type FastifyInstance } from 'fastify';
 
-import { TRPC_PATH } from '@menouchat/shared';
+import { SLIDES_PATH, TRPC_PATH } from '@menouchat/shared';
 
-import { createAppRouter, type AppRouter } from '../api/router.ts';
+import { createAppRouter, type AppRouter, type DisplayStateApi } from '../api/router.ts';
 import { resolveClientKind } from './client-kind.ts';
 
 export interface ServerOptions {
   version: string;
   /** Per-launch secret that identifies the desktop app's own windows. */
   token: string;
+  displayStates: DisplayStateApi;
+  /** `userData/slides`, served read-only under `/slides`. */
+  slidesRoot: string;
   /** Built web app to serve; omitted in development, where Vite serves it. */
   webRoot?: string;
   onError: (error: Error, path: string | undefined) => void;
@@ -35,7 +38,7 @@ export async function createServer(options: ServerOptions): Promise<FastifyInsta
   });
 
   const trpcOptions: FastifyTRPCPluginOptions<AppRouter>['trpcOptions'] = {
-    router: createAppRouter({ version: options.version }),
+    router: createAppRouter({ version: options.version, displayStates: options.displayStates }),
     createContext: ({ req }) => ({
       client: resolveClientKind(req.headers.authorization, options.token),
     }),
@@ -46,6 +49,15 @@ export async function createServer(options: ServerOptions): Promise<FastifyInsta
   await server.register(fastifyTRPCPlugin, { prefix: TRPC_PATH, trpcOptions });
 
   server.get('/', async (_request, reply) => reply.redirect('/admin'));
+
+  await server.register(fastifyStatic, {
+    root: options.slidesRoot,
+    prefix: `${SLIDES_PATH}/`,
+    decorateReply: false,
+    // Pages never change in place: a new upload gets a new slide id.
+    maxAge: '1y',
+    immutable: true,
+  });
 
   if (options.webRoot !== undefined) {
     await registerWebApp(server, options.webRoot);

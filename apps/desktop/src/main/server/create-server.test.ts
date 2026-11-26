@@ -5,7 +5,16 @@ import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
 
-import { healthSchema } from '@menouchat/shared';
+import {
+  createDefaultDisplays,
+  createDefaultSchedule,
+  createDefaultSettings,
+  createDefaultSlides,
+  displayStateSchema,
+  healthSchema,
+} from '@menouchat/shared';
+
+import { createDisplayStateService } from '../services/display-state-service.ts';
 
 import { createServer } from './create-server.ts';
 
@@ -14,10 +23,36 @@ const version = '2.0.0-test';
 
 const servers: FastifyInstance[] = [];
 
+let slidesRoot: string;
+const slideId = '00000000-0000-4000-8000-00000000000a';
+
+beforeAll(async () => {
+  slidesRoot = await mkdtemp(join(tmpdir(), 'menouchat-slides-'));
+  await mkdir(join(slidesRoot, slideId));
+  await writeFile(join(slidesRoot, slideId, 'page-1.jpg'), 'jpeg bytes');
+});
+
+afterAll(async () => {
+  await rm(slidesRoot, { recursive: true, force: true });
+});
+
+const displayStates = createDisplayStateService({
+  readInputs: () =>
+    Promise.resolve({
+      settings: createDefaultSettings(),
+      schedule: createDefaultSchedule(),
+      slides: createDefaultSlides(),
+      displays: createDefaultDisplays(),
+    }),
+  now: () => Date.UTC(2026, 10, 27, 10),
+});
+
 async function startServer(webRoot?: string): Promise<FastifyInstance> {
   const server = await createServer({
     version,
     token,
+    displayStates,
+    slidesRoot,
     onError: vi.fn(),
     ...(webRoot === undefined ? {} : { webRoot }),
   });
@@ -57,6 +92,61 @@ describe('health procedure', () => {
       await expect(getHealth(server, authorization)).resolves.toMatchObject({ client: 'remote' });
     },
   );
+});
+
+describe('display procedures', () => {
+  const stateUrl = (displayId: string) =>
+    `/trpc/display.state?input=${encodeURIComponent(JSON.stringify({ displayId }))}`;
+
+  it('returns the snapshot of a display', async () => {
+    const server = await startServer();
+    const response = await server.inject({ method: 'GET', url: stateUrl('main') });
+    expect(response.statusCode).toBe(200);
+    const body = response.json<{ result: { data: unknown } }>();
+    expect(displayStateSchema.parse(body.result.data).calendar.parasha).toBe('וישלח');
+  });
+
+  it('answers 404 for an unknown display', async () => {
+    const server = await startServer();
+    const response = await server.inject({ method: 'GET', url: stateUrl('lobby') });
+    expect(response.statusCode).toBe(404);
+  });
+
+  it('streams snapshots over server-sent events', async () => {
+    const server = await startServer();
+    const address = await server.listen({ host: '127.0.0.1', port: 0 });
+    const controller = new AbortController();
+    const response = await fetch(
+      `${address}/trpc/display.onState?input=${encodeURIComponent(JSON.stringify({ displayId: 'main' }))}`,
+      { signal: controller.signal },
+    );
+    expect(response.headers.get('content-type')).toContain('text/event-stream');
+    const reader: ReadableStreamDefaultReader<Uint8Array> | undefined = response.body?.getReader();
+    let received = '';
+    while (reader !== undefined && !received.includes('וישלח')) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      received += new TextDecoder().decode(value);
+    }
+    controller.abort();
+    expect(received).toContain('"displayId":"main"');
+  });
+});
+
+describe('slides', () => {
+  it('serves slide pages as immutable files', async () => {
+    const server = await startServer();
+    const response = await server.inject({ method: 'GET', url: `/slides/${slideId}/page-1.jpg` });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toBe('jpeg bytes');
+    expect(response.headers['cache-control']).toContain('immutable');
+  });
+
+  it('does not serve files outside the slides folder', async () => {
+    const server = await startServer();
+    const response = await server.inject({ method: 'GET', url: '/slides/..%2F..%2Fetc%2Fpasswd' });
+    expect(response.statusCode).toBe(404);
+  });
 });
 
 describe('HTTP server', () => {

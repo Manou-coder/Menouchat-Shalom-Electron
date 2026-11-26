@@ -2,7 +2,7 @@
 
 This document is the project memory for the v2 rewrite. Each work session picks the next unchecked step in [§7](#7-steps), does it on a branch off `v2`, and checks the box in the same PR.
 
-Status: plan approved on 2026-11-26. Steps 1–4 (skeleton, reference tests, zmanim calculation, storage) done.
+Status: plan approved on 2026-11-26. Steps 1–5 (skeleton, reference tests, zmanim calculation, storage, display) done.
 
 ## 1. Goals
 
@@ -154,6 +154,18 @@ docs/v2/     this plan
 - The kiosk window on the PC shows display `main`. Adding monitors (`screen.getAllDisplays()`) or network TVs (`/display/:id` with a pairing code) later needs no redesign.
 - **`DisplayState` snapshot**: entered times, today's zmanim already formatted in the location's time zone, Hebrew calendar info, the display's slides and layout options. Rebuilt at local midnight (location time) and on every change. The display keeps the last snapshot if the server restarts.
 
+Implemented in step 5:
+
+- `DisplayState` (zod schema in `packages/shared/src/display-state.ts`) is built by `buildDisplayState()` in `apps/desktop/src/main/services/`. The display-state service pushes it through the `display.onState` tRPC subscription (SSE): first on connection, then after every `notifyChanged()` and just after local midnight. `display.state` is the one-off query.
+- Slide pages are served read-only from `userData/slides/<id>/<file>` under `/slides/`. A display with an empty `slideIds` shows every enabled slide in library order.
+- Layouts live in `apps/web/src/layouts/<id>/`, registered in `layouts/registry.ts` through `defineLayout({ id, optionsSchema, Component })`. Options that no longer validate fall back to the defaults instead of blanking the screen.
+- `classic-portrait` uses v1's background, Guttman Mantova fonts and clock hands. Run today, v1's own page renders misaligned (its pixel offsets depend on Windows fonts and scaling), so positions were measured on the background artwork itself: weekday times in the "זמני חול" frame, Shabbat times in "זמני שבת", daf yomi / parasha / candle lighting / Rabbeinu Tam on the left panel, Hebrew date and the seven zmanim on the right panel, slides in the bottom frame. The 540×960 surface is scaled to the screen and letterboxed.
+- Differences from v1:
+  - The clock follows the location's time zone (v1 added a fixed 2 hours).
+  - The bottom frame stays empty without slides: v1's fallback image is an error icon.
+  - "ירושלים" is part of the background artwork, so it stays even if the city changes.
+- Windows: the `main` display opens at startup, in kiosk mode in production and as a 540×960 window in development. The admin opens with Ctrl+Alt+A, and in development at startup too.
+
 ### 4.6 Windows and reliability
 
 - Public display: full-screen kiosk window at startup. The `classic-portrait` layout keeps the v1 540×960 design and scales it to the screen (RTL, Guttman Mantova fonts).
@@ -215,7 +227,7 @@ One session per step, each on its own branch and PR into `v2`.
 - [x] **2. Reference tests** — capture v1 outputs as described in §6.
 - [x] **3. Zmanim calculation** — `packages/core` for any location: zmanim, candle lighting, Motzei Shabbat, daf yomi, parasha, Hebrew date; all reference tests green.
 - [x] **4. Storage** — zod schemas, atomic writes, `.bak`, defaults, schema migrations, tests.
-- [ ] **5. Display** — layout registry, `DisplayState` + SSE subscription, `classic-portrait` layout faithful to v1, clock, multi-page slideshow, kiosk window.
+- [x] **5. Display** — layout registry, `DisplayState` + SSE subscription, `classic-portrait` layout faithful to v1, clock, multi-page slideshow, kiosk window.
 - [ ] **6. Admin** — times, slides (pdf.js worker, all pages, original kept, ordering, enable/disable), location, "Screens" card (layout, options, live preview), phone access (LAN listening, PIN, QR code); UI rules in §9.
 - [ ] **7. v1 import** — §5, tested against a copy of a real v1 `userData`.
 - [ ] **8. Reliability and auto-update** — start at login, crash recovery, sleep prevention, `electron-updater`, "Check for updates".

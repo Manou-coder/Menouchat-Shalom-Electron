@@ -52,6 +52,8 @@ export function createDocumentStore<T extends { schemaVersion: number }>(
   const invalidPath = `${path}.invalid`;
   // Writes run one at a time so that two quick saves never interleave their renames.
   let pendingWrite: Promise<void> = Promise.resolve();
+  // Every display snapshot reads the store: say once that defaults are in use, not each time.
+  let defaultsLogged = false;
 
   function parse(text: string): T {
     let json: unknown;
@@ -97,7 +99,10 @@ export function createDocumentStore<T extends { schemaVersion: number }>(
       logger.warn(`Using backup ${backupPath}`);
       return backup;
     }
-    logger.info(`Using default ${definition.fileName}`);
+    if (!defaultsLogged) {
+      logger.info(`Using default ${definition.fileName}`);
+      defaultsLogged = true;
+    }
     return definition.createDefault();
   }
 

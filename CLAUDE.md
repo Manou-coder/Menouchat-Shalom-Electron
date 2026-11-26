@@ -23,6 +23,7 @@ Requires Node.js 24+ and pnpm (version pinned in the root `package.json`).
 
 - `pnpm install` — install the workspace (Electron downloads its binary in a postinstall script).
 - `pnpm dev` — run the Vite dev server for `apps/web` and the Electron app (`electron-vite dev --watch`) in parallel. The HTTP server listens on `127.0.0.1:3741`; the window loads the Vite server on `127.0.0.1:5173`, which proxies `/trpc` to it.
+- In `pnpm dev`, the `main` display opens as a 540×960 window and the admin opens too; in production the display is a full-screen kiosk and the admin opens with Ctrl+Alt+A.
 - `pnpm build` — bundle `apps/desktop` (main + preload into `out/`) and `apps/web` (into `dist/`).
 - `pnpm test` — run Vitest across every package (`vitest.config.ts` lists them as projects).
 - `pnpm lint` — ESLint (`strict-type-checked`) and `prettier --check`; `pnpm format` rewrites formatting.
@@ -64,6 +65,10 @@ docs/v2           rewrite plan
 - The web app imports the `AppRouter` type from `menouchat-chalom/api` (`apps/desktop/src/main/api/`). That folder must stay free of Node, Electron and server code; ESLint enforces it. Services are injected into `createAppRouter`.
 - The main process passes the bridge (`baseUrl`, per-launch `token`) to the sandboxed preload as a `--menouchat-bridge` command-line switch; the preload validates it with zod and exposes it as `window.menouchatDesktop`. Requests carrying `Authorization: Bearer <token>` are treated as local clients.
 - Runtime dependencies of `apps/desktop` (`fastify`, `@trpc/server`, …) are externalised and packaged by electron-builder; workspace packages are dev dependencies so that they are bundled. The preload is fully bundled as CommonJS, as sandboxing requires.
+
+## Display
+
+A display renders a `DisplayState` pushed by the server (`display.onState`, SSE) through the layout named by `layoutId`. To add a layout, create `apps/web/src/layouts/<id>/` with a component and a zod options schema whose every field has a default, and register it in `layouts/registry.ts`. Anything that changes settings, schedule, slides or displays must call the display-state service's `notifyChanged()`.
 
 ## Data
 
