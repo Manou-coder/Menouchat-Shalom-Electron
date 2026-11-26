@@ -1,8 +1,9 @@
 name: v2 CI
 
 on:
+  # main holds v2 since 2.0.0: its pull requests are checked before they release.
   pull_request:
-    branches: [v2]
+    branches: [main, v2]
   push:
     branches: [v2]
 
