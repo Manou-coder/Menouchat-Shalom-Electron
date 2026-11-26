@@ -1,59 +1,29 @@
 {
-  "name": "menouchat-chalom",
-  "version": "1.1.11",
-  "description": "backend du louach zmanim de menouchat chalom",
-  "main": "main.js",
-  "scripts": {
-    "start": "electron-forge start",
-    "dev": "nodemon server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "package": "electron-forge package",
-    "make": "electron-forge make && node postBuild.js"
+  "name": "menouchat-chalom-workspace",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24"
   },
-  "author": "manou haouzi",
-  "license": "ISC",
-  "dependencies": {
-    "@hebcal/core": "^3.42.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.1",
-    "electron-log": "^5.4.3",
-    "electron-squirrel-startup": "^1.0.0",
-    "express": "^4.18.1",
-    "kosher-zmanim": "^0.8.2",
-    "multer": "^1.4.5-lts.1",
-    "nodemon": "^2.0.16",
-    "pdfjs-dist": "^5.6.205"
+  "scripts": {
+    "dev": "pnpm --parallel --filter @menouchat/web --filter menouchat-chalom run dev",
+    "build": "pnpm --recursive run build",
+    "test": "vitest run",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "pnpm --recursive run typecheck",
+    "dist": "pnpm run build && pnpm --filter menouchat-chalom run dist"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.0.0",
-    "@electron-forge/maker-deb": "^7.0.0",
-    "@electron-forge/maker-rpm": "^7.0.0",
-    "@electron-forge/maker-squirrel": "^7.0.0",
-    "@electron-forge/maker-zip": "^7.0.0",
-    "electron": "^41.0.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "electron"
-    ]
-  },
-  "config": {
-    "forge": {
-      "packagerConfig": {
-        "icon": "./public/assets/logo menouchat chalom entier (1).ico"
-      },
-      "makers": [
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "win32"
-          ]
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {}
-        }
-      ]
-    }
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.74.0",
+    "vitest": "~5.1.1"
   }
 }

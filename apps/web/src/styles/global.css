@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+/* Semantic colours, switched as a whole for the dark theme. */
+@theme {
+  --color-background: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-border: #d9dde3;
+  --color-text: #1a1d21;
+  --color-text-muted: #4a515b;
+  --color-accent: #1f5fbf;
+  --color-accent-hover: #194f9f;
+  --color-on-accent: #ffffff;
+  --color-focus: #f0a500;
+  --color-pending: #8a929c;
+  --color-success: #1e8e3e;
+  --color-danger: #c5221f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #121417;
+    --color-surface: #1c1f24;
+    --color-border: #353a42;
+    --color-text: #eceef1;
+    --color-text-muted: #b2b8c0;
+    --color-accent: #5b9bf0;
+    --color-accent-hover: #7aaef3;
+    --color-on-accent: #0b1220;
+    --color-success: #4cc26a;
+    --color-danger: #f26b67;
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  body {
+    @apply bg-background font-sans text-text;
+  }
+}

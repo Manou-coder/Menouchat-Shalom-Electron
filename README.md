@@ -1,38 +1,37 @@
-# menouchat-chalom
+# Menouchat Chalom
 
-Louach zmanim (tableau des horaires de prières) pour la synagogue Menouchat Chalom, packagé en application desktop avec Electron.
+Prayer times (zmanim), Hebrew calendar information and a slideshow for the Menouchat Chalom synagogue, shown full screen on a Windows PC and edited from the PC or a phone on the local Wi-Fi.
 
-## Prérequis
+This branch (`v2`) is a TypeScript rewrite; the plan and its progress are in [`docs/v2/plan.md`](docs/v2/plan.md). The released v1 lives on `main`.
 
-- Node.js 20+
-- pnpm
+## Requirements
 
-Aucune dépendance système requise : la conversion des PDF en images se fait nativement dans Chromium (Electron), sans GraphicsMagick ni Ghostscript.
+- Node.js 24+
+- pnpm (version pinned in `package.json`; `corepack enable` picks it up)
 
-## Installation
+## Development
 
 ```bash
 pnpm install
+pnpm dev
 ```
 
-## Lancement
+`pnpm dev` starts the web app's Vite dev server and the Electron app, which opens the admin.
 
-```bash
-# Serveur Express seul (développement rapide, sans fenêtre Electron)
-npm run dev
+| Command          | Purpose                                 |
+| ---------------- | --------------------------------------- |
+| `pnpm build`     | Bundle the desktop and web apps         |
+| `pnpm test`      | Run the Vitest suites                   |
+| `pnpm lint`      | ESLint and Prettier checks              |
+| `pnpm typecheck` | TypeScript checks in every package      |
+| `pnpm dist`      | Build the Windows installer (NSIS, x64) |
 
-# Application Electron complète
-npm start
+## Layout
+
 ```
-
-## Build & Release
-
-Le workflow GitHub Actions (`build.yml`) se déclenche automatiquement à chaque merge dans `main` :
-
-1. **create-tag** — bumpe le patch (`v1.x.y → v1.x.y+1`), met à jour `package.json`, committe sur `main` puis pousse le tag
-2. **build** — compile Linux (`.deb`) et Windows (`.zip`) en parallèle à partir du tag
-3. **release** — publie une GitHub Release avec les artefacts et les release notes auto-générées
-
-`package.json` dans le repo est toujours synchronisé avec le dernier tag — aucune action manuelle requise.
-
-Pour déclencher un build manuellement : Actions → *Build Cross-Platform* → *Run workflow*.
+packages/core     pure calculations
+packages/shared   zod schemas, API contracts, Hebrew UI strings
+apps/desktop      Electron main process, preload, embedded Fastify + tRPC server
+apps/web          React app: /admin and /display/:id
+docs/v2           rewrite plan
+```

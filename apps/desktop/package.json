@@ -1,0 +1,34 @@
+{
+  "name": "menouchat-chalom",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Prayer times (zmanim) display for the Menouchat Chalom synagogue",
+  "author": "manou haouzi",
+  "license": "ISC",
+  "main": "./out/main/index.js",
+  "exports": {
+    "./api": "./src/main/api/router.ts"
+  },
+  "scripts": {
+    "dev": "electron-vite dev --watch",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit",
+    "dist": "electron-builder --win nsis --x64 --publish never"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.12",
+    "@trpc/server": "^11.31.3",
+    "electron-log": "^5.4.4",
+    "fastify": "^5.12.8"
+  },
+  "devDependencies": {
+    "@menouchat/shared": "workspace:*",
+    "@types/node": "~24.19.2",
+    "electron": "~41.10.7",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "vite": "^8.3.8"
+  }
+}

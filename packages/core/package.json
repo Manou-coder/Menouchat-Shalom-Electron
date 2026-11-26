@@ -1,0 +1,13 @@
+{
+  "name": "@menouchat/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure calculations: zmanim, candle lighting, daf yomi, parasha, Hebrew date. No I/O.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}
