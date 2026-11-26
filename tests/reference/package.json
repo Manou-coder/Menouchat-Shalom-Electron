@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Records v1's zmanim and calendar outputs as the fixture v2 must reproduce (plan \u00a76).",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "generate": "node src/generate-fixture.ts",
     "check": "node src/generate-fixture.ts --check",

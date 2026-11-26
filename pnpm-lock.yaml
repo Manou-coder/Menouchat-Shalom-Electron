@@ -113,7 +113,27 @@ importers:
         specifier: ^8.3.8
         version: 8.3.8(@types/node@24.19.3)(jiti@2.7.0)
 
-  packages/core: {}
+  packages/core:
+    dependencies:
+      '@hebcal/core':
+        specifier: 3.50.4
+        version: 3.50.4
+      kosher-zmanim:
+        specifier: 0.8.2
+        version: 0.8.2
+      luxon:
+        specifier: 1.28.1
+        version: 1.28.1
+    devDependencies:
+      '@menouchat/reference-tests':
+        specifier: workspace:*
+        version: link:../../tests/reference
+      '@types/luxon':
+        specifier: ~1.27.1
+        version: 1.27.1
+      '@types/node':
+        specifier: ~24.19.3
+        version: 24.19.3
 
   packages/shared:
     dependencies:
@@ -737,6 +757,9 @@ packages:
 
   '@types/keyv@3.1.4':
     resolution: {integrity: sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg==}
+
+  '@types/luxon@1.27.1':
+    resolution: {integrity: sha512-cPiXpOvPFDr2edMnOXlz3UBDApwUfR+cpizvxCy0n3vp9bz/qe8BWzHPIEFcy+ogUOyjKuCISgyq77ELZPmkkg==}
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
@@ -3198,6 +3221,8 @@ snapshots:
   '@types/keyv@3.1.4':
     dependencies:
       '@types/node': 24.19.3
+
+  '@types/luxon@1.27.1': {}
 
   '@types/ms@2.1.0': {}
 
