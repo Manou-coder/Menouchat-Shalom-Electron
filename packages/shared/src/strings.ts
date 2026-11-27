@@ -17,6 +17,14 @@ export const strings = {
     loading: 'טוען…',
     connectionLost: 'החיבור לשרת נותק, מנסה שוב…',
     openAdmin: 'ניהול',
+    menu: {
+      label: 'תפריט ניהול',
+      times: 'זמנים',
+      slides: 'תמונות',
+      layout: 'עיצוב',
+      settings: 'הגדרות',
+      updatePending: 'יש עדכון',
+    },
     update: {
       downloading: (version: string) => `מורידים גרסה חדשה (${version})…`,
       ready: (version: string) => `גרסה חדשה (${version}) מוכנה. היא תותקן בהפעלה הבאה.`,
@@ -54,6 +62,7 @@ export const strings = {
       names: { 'classic-portrait': 'קלאסי', 'blue-gold': 'כחול וזהב' },
     },
     phone: {
+      title: 'עריכה מהטלפון',
       address: 'לעריכה מהטלפון (באותה רשת Wi-Fi):',
       noNetwork: 'המחשב אינו מחובר לרשת, אין גישה מהטלפון.',
       or: 'או',
