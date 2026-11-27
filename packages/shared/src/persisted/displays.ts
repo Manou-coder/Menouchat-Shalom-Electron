@@ -8,7 +8,7 @@ export const DISPLAYS_SCHEMA_VERSION = 1;
 export const MAIN_DISPLAY_ID = 'main';
 
 /** Layouts the admin can choose for the main display; each is registered in the web app. */
-export const LAYOUT_IDS = ['classic-portrait', 'blue-gold'] as const;
+export const LAYOUT_IDS = ['classic-portrait', 'classic-new', 'blue-gold'] as const;
 export const layoutIdSchema = z.enum(LAYOUT_IDS);
 export type LayoutId = z.infer<typeof layoutIdSchema>;
 

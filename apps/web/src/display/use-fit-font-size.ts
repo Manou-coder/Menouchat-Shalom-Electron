@@ -20,9 +20,12 @@ export function useFitFontSize<T extends HTMLElement>(
     let active = true;
     const fit = () => {
       // offsetWidth ignores the surface's CSS scale: this is the width on the layout's surface.
+      // The size React set is put back after measuring: if the result does not change, React
+      // will not set it again.
+      const applied = element.style.fontSize;
       element.style.fontSize = `${String(size)}px`;
       const width = element.offsetWidth;
-      element.style.fontSize = '';
+      element.style.fontSize = applied;
       if (active) {
         setFitted(width > maxWidth ? Math.floor((size * maxWidth * 10) / width) / 10 : size);
       }

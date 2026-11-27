@@ -2,12 +2,15 @@ import { Navigate, useParams } from 'react-router';
 
 import { strings } from '@menouchat/shared';
 
-import logo from '../assets/logo.png';
+import logoFull from '../assets/logo-full.png';
+import logoSymbol from '../assets/logo-symbol.png';
 import { AdminNav } from './AdminNav.tsx';
+import { DayEventsCard } from './cards/DayEventsCard.tsx';
 import { LayoutCard } from './cards/LayoutCard.tsx';
 import { ShabbatTimesCard, WeekdayTimesCard } from './cards/ScheduleCards.tsx';
 import { SlidesCard } from './cards/SlidesCard.tsx';
 import { UpdateCard } from './cards/UpdateCard.tsx';
+import { LibraryCard } from './pictures/LibraryCard.tsx';
 import { PhoneAddress } from './PhoneAddress.tsx';
 import { DEFAULT_SECTION, parseSection, sectionPath, type AdminSection } from './sections.ts';
 import { Card } from './ui/Card.tsx';
@@ -32,9 +35,24 @@ export function Dashboard() {
     <>
       <header className="sticky top-0 z-10 border-b border-border/70 bg-surface/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
-          <img src={logo} alt="" className="size-11 shrink-0" />
+          {/*
+            The full logo, with its address, from 640 px up; the candle and book alone on a
+            phone, where the address would be unreadable. Its dark grey needs a light backing
+            in dark mode.
+          */}
+          <img
+            src={logoSymbol}
+            alt=""
+            className="size-11 shrink-0 rounded-lg sm:hidden dark:bg-white/90 dark:p-0.5"
+          />
+          <img
+            src={logoFull}
+            alt=""
+            className="hidden h-16 w-auto shrink-0 rounded-lg sm:block dark:bg-white/90 dark:p-1"
+          />
           <h1 className="min-w-0 flex-1 text-xl font-bold">
-            {strings.appName} ·{' '}
+            {/* The logo already shows the name on wider screens. */}
+            <span className="sm:sr-only">{strings.appName} · </span>
             <span className="font-medium text-text-muted">{strings.admin.title}</span>
           </h1>
         </div>
@@ -58,7 +76,14 @@ export function Dashboard() {
                 <ShabbatTimesCard schedule={state.schedule} />
               </div>
               <div {...shown('slides')}>
-                <SlidesCard slides={state.slides} slideIntervalSec={state.slideIntervalSec} />
+                <SlidesCard
+                  slots={state.slots}
+                  library={state.library}
+                  slideIntervalSec={state.slideIntervalSec}
+                />
+              </div>
+              <div {...shown('library')}>
+                <LibraryCard library={state.library} slots={state.slots} />
               </div>
               <div {...shown('layout')}>
                 <LayoutCard layoutId={state.layoutId} />
@@ -67,6 +92,7 @@ export function Dashboard() {
                 <Card title={strings.admin.phone.title}>
                   <PhoneAddress urls={state.phoneUrls} />
                 </Card>
+                <DayEventsCard events={state.events} />
                 <UpdateCard update={state.update} />
               </div>
             </>

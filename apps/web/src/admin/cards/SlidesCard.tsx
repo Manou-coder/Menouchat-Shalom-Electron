@@ -1,181 +1,251 @@
-import { ImageIcon, LoaderCircle } from 'lucide-react';
+import { ImagePlus, Pencil, Replace, ZoomIn } from 'lucide-react';
 import { useState } from 'react';
-import { FileTrigger } from 'react-aria-components';
+import { Button as AriaButton } from 'react-aria-components';
 
 import {
   SLIDE_SLOTS,
-  SLIDE_UPLOAD_FIELDS,
-  slidePageUrl,
   strings,
-  type Slide,
+  type LibraryItem,
   type SlideSlot,
+  type Slot,
 } from '@menouchat/shared';
 
 import { useApiClient } from '../../api/api-client.ts';
 import { Button } from '../../components/Button.tsx';
-import {
-  ACCEPTED_SLIDE_TYPES,
-  convertSlide,
-  SlideConversionError,
-} from '../../slides/convert-slide.ts';
-import { errorMessage } from '../errors.ts';
+import type { TemplateItem } from '../pictures/library.ts';
+import { LibraryThumbnail } from '../pictures/LibraryThumbnail.tsx';
+import { PictureChooser } from '../pictures/PictureChooser.tsx';
+import { PictureLightbox } from '../pictures/PictureLightbox.tsx';
+import { TemplateEditor } from '../pictures/TemplateEditor.tsx';
 import { Card, ErrorMessage } from '../ui/Card.tsx';
-import { NumberInput, Toggle } from '../ui/fields.tsx';
-import { SaveButton } from '../ui/SaveButton.tsx';
+import { Toggle } from '../ui/fields.tsx';
 import { useAction } from '../use-action.ts';
-import { useDraft } from '../use-draft.ts';
-import { useUnsavedWarning } from '../use-unsaved-warning.ts';
 
 const labels = strings.admin.slides;
 
-function useSlotUpload(slot: SlideSlot) {
-  const api = useApiClient();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
+const MIN_INTERVAL = 3;
+const MAX_INTERVAL = 300;
 
-  async function upload(file: File) {
-    setBusy(true);
-    setError(undefined);
-    try {
-      const image = await convertSlide(file);
-      const form = new FormData();
-      form.set(SLIDE_UPLOAD_FIELDS.slot, String(slot));
-      form.set(SLIDE_UPLOAD_FIELDS.title, file.name);
-      form.set(SLIDE_UPLOAD_FIELDS.original, file);
-      form.set(SLIDE_UPLOAD_FIELDS.image, image, 'page-1.jpg');
-      await api.admin.slides.upload.mutate(form);
-    } catch (failure) {
-      setError(
-        failure instanceof SlideConversionError ? labels.conversionFailed : errorMessage(failure),
-      );
-    } finally {
-      setBusy(false);
+/** The seconds per slide, saved when the field is left or Enter is pressed. */
+function IntervalField({ seconds }: { seconds: number }) {
+  const api = useApiClient();
+  const [draft, setDraft] = useState(String(seconds));
+  const [lastSaved, setLastSaved] = useState(seconds);
+  const save = useAction((value: number) =>
+    api.admin.slides.setInterval.mutate({ slideIntervalSec: value }),
+  );
+  // Follows changes made elsewhere (another phone) while the field is untouched.
+  if (seconds !== lastSaved) {
+    setLastSaved(seconds);
+    setDraft(String(seconds));
+  }
+
+  function commit() {
+    const value = Number(draft);
+    if (Number.isInteger(value) && value >= MIN_INTERVAL && value <= MAX_INTERVAL) {
+      if (value !== seconds) {
+        void save.run(value);
+      }
+    } else {
+      setDraft(String(seconds));
     }
   }
 
-  return { upload, busy, error };
-}
-
-/** The slot's picture, or an empty frame; a spinner covers it while a new file goes up. */
-function Thumbnail({ slide, busy }: { slide: Slide | undefined; busy: boolean }) {
   return (
-    <div className="relative grid h-16 w-24 shrink-0 place-items-center overflow-hidden rounded-lg bg-background">
-      {slide === undefined ? (
-        <ImageIcon aria-hidden className="size-6 text-text-muted" />
-      ) : (
-        <img
-          src={slidePageUrl(slide.id, slide.image)}
-          alt=""
-          className="size-full object-contain"
+    <div className="grid gap-1">
+      <label className="flex flex-wrap items-center gap-2 text-sm text-text-muted">
+        {labels.interval}
+        <input
+          type="number"
+          inputMode="numeric"
+          dir="ltr"
+          min={MIN_INTERVAL}
+          max={MAX_INTERVAL}
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value);
+          }}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              commit();
+            }
+          }}
+          className="h-11 w-20 rounded-xl border border-border bg-surface px-3 text-center text-base text-text tabular-nums shadow-xs outline-none focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-focus/40"
         />
-      )}
-      {busy && (
-        <div className="absolute inset-0 grid place-items-center bg-surface/80">
-          <LoaderCircle
-            aria-label={labels.converting}
-            className="size-6 animate-spin text-accent"
-          />
-        </div>
-      )}
+        {labels.intervalUnit}
+      </label>
+      <ErrorMessage message={save.error} />
     </div>
   );
 }
 
-function SlotRow({ slot, slide }: { slot: SlideSlot; slide: Slide | undefined }) {
+function SlotCard({
+  slot,
+  entry,
+  item,
+  library,
+}: {
+  slot: SlideSlot;
+  entry: Slot | undefined;
+  item: LibraryItem | undefined;
+  library: readonly LibraryItem[];
+}) {
   const api = useApiClient();
-  const { upload, busy, error } = useSlotUpload(slot);
+  // The chooser, or the editor on the slot's template or on a new one for this slot.
+  const [dialog, setDialog] = useState<'choose' | 'enlarge' | 'new-template' | 'edit-template'>();
   const toggle = useAction((enabled: boolean) =>
     api.admin.slides.setEnabled.mutate({ slot, enabled }),
   );
+  const show = useAction((itemId: string) => api.admin.slides.show.mutate({ slot, itemId }));
+  const shown = entry?.enabled === true;
+  const template: TemplateItem | undefined = item?.kind === 'template' ? item : undefined;
+  const open = () => {
+    setDialog('choose');
+  };
 
   return (
-    <li className="grid min-w-0 grid-cols-1 gap-3 rounded-xl border border-border/70 p-3">
-      {/* On a phone the file name gets its own line under the picture. */}
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-soft font-semibold text-accent">
-          {slot}
-        </span>
-        <Thumbnail slide={slide} busy={busy} />
-        <span
-          className="w-full min-w-0 truncate sm:w-auto sm:flex-1"
-          dir="auto"
-          title={slide?.title}
+    <li className="grid content-start gap-3 rounded-xl border border-border/70 bg-surface p-3">
+      {item === undefined ? (
+        <AriaButton
+          onPress={open}
+          className="relative grid aspect-[594/280] w-full cursor-pointer place-items-center rounded-lg border-2 border-dashed border-border text-text-muted data-focus-visible:outline-3 data-focus-visible:outline-focus data-hovered:border-accent data-hovered:text-accent"
         >
-          {slide?.title ?? labels.emptySlot}
+          <span className="grid justify-items-center gap-1">
+            <ImagePlus aria-hidden className="size-7" />
+            {labels.add}
+          </span>
+          <SlotNumber slot={slot} />
+        </AriaButton>
+      ) : (
+        // A tap shows the picture large; changing it is the button's job.
+        <AriaButton
+          onPress={() => {
+            setDialog('enlarge');
+          }}
+          aria-label={labels.enlarge(slot)}
+          className="group relative block w-full cursor-zoom-in rounded-lg data-focus-visible:outline-3 data-focus-visible:outline-focus"
+        >
+          <LibraryThumbnail item={item} dimmed={!shown} />
+          <SlotNumber slot={slot} />
+          {/* Always visible on a phone, which has no hover; larger under a mouse. */}
+          <span className="absolute bottom-2 left-2 grid size-8 place-items-center rounded-full bg-black/55 text-white transition group-data-hovered:size-11 group-data-hovered:bg-black/70">
+            <ZoomIn aria-hidden className="size-4 group-data-hovered:size-6" />
+          </span>
+        </AriaButton>
+      )}
+
+      <div className="grid min-h-11 content-center gap-0.5">
+        <span className="truncate font-medium" title={item?.name}>
+          <bdi>{item?.name ?? labels.empty}</bdi>
         </span>
+        {template !== undefined && (
+          <button
+            type="button"
+            onClick={() => {
+              setDialog('edit-template');
+            }}
+            className="flex w-fit items-center gap-1 text-sm text-accent hover:underline focus-visible:outline-3 focus-visible:outline-focus"
+          >
+            <Pencil aria-hidden className="size-4" />
+            {labels.editTemplate}
+          </button>
+        )}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+
+      <div className="flex items-center justify-between gap-2">
         <Toggle
           label={labels.shown}
-          isSelected={slide?.enabled === true}
-          isDisabled={slide === undefined || toggle.pending}
+          isSelected={shown}
+          isDisabled={item === undefined || toggle.pending}
           onChange={(enabled) => void toggle.run(enabled)}
         />
-        <FileTrigger
-          acceptedFileTypes={ACCEPTED_SLIDE_TYPES}
-          onSelect={(files) => {
-            const file = files?.[0];
-            if (file !== undefined) {
-              void upload(file);
+        {item !== undefined && (
+          <Button variant="secondary" onPress={open}>
+            <span className="flex items-center gap-2 whitespace-nowrap">
+              <Replace aria-hidden className="size-5" />
+              {labels.change}
+            </span>
+          </Button>
+        )}
+      </div>
+      <ErrorMessage message={toggle.error ?? show.error} />
+
+      {dialog === 'enlarge' && item !== undefined && (
+        <PictureLightbox
+          item={item}
+          onClose={() => {
+            setDialog(undefined);
+          }}
+        />
+      )}
+      {dialog === 'choose' && (
+        <PictureChooser
+          slot={slot}
+          library={library}
+          onNewTemplate={() => {
+            setDialog('new-template');
+          }}
+          onClose={() => {
+            setDialog(undefined);
+          }}
+        />
+      )}
+      {(dialog === 'new-template' || dialog === 'edit-template') && (
+        <TemplateEditor
+          {...(dialog === 'edit-template' && template !== undefined ? { template } : {})}
+          library={library}
+          onClose={() => {
+            setDialog(undefined);
+          }}
+          onSaved={(saved) => {
+            setDialog(undefined);
+            // An edited template already reaches the screens; a new one goes in this slot.
+            if (dialog === 'new-template') {
+              void show.run(saved.id);
             }
           }}
-        >
-          <Button variant="secondary" isDisabled={busy}>
-            {busy ? labels.converting : slide === undefined ? labels.choose : labels.replace}
-          </Button>
-        </FileTrigger>
-      </div>
-      <ErrorMessage message={error ?? toggle.error} />
+        />
+      )}
     </li>
   );
 }
 
-/** v1's four slide slots: a picture each, shown or not, and the seconds per slide. */
+function SlotNumber({ slot }: { slot: SlideSlot }) {
+  return (
+    <span className="absolute top-2 right-2 grid size-8 place-items-center rounded-full bg-surface/90 font-semibold text-accent shadow-sm">
+      {slot}
+    </span>
+  );
+}
+
+/** v1's four slide slots, each showing an item of the library, and the seconds per slide. */
 export function SlidesCard({
-  slides,
+  slots,
+  library,
   slideIntervalSec,
 }: {
-  slides: readonly Slide[];
+  slots: readonly Slot[];
+  library: readonly LibraryItem[];
   slideIntervalSec: number;
 }) {
-  const api = useApiClient();
-  const interval = useDraft(slideIntervalSec);
-  const save = useAction(() =>
-    api.admin.slides.setInterval.mutate({ slideIntervalSec: interval.draft }),
-  );
-  useUnsavedWarning(interval.dirty);
-
   return (
     <Card title={labels.title}>
-      <p className="-mt-2 text-sm text-text-muted">{labels.accepted}</p>
-      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {SLIDE_SLOTS.map((slot) => (
-          <SlotRow key={slot} slot={slot} slide={slides.find((slide) => slide.slot === slot)} />
-        ))}
-      </ul>
-      <form
-        className="grid gap-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (event.currentTarget.reportValidity()) {
-            void save.run();
-          }
-        }}
-      >
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="w-40">
-            <NumberInput
-              label={labels.interval}
-              value={interval.draft}
-              min={3}
-              max={300}
-              onChange={interval.setDraft}
+      <IntervalField seconds={slideIntervalSec} />
+      <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {SLIDE_SLOTS.map((slot) => {
+          const entry = slots.find((candidate) => candidate.slot === slot);
+          return (
+            <SlotCard
+              key={slot}
+              slot={slot}
+              entry={entry}
+              item={library.find((candidate) => candidate.id === entry?.itemId)}
+              library={library}
             />
-          </div>
-          <SaveButton dirty={interval.dirty} pending={save.pending} done={save.done} />
-        </div>
-        <ErrorMessage message={save.error} />
-      </form>
+          );
+        })}
+      </ul>
     </Card>
   );
 }
