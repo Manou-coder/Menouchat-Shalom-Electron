@@ -6,9 +6,13 @@ import {
   createDefaultDisplays,
   createDefaultSettings,
   MAIN_DISPLAY_ID,
-  type Slide,
+  type Prayer,
+  type LibraryItem,
+  type Slot,
+  SLIDES_SCHEMA_VERSION,
 } from '@menouchat/shared';
 
+import { libraryFolder } from '../services/slide-files.ts';
 import { moveIfExists } from '../store/atomic-file.ts';
 import type { StoreLogger } from '../store/document-store.ts';
 import { createStore } from '../store/store.ts';
@@ -64,31 +68,34 @@ export async function importV1IfNeeded(
 
   const conversion = convertV1Data(v1);
   const notes = [...conversion.notes];
-  const slides: Slide[] = [];
+  const library: LibraryItem[] = [];
+  const slots: Slot[] = [];
   for (const imported of conversion.slides) {
     if (!(await isJpeg(imported.sourcePath))) {
       notes.push(`imageAffiche${String(imported.slot)}.jpg: not a JPEG image, slot skipped`);
       continue;
     }
     const id = randomUUID();
-    await mkdir(join(slidesRoot, id), { recursive: true });
-    await copyFile(imported.sourcePath, join(slidesRoot, id, PAGE_FILE));
-    slides.push({
+    const folder = libraryFolder(id);
+    await mkdir(join(slidesRoot, ...folder.split('/')), { recursive: true });
+    await copyFile(imported.sourcePath, join(slidesRoot, ...folder.split('/'), PAGE_FILE));
+    library.push({
+      kind: 'file',
       id,
-      slot: imported.slot,
-      title: imported.title,
+      name: imported.title,
+      folder,
       // v1 kept only the converted JPEG, never the uploaded original.
-      originalFile: null,
+      original: null,
       image: PAGE_FILE,
-      enabled: imported.enabled,
     });
+    slots.push({ slot: imported.slot, itemId: id, enabled: imported.enabled });
   }
 
   const store = createStore(stagingDirectory, logger);
   const displays = createDefaultDisplays();
   await store.settings.write(createDefaultSettings());
   await store.schedule.write(conversion.schedule);
-  await store.slides.write({ schemaVersion: 1, slides });
+  await store.slides.write({ schemaVersion: SLIDES_SCHEMA_VERSION, library, slots });
   await store.displays.write({
     ...displays,
     displays: displays.displays.map((display) =>
@@ -98,13 +105,14 @@ export async function importV1IfNeeded(
     ),
   });
 
+  const times = (prayers: readonly Prayer[]) => prayers.map((prayer) => prayer.time).join(' ');
   const report = [
     `${now().toISOString()} Imported Menouchat Chalom v1 data from ${userData}`,
-    `schedule: weekday ${Object.values(conversion.schedule.weekday).join(' ')}, shabbat ${Object.values(conversion.schedule.shabbat).join(' ')}`,
+    `schedule: weekday ${times(conversion.schedule.weekday)}, shabbat ${times(conversion.schedule.shabbat)}`,
     `slide interval: ${String(conversion.slideIntervalSec)} s`,
-    ...slides.map(
-      (slide) =>
-        `slot ${String(slide.slot)}: "${slide.title}" ${slide.enabled ? 'shown' : 'hidden'} (${slide.id})`,
+    ...slots.map(
+      (slot) =>
+        `slot ${String(slot.slot)}: "${library.find((item) => item.id === slot.itemId)?.name ?? ''}" ${slot.enabled ? 'shown' : 'hidden'} (${slot.itemId})`,
     ),
     'location: Jerusalem (v1 coordinates)',
     ...notes.map((note) => `note: ${note}`),
@@ -115,8 +123,8 @@ export async function importV1IfNeeded(
   if (!(await moveIfExists(stagingDirectory, dataDirectory))) {
     throw new Error(`Import staging folder ${stagingDirectory} disappeared`);
   }
-  logger.info(`Imported v1 data: ${String(slides.length)} slides, ${String(notes.length)} notes`);
-  return { status: 'imported', slides: slides.length, notes };
+  logger.info(`Imported v1 data: ${String(slots.length)} slides, ${String(notes.length)} notes`);
+  return { status: 'imported', slides: slots.length, notes };
 }
 
 async function exists(path: string): Promise<boolean> {

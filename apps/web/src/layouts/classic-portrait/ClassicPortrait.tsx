@@ -1,18 +1,23 @@
 import { strings, type ZmanSnapshot } from '@menouchat/shared';
 
+import { DayEventsLine } from '../../display/DayEventsLine.tsx';
 import { Slideshow } from '../../display/Slideshow.tsx';
+import { useFitFontSize } from '../../display/use-fit-font-size.ts';
 import { useFitScale } from '../../display/use-fit-scale.ts';
 import type { LayoutProps } from '../define-layout.tsx';
 import { AnalogClock } from './AnalogClock.tsx';
 import background from './assets/background.jpg';
 import type { ClassicPortraitOptions } from './options.ts';
 import {
+  eventsLine,
+  frameRows,
   leftPanel,
   rightPanel,
-  shabbat as shabbatPlacements,
+  shabbatFrame,
   slideshow,
   SURFACE,
-  weekday as weekdayPlacements,
+  weekdayFrame,
+  type FrameRow,
   type Placement,
 } from './placements.ts';
 import './classic-portrait.css';
@@ -23,44 +28,65 @@ function timeOf(zman: ZmanSnapshot | null): string {
   return zman?.time ?? labels.missingTime;
 }
 
-/** The two styles of v1: dark bold text on the parchment frames, light text on the wood. */
-type Style = 'frame' | 'frame-small' | 'frame-large' | 'panel';
-
-const labelClasses: Record<Style, string> = {
-  'frame-large': 'classic-portrait-frame text-[32px]',
-  frame: 'classic-portrait-frame text-[28.8px]',
-  'frame-small': 'classic-portrait-frame text-[22.464px]',
-  panel: 'classic-portrait-panel classic-portrait-decor text-[21.6px]',
-};
-
-const valueClasses: Record<Style, string> = {
-  ...labelClasses,
-  panel: 'classic-portrait-panel classic-portrait-mantova text-[21.6px]',
-};
+/** Light text on the wood panels, as in v1. */
+const panelLabelClass = 'classic-portrait-panel classic-portrait-decor text-[21.6px]';
+const panelValueClass = 'classic-portrait-panel classic-portrait-mantova text-[21.6px]';
 
 function Entry({
   placement,
   label,
   value,
-  style,
 }: {
   placement: Placement;
   label: string;
   value: string;
-  style: Style;
 }) {
   return (
     <>
       <div
-        className={`absolute whitespace-nowrap ${labelClasses[style]}`}
+        className={`absolute whitespace-nowrap ${panelLabelClass}`}
         style={{ top: placement.top, right: SURFACE.width - placement.labelRight }}
       >
         {label}
       </div>
       <div
         dir="ltr"
-        className={`absolute whitespace-nowrap ${valueClasses[style]}`}
+        className={`absolute whitespace-nowrap ${panelValueClass}`}
         style={{ top: placement.top, left: placement.valueLeft }}
+      >
+        {value}
+      </div>
+    </>
+  );
+}
+
+/** A row of a parchment frame: dark bold text, the label shrunk if it is too long. */
+function FrameEntry({ row, label, value }: { row: FrameRow; label: string; value: string }) {
+  const { ref, fontSize } = useFitFontSize<HTMLDivElement>(label, row.fontSize, row.labelMaxWidth);
+  return (
+    <>
+      <div
+        ref={ref}
+        className="classic-portrait-frame absolute whitespace-nowrap"
+        style={{
+          top: row.top,
+          right: SURFACE.width - row.labelRight,
+          fontSize,
+          // A shrunk label stays centred on its row.
+          lineHeight: `${String(row.fontSize * 1.5)}px`,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        dir="ltr"
+        className="classic-portrait-frame absolute whitespace-nowrap"
+        style={{
+          top: row.top,
+          left: row.valueLeft,
+          fontSize: row.fontSize,
+          lineHeight: `${String(row.fontSize * 1.5)}px`,
+        }}
       >
         {value}
       </div>
@@ -75,6 +101,9 @@ function Entry({
 export function ClassicPortrait({ state, options }: LayoutProps<ClassicPortraitOptions>) {
   const scale = useFitScale(SURFACE.width, SURFACE.height);
   const { schedule, dailyZmanim, shabbat, calendar } = state;
+  const weekdayRows = frameRows(weekdayFrame, schedule.weekday.length);
+  // The entered Shabbat prayers, then Arvit at the end of Shabbat.
+  const shabbatRows = frameRows(shabbatFrame, schedule.shabbat.length + 1);
 
   return (
     <div className="flex h-dvh w-dvw items-center justify-center overflow-hidden bg-black">
@@ -88,67 +117,46 @@ export function ClassicPortrait({ state, options }: LayoutProps<ClassicPortraitO
           backgroundSize: '100% 100%',
         }}
       >
-        {(['shacharit', 'mincha', 'arvit'] as const).map((key) => (
-          <Entry
-            key={key}
-            placement={weekdayPlacements[key]}
-            label={labels.weekday[key]}
-            value={schedule.weekday[key]}
-            style="frame-large"
-          />
-        ))}
+        {weekdayRows.map((row, index) => {
+          const prayer = schedule.weekday[index];
+          return (
+            prayer !== undefined && (
+              <FrameEntry key={prayer.id} row={row} label={prayer.name} value={prayer.time} />
+            )
+          );
+        })}
 
-        <Entry
-          placement={shabbatPlacements.shirHashirim}
-          label={labels.shabbat.shirHashirim}
-          value={schedule.shabbat.shirHashirim}
-          style="frame-small"
-        />
-        {(['minchaErev', 'shacharit', 'mincha'] as const).map((key) => (
-          <Entry
-            key={key}
-            placement={shabbatPlacements[key]}
-            label={labels.shabbat[key]}
-            value={schedule.shabbat[key]}
-            style="frame"
-          />
-        ))}
-        <Entry
-          placement={shabbatPlacements.arvit}
-          label={labels.shabbat.arvit}
-          value={timeOf(shabbat.motzeiShabbatArvit)}
-          style="frame"
-        />
+        {shabbatRows.map((row, index) => {
+          const prayer = schedule.shabbat[index];
+          return prayer === undefined ? (
+            <FrameEntry
+              key="arvit"
+              row={row}
+              label={labels.shabbat.arvit}
+              value={timeOf(shabbat.motzeiShabbatArvit)}
+            />
+          ) : (
+            <FrameEntry key={prayer.id} row={row} label={prayer.name} value={prayer.time} />
+          );
+        })}
 
         {options.showDafYomi && (
-          <Entry
-            placement={leftPanel.dafYomi}
-            label={labels.dafYomi}
-            value={calendar.dafYomi}
-            style="panel"
-          />
+          <Entry placement={leftPanel.dafYomi} label={labels.dafYomi} value={calendar.dafYomi} />
         )}
-        <Entry
-          placement={leftPanel.parasha}
-          label={labels.parasha}
-          value={calendar.parasha}
-          style="panel"
-        />
+        <Entry placement={leftPanel.parasha} label={labels.parasha} value={calendar.parasha} />
         <Entry
           placement={leftPanel.candleLighting}
           label={labels.candleLighting}
           value={timeOf(shabbat.candleLighting)}
-          style="panel"
         />
         <Entry
           placement={leftPanel.rabbeinuTam}
           label={labels.rabbeinuTam}
           value={timeOf(shabbat.rabbeinuTam)}
-          style="panel"
         />
 
         <div
-          className={`absolute whitespace-nowrap ${labelClasses.panel}`}
+          className={`absolute whitespace-nowrap ${panelLabelClass}`}
           style={{
             top: rightPanel.hebrewDate.top,
             right: SURFACE.width - rightPanel.hebrewDate.labelRight,
@@ -162,9 +170,20 @@ export function ClassicPortrait({ state, options }: LayoutProps<ClassicPortraitO
             placement={rightPanel[key]}
             label={labels.dailyZmanim[key]}
             value={timeOf(dailyZmanim[key])}
-            style="panel"
           />
         ))}
+
+        <div
+          className="absolute inset-x-0 flex items-center justify-center"
+          style={{ top: eventsLine.top, height: eventsLine.height }}
+        >
+          <DayEventsLine
+            events={state.events}
+            size={24}
+            maxWidth={eventsLine.maxWidth}
+            className="classic-portrait-panel classic-portrait-decor"
+          />
+        </div>
 
         {options.showClock && <AnalogClock timeZoneId={state.timeZoneId} />}
 

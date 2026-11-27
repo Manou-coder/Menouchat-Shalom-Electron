@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createDefaultSettings } from '@menouchat/shared';
+import { createDefaultSchedule, createDefaultSettings } from '@menouchat/shared';
 
 import { createStore } from '../store/store.ts';
 import { importV1IfNeeded } from './import-v1.ts';
@@ -49,22 +49,21 @@ describe('v1 import, on a copy of a real v1 userData', () => {
     expect(outcome).toEqual({ status: 'imported', slides: 4, notes: [] });
 
     const store = createStore(join(userData, 'data'), logger);
-    await expect(store.schedule.read()).resolves.toEqual({
-      schemaVersion: 1,
-      weekday: { shacharit: '06:20', mincha: '17:50', arvit: '20:10' },
-      shabbat: { shirHashirim: '19:10', minchaErev: '19:25', shacharit: '08:20', mincha: '18:40' },
-    });
+    await expect(store.schedule.read()).resolves.toEqual(createDefaultSchedule());
     await expect(store.settings.read()).resolves.toEqual(createDefaultSettings());
 
-    const { slides } = await store.slides.read();
+    const { slots, library } = await store.slides.read();
     expect(
-      slides.map(({ slot, title, enabled, originalFile, image }) => ({
-        slot,
-        title,
-        enabled,
-        originalFile,
-        image,
-      })),
+      slots.map(({ slot, itemId, enabled }) => {
+        const item = library.find((candidate) => candidate.id === itemId);
+        return {
+          slot,
+          title: item?.name,
+          enabled,
+          originalFile: item?.kind === 'file' ? item.original : undefined,
+          image: item?.image,
+        };
+      }),
     ).toEqual([
       {
         slot: 1,
@@ -77,10 +76,12 @@ describe('v1 import, on a copy of a real v1 userData', () => {
       { slot: 3, title: 'test-image3', enabled: false, originalFile: null, image: 'page-1.jpg' },
       { slot: 4, title: 'test-image4', enabled: false, originalFile: null, image: 'page-1.jpg' },
     ]);
-    const [first] = slides;
-    expect(await readFile(join(userData, 'slides', first?.id ?? '', first?.image ?? ''))).toEqual(
-      await readFile(join(userData, 'images', 'imageAffiche1.jpg')),
-    );
+    const first = library.find((item) => item.id === slots[0]?.itemId);
+    expect(
+      await readFile(
+        join(userData, 'slides', ...(first?.folder.split('/') ?? []), first?.image ?? ''),
+      ),
+    ).toEqual(await readFile(join(userData, 'images', 'imageAffiche1.jpg')));
 
     await expect(store.displays.read()).resolves.toMatchObject({
       displays: [{ id: 'main', layoutId: 'classic-portrait', slideIntervalSec: 10 }],
@@ -98,12 +99,12 @@ describe('v1 import, on a copy of a real v1 userData', () => {
     await importV1IfNeeded(userData, logger, NOW);
     const store = createStore(join(userData, 'data'), logger);
     const schedule = await store.schedule.read();
-    await store.schedule.write({ ...schedule, weekday: { ...schedule.weekday, arvit: '20:30' } });
+    await store.schedule.write({ ...schedule, weekday: [] });
 
     await expect(importV1IfNeeded(userData, logger, NOW)).resolves.toEqual({
       status: 'already-imported',
     });
-    await expect(store.schedule.read()).resolves.toMatchObject({ weekday: { arvit: '20:30' } });
+    await expect(store.schedule.read()).resolves.toMatchObject({ weekday: [] });
   });
 
   it('redoes an import that was interrupted before the final rename', async () => {
@@ -118,7 +119,7 @@ describe('v1 import, on a copy of a real v1 userData', () => {
     const entries = await readdir(userData);
     expect(entries).not.toContain('data.importing');
     expect(await readdir(join(userData, 'slides'))).not.toContain('left-over');
-    expect(await readdir(join(userData, 'slides'))).toHaveLength(4);
+    expect(await readdir(join(userData, 'slides', 'library'))).toHaveLength(4);
   });
 
   it('does nothing on a fresh install without v1 data', async () => {
@@ -141,8 +142,6 @@ describe('v1 import, on a copy of a real v1 userData', () => {
     expect(log).toContain('note: imageAffiche2.jpg: not a JPEG image, slot skipped');
     expect(log).toContain('note: imageAffiche3.jpg: missing, slot skipped');
     const store = createStore(join(userData, 'data'), logger);
-    await expect(store.schedule.read()).resolves.toMatchObject({
-      weekday: { shacharit: '06:20', mincha: '17:50', arvit: '20:10' },
-    });
+    await expect(store.schedule.read()).resolves.toEqual(createDefaultSchedule());
   });
 });

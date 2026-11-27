@@ -4,7 +4,11 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createDefaultSchedule, createDefaultSettings } from '@menouchat/shared';
+import {
+  createDefaultSchedule,
+  createDefaultSettings,
+  createDefaultSlides,
+} from '@menouchat/shared';
 
 import { createStore } from './store.ts';
 
@@ -30,9 +34,9 @@ describe('store', () => {
   it('keeps each document in its own file', async () => {
     const store = createStore(dataDirectory, { info: vi.fn(), warn: vi.fn() });
     const schedule = createDefaultSchedule();
-    schedule.weekday.shacharit = '06:45';
+    schedule.weekday.push({ id: 'weekday-late', name: 'ערבית ב׳', time: '22:00' });
     await store.schedule.write(schedule);
-    await store.slides.write({ schemaVersion: 1, slides: [] });
+    await store.slides.write(createDefaultSlides());
     await expect(store.schedule.read()).resolves.toEqual(schedule);
     expect((await readdir(dataDirectory)).sort()).toEqual(['schedule.json', 'slides.json']);
   });

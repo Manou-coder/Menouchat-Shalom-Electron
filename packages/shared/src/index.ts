@@ -1,5 +1,10 @@
 export {
   adminStateSchema,
+  TEMPLATE_UPLOAD_FIELDS,
+  libraryItemRefInputSchema,
+  renameLibraryItemInputSchema,
+  showLibraryItemInputSchema,
+  dayEventToggleInputSchema,
   layoutInputSchema,
   scheduleInputSchema,
   SLIDE_UPLOAD_FIELDS,
@@ -22,9 +27,11 @@ export {
   type DesktopBridge,
 } from './desktop-bridge.ts';
 export {
+  dayEventSchema,
+  type DayEventSnapshot,
   displayStateSchema,
   SLIDES_PATH,
-  slidePageUrl,
+  libraryFileUrl,
   zmanSchema,
   type DisplayState,
   type ZmanSnapshot,
