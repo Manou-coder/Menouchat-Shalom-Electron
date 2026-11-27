@@ -113,7 +113,7 @@ export const strings = {
     },
     layout: {
       title: 'עיצוב המסך',
-      names: { 'classic-portrait': 'קלאסי', 'blue-gold': 'כחול וזהב' },
+      names: { 'classic-portrait': 'קלאסי', 'classic-new': 'קלאסי חדש', 'blue-gold': 'כחול וזהב' },
     },
     phone: {
       title: 'עריכה מהטלפון',
