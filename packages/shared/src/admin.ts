@@ -57,4 +57,6 @@ export const SLIDE_UPLOAD_FIELDS = {
   title: 'title',
   original: 'original',
   image: 'image',
+  /** JSON of a `SlideDesign`, for slides made in the template editor. */
+  design: 'design',
 } as const;

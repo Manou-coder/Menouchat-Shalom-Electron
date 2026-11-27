@@ -1,5 +1,5 @@
-import { ImageIcon, LoaderCircle } from 'lucide-react';
-import { useState } from 'react';
+import { ImageIcon, LoaderCircle, Palette } from 'lucide-react';
+import { lazy, Suspense, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
 
 import {
@@ -27,6 +27,12 @@ import { useDraft } from '../use-draft.ts';
 import { useUnsavedWarning } from '../use-unsaved-warning.ts';
 
 const labels = strings.admin.slides;
+
+// Konva is heavy and only needed here: the screens and the rest of the admin load without it.
+const SlideEditorDialog = lazy(async () => {
+  const module = await import('../slide-editor/SlideEditor.tsx');
+  return { default: module.SlideEditorDialog };
+});
 
 function useSlotUpload(slot: SlideSlot) {
   const api = useApiClient();
@@ -84,6 +90,7 @@ function Thumbnail({ slide, busy }: { slide: Slide | undefined; busy: boolean })
 function SlotRow({ slot, slide }: { slot: SlideSlot; slide: Slide | undefined }) {
   const api = useApiClient();
   const { upload, busy, error } = useSlotUpload(slot);
+  const [editing, setEditing] = useState(false);
   const toggle = useAction((enabled: boolean) =>
     api.admin.slides.setEnabled.mutate({ slot, enabled }),
   );
@@ -104,13 +111,26 @@ function SlotRow({ slot, slide }: { slot: SlideSlot; slide: Slide | undefined })
           {slide?.title ?? labels.emptySlot}
         </span>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Toggle
           label={labels.shown}
           isSelected={slide?.enabled === true}
           isDisabled={slide === undefined || toggle.pending}
           onChange={(enabled) => void toggle.run(enabled)}
         />
+        <span className="flex-1" />
+        <Button
+          variant="secondary"
+          isDisabled={busy}
+          onPress={() => {
+            setEditing(true);
+          }}
+        >
+          <span className="flex items-center gap-2">
+            <Palette aria-hidden className="size-5" />
+            {slide?.design === undefined ? labels.design : labels.editDesign}
+          </span>
+        </Button>
         <FileTrigger
           acceptedFileTypes={ACCEPTED_SLIDE_TYPES}
           onSelect={(files) => {
@@ -126,6 +146,25 @@ function SlotRow({ slot, slide }: { slot: SlideSlot; slide: Slide | undefined })
         </FileTrigger>
       </div>
       <ErrorMessage message={error ?? toggle.error} />
+      {editing && (
+        <Suspense
+          fallback={
+            <LoaderCircle
+              aria-label={labels.converting}
+              className="size-6 animate-spin text-accent"
+            />
+          }
+        >
+          <SlideEditorDialog
+            slot={slot}
+            slide={slide}
+            isOpen
+            onClose={() => {
+              setEditing(false);
+            }}
+          />
+        </Suspense>
+      )}
     </li>
   );
 }

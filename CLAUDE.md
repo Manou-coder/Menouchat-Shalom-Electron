@@ -74,7 +74,7 @@ A display renders a `DisplayState` pushed by the server (`display.onState`, SSE)
 
 - Admin procedures (`adminProcedure` in `apps/desktop/src/main/api/router.ts`) are open to any caller, by the owner's decision. `localProcedure` (the launch token) guards what acts on the PC itself, such as opening the admin window.
 - Business logic lives in `apps/desktop/src/main/services/admin-service.ts`. Every write goes through its queue and wakes the display and admin streams (`ChangeHub.notify()`). Business-rule failures throw `AdminError` (`NOT_FOUND`, `BAD_REQUEST`, `PRECONDITION_FAILED`), which the API turns into the matching status.
-- Admin UI code is in `apps/web/src/admin/`: cards, `useDraft`, `useAction` (toasts), and fields that follow the plan §9 rules. The admin has four sections (times, slides, layout, settings): prayer lists the owner can add to, remove from and reorder, four slide slots, seconds per slide, the screen theme, the phone address and a manual update check. Ask the owner before adding anything to it.
+- Admin UI code is in `apps/web/src/admin/`: cards, `useDraft`, `useAction` (toasts), and fields that follow the plan §9 rules. The admin has four sections (times, slides, layout, settings): prayer lists the owner can add to, remove from and reorder, four slide slots (a file, or a slide made in the template editor in `apps/web/src/admin/slide-editor/`, Konva, loaded on demand), seconds per slide, the screen theme, the phone address and a manual update check. Ask the owner before adding anything to it.
 - `pnpm dev` writes to this machine's real `userData` as soon as you save in the admin. Delete `data/` and `slides/` there to get back to a first launch.
 
 ## Data

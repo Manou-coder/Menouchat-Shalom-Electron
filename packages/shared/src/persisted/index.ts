@@ -35,6 +35,16 @@ export {
 } from './settings.ts';
 export {
   createDefaultSlides,
+  MAX_SLIDE_TEXT_LENGTH,
+  MAX_SLIDE_TEXTS,
+  SLIDE_DESIGN_SIZE,
+  SLIDE_FONTS,
+  slideDesignSchema,
+  slideFontSchema,
+  slideTextSchema,
+  type SlideDesign,
+  type SlideFont,
+  type SlideText,
   SLIDE_SLOTS,
   slideIdSchema,
   slideSchema,

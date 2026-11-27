@@ -101,6 +101,7 @@ export function createAdminService(dependencies: AdminServiceDependencies): Admi
           title: upload.title,
           ...files,
           enabled: previous?.enabled ?? true,
+          ...(upload.design === undefined ? {} : { design: upload.design }),
         };
         try {
           await store.slides.write({

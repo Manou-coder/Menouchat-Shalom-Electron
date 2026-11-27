@@ -48,6 +48,17 @@ async function errorCode(promise: Promise<unknown>): Promise<string | undefined>
 
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
 
+/** A slide from the template editor: a PNG background, the rendered JPEG and the design. */
+function designForm(design: string): FormData {
+  const form = uploadForm(2);
+  form.set(
+    SLIDE_UPLOAD_FIELDS.original,
+    new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'background.png', { type: 'image/png' }),
+  );
+  form.set(SLIDE_UPLOAD_FIELDS.design, design);
+  return form;
+}
+
 function uploadForm(
   slot: number | string = 2,
   image: Uint8Array = JPEG,
@@ -237,6 +248,43 @@ describe('slides', () => {
     await expect(errorCode(local().admin.slides.upload.mutate(uploadForm(5)))).resolves.toBe(
       'BAD_REQUEST',
     );
+    await expect(local().admin.state.query()).resolves.toMatchObject({ slides: [] });
+  });
+
+  it('keeps the design of a slide made in the template editor, with its background', async () => {
+    const design = {
+      texts: [
+        {
+          id: 'title',
+          text: 'מזל טוב',
+          x: 100,
+          y: 80,
+          width: 1500,
+          fontSize: 120,
+          font: 'frank-ruhl-libre',
+          color: '#9b1b1b',
+          bold: true,
+          align: 'center',
+        },
+      ],
+    };
+    const form = designForm(JSON.stringify(design));
+    const slide = await local().admin.slides.upload.mutate(form);
+    expect(slide).toMatchObject({ originalFile: 'original.png', design });
+    const { slides } = await local().admin.state.query();
+    expect(slides[0]?.design).toEqual(design);
+  });
+
+  it('refuses an invalid design or a PDF background', async () => {
+    await expect(
+      errorCode(local().admin.slides.upload.mutate(designForm('{"texts":[{"id":"x"}]}'))),
+    ).resolves.toBe('BAD_REQUEST');
+    await expect(
+      errorCode(local().admin.slides.upload.mutate(designForm('not json'))),
+    ).resolves.toBe('BAD_REQUEST');
+    const pdf = uploadForm(2);
+    pdf.set(SLIDE_UPLOAD_FIELDS.design, JSON.stringify({ texts: [] }));
+    await expect(errorCode(local().admin.slides.upload.mutate(pdf))).resolves.toBe('BAD_REQUEST');
     await expect(local().admin.state.query()).resolves.toMatchObject({ slides: [] });
   });
 
