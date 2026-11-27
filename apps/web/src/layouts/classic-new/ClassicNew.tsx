@@ -14,7 +14,7 @@ import {
 } from '../classic-portrait/placements.ts';
 import type { LayoutProps } from '../define-layout.tsx';
 import background from './assets/background.jpg';
-import parchment from './assets/parchment.jpg';
+import frame from './assets/frame.jpg';
 import type { ClassicNewOptions } from './options.ts';
 import './classic-new.css';
 
@@ -26,13 +26,20 @@ function timeOf(zman: ZmanSnapshot | null): string {
 
 /**
  * The new classic look: v1's wood, clock and slide frame, with the new logo engraved at the
- * top and both prayer lists in one gold frame where v1 had two ornate ones. Same 720 × 1280
+ * top and both prayer lists in one frame, moulded like the slide frame, where v1 had two. Same 720 × 1280
  * surface as the classic theme, whose panel and clock positions it keeps.
  */
 const LOGO = { top: 12, height: 152 } as const;
 /** Where v1's two frames stood, side by side. */
 const FRAME = { left: 26, top: 184, width: 668, height: 368 } as const;
-const FRAME_PADDING = { x: 26, top: 16, bottom: 18 } as const;
+/**
+ * The slide frame's wooden moulding, cut from the background and drawn as a border image:
+ * its thickness on the surface (v1's 52-58 px at 1080 px wide, times 2/3), then the
+ * matching slices of `frame.jpg`, which is at the background's full size.
+ */
+const BORDER = { top: 37, right: 39, bottom: 35, left: 39 } as const;
+const BORDER_SLICE = { top: 56, right: 58, bottom: 52, left: 58 } as const;
+const FRAME_PADDING = { x: 24, top: 6, bottom: 12 } as const;
 const TITLE_HEIGHT = 50;
 const MAX_ROW_STEP = 54;
 const MAX_FONT_SIZE = 34;
@@ -135,10 +142,17 @@ export function ClassicNew({ state, options }: LayoutProps<ClassicNewOptions>) {
     { key: 'arvit', name: labels.shabbat.arvit, time: timeOf(shabbat.motzeiShabbatArvit) },
   ];
   const rowCount = Math.max(weekday.length, shabbatRows.length, 1);
-  const rowsHeight = FRAME.height - 2 * 7 - FRAME_PADDING.top - FRAME_PADDING.bottom - TITLE_HEIGHT;
+  const rowsHeight =
+    FRAME.height -
+    BORDER.top -
+    BORDER.bottom -
+    FRAME_PADDING.top -
+    FRAME_PADDING.bottom -
+    TITLE_HEIGHT;
   const step = Math.min(MAX_ROW_STEP, rowsHeight / rowCount);
   const fontSize = Math.min(MAX_FONT_SIZE, step * FONT_TO_STEP);
-  const columnWidth = (FRAME.width - 2 * 7 - 2 * FRAME_PADDING.x - DIVIDER_WIDTH) / 2;
+  const columnWidth =
+    (FRAME.width - BORDER.left - BORDER.right - 2 * FRAME_PADDING.x - DIVIDER_WIDTH) / 2;
 
   return (
     <div className="flex h-dvh w-dvw items-center justify-center overflow-hidden bg-black">
@@ -164,11 +178,18 @@ export function ClassicNew({ state, options }: LayoutProps<ClassicNewOptions>) {
           />
         </div>
 
-        <div className="classic-new-frame absolute" style={FRAME}>
+        <div
+          className="classic-new-frame absolute"
+          style={{
+            ...FRAME,
+            borderStyle: 'solid',
+            borderWidth: `${String(BORDER.top)}px ${String(BORDER.right)}px ${String(BORDER.bottom)}px ${String(BORDER.left)}px`,
+            borderImage: `url(${frame}) ${String(BORDER_SLICE.top)} ${String(BORDER_SLICE.right)} ${String(BORDER_SLICE.bottom)} ${String(BORDER_SLICE.left)} fill / 1 / 0 stretch`,
+          }}
+        >
           <div
-            className="classic-new-parchment flex size-full items-start justify-between"
+            className="flex size-full items-start justify-between"
             style={{
-              backgroundImage: `url(${parchment})`,
               padding: `${String(FRAME_PADDING.top)}px ${String(FRAME_PADDING.x)}px ${String(FRAME_PADDING.bottom)}px`,
             }}
           >
