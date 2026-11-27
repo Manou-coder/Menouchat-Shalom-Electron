@@ -1,4 +1,4 @@
-import { ImagePlus, Pencil, Replace } from 'lucide-react';
+import { ImagePlus, Pencil, Replace, ZoomIn } from 'lucide-react';
 import { useState } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
 
@@ -15,6 +15,7 @@ import { Button } from '../../components/Button.tsx';
 import type { TemplateItem } from '../pictures/library.ts';
 import { LibraryThumbnail } from '../pictures/LibraryThumbnail.tsx';
 import { PictureChooser } from '../pictures/PictureChooser.tsx';
+import { PictureLightbox } from '../pictures/PictureLightbox.tsx';
 import { TemplateEditor } from '../pictures/TemplateEditor.tsx';
 import { Card, ErrorMessage } from '../ui/Card.tsx';
 import { Toggle } from '../ui/fields.tsx';
@@ -92,7 +93,7 @@ function SlotCard({
 }) {
   const api = useApiClient();
   // The chooser, or the editor on the slot's template or on a new one for this slot.
-  const [dialog, setDialog] = useState<'choose' | 'new-template' | 'edit-template'>();
+  const [dialog, setDialog] = useState<'choose' | 'enlarge' | 'new-template' | 'edit-template'>();
   const toggle = useAction((enabled: boolean) =>
     api.admin.slides.setEnabled.mutate({ slot, enabled }),
   );
@@ -117,13 +118,20 @@ function SlotCard({
           <SlotNumber slot={slot} />
         </AriaButton>
       ) : (
+        // A tap shows the picture large; changing it is the button's job.
         <AriaButton
-          onPress={open}
-          aria-label={`${labels.change} – ${labels.slot(slot)}`}
-          className="relative block w-full cursor-pointer rounded-lg data-focus-visible:outline-3 data-focus-visible:outline-focus"
+          onPress={() => {
+            setDialog('enlarge');
+          }}
+          aria-label={labels.enlarge(slot)}
+          className="group relative block w-full cursor-zoom-in rounded-lg data-focus-visible:outline-3 data-focus-visible:outline-focus"
         >
           <LibraryThumbnail item={item} dimmed={!shown} />
           <SlotNumber slot={slot} />
+          {/* Always visible on a phone, which has no hover; larger under a mouse. */}
+          <span className="absolute bottom-2 left-2 grid size-8 place-items-center rounded-full bg-black/55 text-white transition group-data-hovered:size-11 group-data-hovered:bg-black/70">
+            <ZoomIn aria-hidden className="size-4 group-data-hovered:size-6" />
+          </span>
         </AriaButton>
       )}
 
@@ -145,7 +153,7 @@ function SlotCard({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <Toggle
           label={labels.shown}
           isSelected={shown}
@@ -154,7 +162,7 @@ function SlotCard({
         />
         {item !== undefined && (
           <Button variant="secondary" onPress={open}>
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2 whitespace-nowrap">
               <Replace aria-hidden className="size-5" />
               {labels.change}
             </span>
@@ -163,6 +171,14 @@ function SlotCard({
       </div>
       <ErrorMessage message={toggle.error ?? show.error} />
 
+      {dialog === 'enlarge' && item !== undefined && (
+        <PictureLightbox
+          item={item}
+          onClose={() => {
+            setDialog(undefined);
+          }}
+        />
+      )}
       {dialog === 'choose' && (
         <PictureChooser
           slot={slot}

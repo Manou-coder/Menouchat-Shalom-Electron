@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { strings, type LibraryItem } from '@menouchat/shared';
@@ -37,5 +37,23 @@ describe('SlidesCard', () => {
     expect(document.querySelector('img')?.className).toContain('grayscale');
     expect(screen.getAllByText(labels.add)).toHaveLength(3);
     expect(screen.getByRole('spinbutton')).toHaveProperty('value', '8');
+  });
+
+  it('shows the picture large on a tap, and changes it only from the button', () => {
+    render(
+      <ApiClientContext value={api}>
+        <SlidesCard
+          slots={[{ slot: 1, itemId: picture.id, enabled: true }]}
+          library={[picture]}
+          slideIntervalSec={8}
+        />
+      </ApiClientContext>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: labels.enlarge(1) }));
+    expect(screen.getByRole('dialog', { name: 'הלכה יומית' })).toBeTruthy();
+    expect(screen.queryByText(strings.admin.chooser.file)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: labels.closePreview }));
+    fireEvent.click(screen.getByRole('button', { name: labels.change }));
+    expect(screen.getByText(strings.admin.chooser.file)).toBeTruthy();
   });
 });

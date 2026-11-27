@@ -1,5 +1,5 @@
 import type Konva from 'konva';
-import { AlignCenter, AlignLeft, AlignRight, Plus, Trash2, X } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, Plus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, FileTrigger, Heading, Modal, ModalOverlay } from 'react-aria-components';
 import { Image as KonvaImage, Layer, Stage, Text, Transformer } from 'react-konva';
@@ -164,11 +164,9 @@ function firstLine(text: string): string | undefined {
 function TextControls({
   text,
   onChange,
-  onRemove,
 }: {
   text: SlideText;
   onChange: (text: SlideText) => void;
-  onRemove: () => void;
 }) {
   const alignIcons = { right: AlignRight, center: AlignCenter, left: AlignLeft } as const;
   return (
@@ -272,15 +270,6 @@ function TextControls({
           })}
         </div>
       </div>
-
-      <div>
-        <Button variant="danger" onPress={onRemove}>
-          <span className="flex items-center gap-2">
-            <Trash2 aria-hidden className="size-5" />
-            {labels.removeText}
-          </span>
-        </Button>
-      </div>
     </div>
   );
 }
@@ -335,10 +324,15 @@ function Editor({
   const newTextColor =
     background.kind === 'builtin' ? backgroundTextColor(background.id) : '#ffffff';
 
+  // After every render: when the layer is drawn again (fonts loaded, picture changed), the
+  // handles must be put back on the selected text, which a narrower list of triggers missed.
   useEffect(() => {
     const node = selectedId === undefined ? undefined : textNodes.current.get(selectedId);
-    transformerRef.current?.nodes(node === undefined ? [] : [node]);
-  }, [selectedId, texts, fontsReady]);
+    const handles = transformerRef.current;
+    if (handles !== null && handles.nodes()[0] !== node) {
+      handles.nodes(node === undefined ? [] : [node]);
+    }
+  });
 
   function update(next: SlideText) {
     setTexts(texts.map((text) => (text.id === next.id ? next : text)));
@@ -350,6 +344,36 @@ function Editor({
     setTexts(texts.map((text) => (text.color === newTextColor ? { ...text, color } : text)));
     setBackground({ kind: 'builtin', id });
   }
+
+  function removeText(id: string) {
+    setTexts(texts.filter((text) => text.id !== id));
+    if (selectedId === id) {
+      setSelectedId(undefined);
+    }
+  }
+
+  // Delete or Backspace removes the selected text, unless a field is being typed in.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target;
+      const typing =
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+      if (
+        (event.key === 'Delete' || event.key === 'Backspace') &&
+        !typing &&
+        selectedId !== undefined
+      ) {
+        event.preventDefault();
+        setTexts((current) => current.filter((text) => text.id !== selectedId));
+        setSelectedId(undefined);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [selectedId]);
 
   function addText() {
     const text = createText(texts, newTextColor);
@@ -412,92 +436,101 @@ function Editor({
       </div>
 
       <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-4 lg:grid-cols-[1fr_22rem]">
-        <div className="grid content-start gap-4">
-          <div ref={frameRef} className="w-full overflow-hidden rounded-xl bg-black shadow-sm">
-            {width > 0 && (
-              <Stage
-                ref={stageRef}
-                width={width}
-                height={SLIDE_DESIGN_SIZE.height * scale}
-                scaleX={scale}
-                scaleY={scale}
-                onMouseDown={deselectOnEmpty}
-                onTouchStart={deselectOnEmpty}
-                aria-label={labels.canvasLabel}
-              >
-                {/* Remounted once the fonts load, so Konva measures the texts again. */}
-                <Layer key={fontsReady ? 'fonts-ready' : 'fonts-loading'}>
-                  {image !== undefined && (
-                    <KonvaImage
-                      name="background"
-                      image={image}
-                      width={SLIDE_DESIGN_SIZE.width}
-                      height={SLIDE_DESIGN_SIZE.height}
-                      crop={coverCrop({ width: image.naturalWidth, height: image.naturalHeight })}
-                    />
-                  )}
-                  {texts.map((text) => (
-                    <Text
-                      key={text.id}
-                      ref={(node) => {
-                        if (node === null) {
-                          textNodes.current.delete(text.id);
-                        } else {
-                          textNodes.current.set(text.id, node);
+        {/*
+          On a phone the columns stack and this one dissolves into the scrolling grid, so the
+          picture can stay at the top while the settings under it scroll.
+        */}
+        <div className="grid content-start gap-4 max-lg:contents">
+          <div className="sticky top-0 z-10 bg-background pb-1 lg:static lg:pb-0">
+            <div ref={frameRef} className="w-full overflow-hidden rounded-xl bg-black shadow-sm">
+              {width > 0 && (
+                <Stage
+                  ref={stageRef}
+                  width={width}
+                  height={SLIDE_DESIGN_SIZE.height * scale}
+                  scaleX={scale}
+                  scaleY={scale}
+                  onMouseDown={deselectOnEmpty}
+                  onTouchStart={deselectOnEmpty}
+                  aria-label={labels.canvasLabel}
+                >
+                  {/* Remounted once the fonts load, so Konva measures the texts again. */}
+                  <Layer key={fontsReady ? 'fonts-ready' : 'fonts-loading'}>
+                    {image !== undefined && (
+                      <KonvaImage
+                        name="background"
+                        image={image}
+                        width={SLIDE_DESIGN_SIZE.width}
+                        height={SLIDE_DESIGN_SIZE.height}
+                        crop={coverCrop({ width: image.naturalWidth, height: image.naturalHeight })}
+                      />
+                    )}
+                    {texts.map((text) => (
+                      <Text
+                        key={text.id}
+                        ref={(node) => {
+                          if (node === null) {
+                            textNodes.current.delete(text.id);
+                          } else {
+                            textNodes.current.set(text.id, node);
+                          }
+                        }}
+                        text={text.text}
+                        x={text.x}
+                        y={text.y}
+                        width={text.width}
+                        fontSize={text.fontSize}
+                        fontFamily={FONT_FAMILIES[text.font]}
+                        fontStyle={text.bold ? 'bold' : 'normal'}
+                        fill={text.color}
+                        align={text.align}
+                        direction="rtl"
+                        lineHeight={1.2}
+                        wrap="word"
+                        draggable
+                        onMouseDown={() => {
+                          setSelectedId(text.id);
+                        }}
+                        onTouchStart={() => {
+                          setSelectedId(text.id);
+                        }}
+                        onDragEnd={(event) => {
+                          update({ ...text, x: event.target.x(), y: event.target.y() });
+                        }}
+                        onTransform={(event) => {
+                          // Side handles change where lines wrap, never stretch the letters.
+                          const node = event.target;
+                          node.setAttrs({
+                            width: Math.max(40, node.width() * node.scaleX()),
+                            scaleX: 1,
+                          });
+                        }}
+                        onTransformEnd={(event) => {
+                          const node = event.target;
+                          update({ ...text, x: node.x(), y: node.y(), width: node.width() });
+                        }}
+                      />
+                    ))}
+                    {selected !== undefined && (
+                      <Transformer
+                        ref={transformerRef}
+                        enabledAnchors={['middle-left', 'middle-right']}
+                        rotateEnabled={false}
+                        // Smaller on a phone, where the picture itself is small.
+                        anchorSize={width < 500 ? 16 : 28}
+                        anchorCornerRadius={width < 500 ? 8 : 14}
+                        anchorStroke="#b8892f"
+                        borderStroke="#d6a64d"
+                        borderStrokeWidth={2}
+                        boundBoxFunc={(previous, next) =>
+                          next.width < 40 * scale ? previous : next
                         }
-                      }}
-                      text={text.text}
-                      x={text.x}
-                      y={text.y}
-                      width={text.width}
-                      fontSize={text.fontSize}
-                      fontFamily={FONT_FAMILIES[text.font]}
-                      fontStyle={text.bold ? 'bold' : 'normal'}
-                      fill={text.color}
-                      align={text.align}
-                      direction="rtl"
-                      lineHeight={1.2}
-                      wrap="word"
-                      draggable
-                      onMouseDown={() => {
-                        setSelectedId(text.id);
-                      }}
-                      onTouchStart={() => {
-                        setSelectedId(text.id);
-                      }}
-                      onDragEnd={(event) => {
-                        update({ ...text, x: event.target.x(), y: event.target.y() });
-                      }}
-                      onTransform={(event) => {
-                        // Side handles change where lines wrap, never stretch the letters.
-                        const node = event.target;
-                        node.setAttrs({
-                          width: Math.max(40, node.width() * node.scaleX()),
-                          scaleX: 1,
-                        });
-                      }}
-                      onTransformEnd={(event) => {
-                        const node = event.target;
-                        update({ ...text, x: node.x(), y: node.y(), width: node.width() });
-                      }}
-                    />
-                  ))}
-                  {selected !== undefined && (
-                    <Transformer
-                      ref={transformerRef}
-                      enabledAnchors={['middle-left', 'middle-right']}
-                      rotateEnabled={false}
-                      anchorSize={28}
-                      anchorCornerRadius={14}
-                      anchorStroke="#b8892f"
-                      borderStroke="#d6a64d"
-                      borderStrokeWidth={2}
-                      boundBoxFunc={(previous, next) => (next.width < 40 * scale ? previous : next)}
-                    />
-                  )}
-                </Layer>
-              </Stage>
-            )}
+                      />
+                    )}
+                  </Layer>
+                </Stage>
+              )}
+            </div>
           </div>
           <p className="text-sm text-text-muted">{labels.selectHint}</p>
 
@@ -552,20 +585,37 @@ function Editor({
             onChange={setName}
           />
           <div className="flex flex-wrap gap-2">
-            {texts.map((text) => (
-              <button
-                key={text.id}
-                type="button"
-                aria-pressed={text.id === selectedId}
-                onClick={() => {
-                  setSelectedId(text.id);
-                }}
-                className="min-h-11 max-w-full truncate rounded-xl border border-border bg-surface px-3 focus-visible:outline-3 focus-visible:outline-focus aria-pressed:border-accent aria-pressed:bg-accent-soft"
-                dir="auto"
-              >
-                {firstLine(text.text) ?? labels.newText}
-              </button>
-            ))}
+            {texts.map((text) => {
+              const name = firstLine(text.text) ?? labels.newText;
+              const isSelected = text.id === selectedId;
+              return (
+                <span
+                  key={text.id}
+                  className={`flex max-w-full items-center rounded-xl border ${isSelected ? 'border-accent bg-accent-soft' : 'border-border bg-surface'}`}
+                >
+                  <button
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      setSelectedId(text.id);
+                    }}
+                    className="min-h-11 min-w-0 truncate rounded-xl ps-3 pe-1 focus-visible:outline-3 focus-visible:outline-focus"
+                  >
+                    <bdi>{name}</bdi>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={labels.removeNamed(name)}
+                    onClick={() => {
+                      removeText(text.id);
+                    }}
+                    className="grid size-11 shrink-0 place-items-center rounded-xl text-text-muted hover:text-danger focus-visible:outline-3 focus-visible:outline-focus"
+                  >
+                    <X aria-hidden className="size-4" />
+                  </button>
+                </span>
+              );
+            })}
             <Button
               variant="secondary"
               onPress={addText}
@@ -583,14 +633,7 @@ function Editor({
           {selected === undefined ? (
             texts.length === 0 && <p className="text-text-muted">{labels.noText}</p>
           ) : (
-            <TextControls
-              text={selected}
-              onChange={update}
-              onRemove={() => {
-                setTexts(texts.filter((text) => text.id !== selected.id));
-                setSelectedId(undefined);
-              }}
-            />
+            <TextControls text={selected} onChange={update} />
           )}
         </div>
       </div>
