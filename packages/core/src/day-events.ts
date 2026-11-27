@@ -47,7 +47,21 @@ const HOLIDAY_FLAGS =
 
 type NamedEventKind = Exclude<DayEvent['kind'], 'omer'>;
 
+/** Hebcal lists it among minor holidays; the synagogue does not mark it (owner's choice). */
+const LEFT_OUT = new Set(['Chag HaBanot']);
+
+/** Display order: the month first, then the day's holidays, Chanukah, and the Omer. */
+const ORDER: Record<DayEvent['kind'], number> = {
+  roshChodesh: 0,
+  holiday: 1,
+  chanukah: 2,
+  omer: 3,
+};
+
 function classify(event: Event): NamedEventKind | undefined {
+  if (LEFT_OUT.has(event.getDesc())) {
+    return undefined;
+  }
   const mask = event.getFlags();
   if (event.getDesc().startsWith('Chanukah')) {
     return 'chanukah';
@@ -69,7 +83,7 @@ function omerTonight(date: HDate): number | undefined {
   return day >= 1 && day <= 49 ? day : undefined;
 }
 
-/** The events of `date`, in Hebcal's order, then tonight's Omer count. */
+/** The events of `date`, Rosh Chodesh first and tonight's Omer count last. */
 export function computeDayEvents(date: CivilDate, location: Location): DayEvent[] {
   const hebrewDate = toHebrewDate(date);
   const events = // Typed as an array by Hebcal, but undefined on a day without any holiday.
@@ -81,7 +95,10 @@ export function computeDayEvents(date: CivilDate, location: Location): DayEvent[
       },
     );
   const omer = omerTonight(hebrewDate);
-  return omer === undefined
-    ? events
-    : [...events, { kind: 'omer', day: omer, dayText: gematriya(omer) }];
+  const all: DayEvent[] =
+    omer === undefined
+      ? events
+      : [...events, { kind: 'omer', day: omer, dayText: gematriya(omer) }];
+  // A stable sort: events of one kind keep Hebcal's order.
+  return all.toSorted((a, b) => ORDER[a.kind] - ORDER[b.kind]);
 }

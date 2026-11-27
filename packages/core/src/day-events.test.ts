@@ -15,10 +15,12 @@ const on = (year: number, month: number, day: number) =>
   computeDayEvents({ year, month, day }, jerusalem);
 
 describe('computeDayEvents', () => {
-  it('names Rosh Chodesh and the Chanukah candles of the evening', () => {
-    const events = on(2026, 12, 10);
-    expect(events).toContainEqual({ kind: 'roshChodesh', text: 'ראש חודש טבת' });
-    expect(events).toContainEqual({ kind: 'chanukah', text: 'חנוכה: ז׳ נרות' });
+  it('names Rosh Chodesh first, then the Chanukah candles of the evening', () => {
+    // Hebcal also lists Chag HaBanot that day, which the synagogue does not mark.
+    expect(on(2026, 12, 10)).toEqual([
+      { kind: 'roshChodesh', text: 'ראש חודש טבת' },
+      { kind: 'chanukah', text: 'חנוכה: ז׳ נרות' },
+    ]);
   });
 
   it('announces the month on Shabbat Mevarchim', () => {
