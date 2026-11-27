@@ -1,40 +1,47 @@
 import { SLIDE_DESIGN_SIZE } from '@menouchat/shared';
 
+import parchmentUrl from './assets/parchment.jpg';
+import { coverCrop } from './design.ts';
+
 /**
- * The backgrounds offered with the app, drawn in code rather than shipped as pictures: a
- * gradient and a gold frame in the spirit of the two screen themes.
+ * The backgrounds offered with the app. No frame of their own: the screen already shows
+ * every slide inside its frame. The parchment is the real one, cut from the inside of the
+ * classic theme's slide frame; the others are plain gradients.
  */
 export const BACKGROUND_IDS = ['parchment', 'navy', 'white', 'dark'] as const;
 export type BackgroundId = (typeof BACKGROUND_IDS)[number];
 
-interface BackgroundStyle {
-  from: string;
-  to: string;
-  frame: string;
-  /** The colour new texts get on this background. */
-  textColor: string;
-  radial: boolean;
-}
+type BackgroundStyle =
+  | { kind: 'picture'; url: string; textColor: string }
+  | { kind: 'gradient'; from: string; to: string; radial: boolean; textColor: string };
 
 const styles: Record<BackgroundId, BackgroundStyle> = {
-  parchment: {
-    from: '#fbf3df',
-    to: '#e4cf9f',
-    frame: '#b8892f',
-    textColor: '#12306a',
-    radial: true,
-  },
-  navy: { from: '#1b3f80', to: '#0c2148', frame: '#d6a64d', textColor: '#fbf1d6', radial: true },
-  white: { from: '#ffffff', to: '#f4eee2', frame: '#b8892f', textColor: '#2b2219', radial: false },
-  dark: { from: '#3a2e22', to: '#15110d', frame: '#d6a64d', textColor: '#f3ece2', radial: true },
+  parchment: { kind: 'picture', url: parchmentUrl, textColor: '#12306a' },
+  navy: { kind: 'gradient', from: '#1b3f80', to: '#0c2148', radial: true, textColor: '#fbf1d6' },
+  white: { kind: 'gradient', from: '#ffffff', to: '#f4eee2', radial: false, textColor: '#2b2219' },
+  dark: { kind: 'gradient', from: '#3a2e22', to: '#15110d', radial: true, textColor: '#f3ece2' },
 };
 
+/** The colour new texts get on this background. */
 export function backgroundTextColor(id: BackgroundId): string {
   return styles[id].textColor;
 }
 
-function draw(context: CanvasRenderingContext2D, style: BackgroundStyle): void {
+async function loadImage(url: string): Promise<HTMLImageElement> {
+  const image = new Image();
+  image.src = url;
+  await image.decode();
+  return image;
+}
+
+async function draw(context: CanvasRenderingContext2D, style: BackgroundStyle): Promise<void> {
   const { width, height } = SLIDE_DESIGN_SIZE;
+  if (style.kind === 'picture') {
+    const image = await loadImage(style.url);
+    const crop = coverCrop({ width: image.naturalWidth, height: image.naturalHeight });
+    context.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, width, height);
+    return;
+  }
   const gradient = style.radial
     ? context.createRadialGradient(
         width / 2,
@@ -49,22 +56,6 @@ function draw(context: CanvasRenderingContext2D, style: BackgroundStyle): void {
   gradient.addColorStop(1, style.to);
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
-
-  // A thick frame and a thin one inside it, with small squares at the inner corners.
-  context.strokeStyle = style.frame;
-  context.lineWidth = 14;
-  context.strokeRect(30, 30, width - 60, height - 60);
-  context.lineWidth = 4;
-  context.strokeRect(56, 56, width - 112, height - 112);
-  context.fillStyle = style.frame;
-  for (const [x, y] of [
-    [56, 56],
-    [width - 56, 56],
-    [56, height - 56],
-    [width - 56, height - 56],
-  ] as const) {
-    context.fillRect(x - 12, y - 12, 24, 24);
-  }
 }
 
 /** The background as a PNG at the slide's design size, uploaded as the slide's original. */
@@ -76,7 +67,7 @@ export async function renderBackground(id: BackgroundId): Promise<Blob> {
   if (context === null) {
     throw new Error('Canvas 2D is not available');
   }
-  draw(context, styles[id]);
+  await draw(context, styles[id]);
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob === null) {
