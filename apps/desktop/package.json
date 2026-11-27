@@ -1,6 +1,6 @@
 {
   "name": "menouchat-chalom",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "private": true,
   "type": "module",
   "description": "Prayer times (zmanim) display for the Menouchat Chalom synagogue",
