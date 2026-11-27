@@ -11,8 +11,11 @@ export function LibraryThumbnail({
   dimmed?: boolean;
 }) {
   return (
+    // Loaded only when scrolled near: a long library on a phone fetches what is on screen.
     <img
       src={itemImageUrl(item)}
+      loading="lazy"
+      decoding="async"
       alt=""
       className={`aspect-[594/280] w-full rounded-lg bg-background object-contain transition ${dimmed ? 'opacity-40 grayscale' : ''}`}
     />
