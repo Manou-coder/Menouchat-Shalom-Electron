@@ -47,6 +47,22 @@ describe('computeDayEvents', () => {
     expect(on(2027, 6, 10).some((event) => event.kind === 'omer')).toBe(false);
   });
 
+  it('leaves out the minor days the synagogue does not mark', () => {
+    // Yom Kippur Katan Kislev, Purim Katan, Rosh Hashana LaBehemot, Leil Selichot.
+    for (const [year, month, day] of [
+      [2026, 11, 9],
+      [2027, 2, 21],
+      [2027, 9, 3],
+      [2027, 9, 25],
+    ] as const) {
+      expect(on(year, month, day).filter((event) => event.kind === 'holiday')).toEqual([]);
+    }
+  });
+
+  it('writes Rosh Hashana without the year in digits', () => {
+    expect(on(2026, 9, 12)).toEqual([{ kind: 'holiday', text: 'ראש השנה' }]);
+  });
+
   it('has nothing to say on an ordinary weekday', () => {
     expect(on(2026, 11, 26)).toEqual([]);
   });

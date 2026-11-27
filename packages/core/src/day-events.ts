@@ -47,8 +47,23 @@ const HOLIDAY_FLAGS =
 
 type NamedEventKind = Exclude<DayEvent['kind'], 'omer'>;
 
-/** Hebcal lists it among minor holidays; the synagogue does not mark it (owner's choice). */
-const LEFT_OUT = new Set(['Chag HaBanot']);
+/**
+ * Minor days Hebcal lists that the synagogue does not mark (owner's choice), by Hebcal's
+ * English name; Yom Kippur Katan carries the month after it.
+ */
+const LEFT_OUT = [
+  'Chag HaBanot',
+  'Yom Kippur Katan',
+  'Rosh Hashana LaBehemot',
+  'Leil Selichot',
+  'Purim Katan',
+  'Shushan Purim Katan',
+];
+
+const isLeftOut = (event: Event) => {
+  const name = event.getDesc();
+  return LEFT_OUT.some((left) => name === left || name.startsWith(`${left} `));
+};
 
 /** Display order: the month first, then the day's holidays, Chanukah, and the Omer. */
 const ORDER: Record<DayEvent['kind'], number> = {
@@ -59,7 +74,7 @@ const ORDER: Record<DayEvent['kind'], number> = {
 };
 
 function classify(event: Event): NamedEventKind | undefined {
-  if (LEFT_OUT.has(event.getDesc())) {
+  if (isLeftOut(event)) {
     return undefined;
   }
   const mask = event.getFlags();
@@ -91,7 +106,9 @@ export function computeDayEvents(date: CivilDate, location: Location): DayEvent[
     (HebrewCalendar.getHolidaysOnDate(hebrewDate, location.inIsrael) ?? []).flatMap(
       (event): DayEvent[] => {
         const kind = classify(event);
-        return kind === undefined ? [] : [{ kind, text: event.render(HEBREW_WITHOUT_NIKUD) }];
+        // Hebcal writes Rosh Hashana's first day with the year in digits ("ראש השנה 5787").
+        const text = event.render(HEBREW_WITHOUT_NIKUD).replace(/ \d+$/, '');
+        return kind === undefined ? [] : [{ kind, text }];
       },
     );
   const omer = omerTonight(hebrewDate);
