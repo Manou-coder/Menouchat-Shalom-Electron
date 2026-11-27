@@ -1,5 +1,8 @@
 export {
   adminStateSchema,
+  TEMPLATE_UPLOAD_FIELDS,
+  templateRefInputSchema,
+  useTemplateInputSchema,
   dayEventToggleInputSchema,
   layoutInputSchema,
   scheduleInputSchema,
@@ -28,6 +31,8 @@ export {
   displayStateSchema,
   SLIDES_PATH,
   slidePageUrl,
+  templateFileUrl,
+  TEMPLATES_FOLDER,
   zmanSchema,
   type DisplayState,
   type ZmanSnapshot,

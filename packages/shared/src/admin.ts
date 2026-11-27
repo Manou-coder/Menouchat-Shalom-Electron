@@ -4,6 +4,7 @@ import { displaySchema, layoutIdSchema } from './persisted/displays.ts';
 import { DAY_EVENT_KINDS, dayEventSettingsSchema } from './persisted/settings.ts';
 import { scheduleSchema } from './persisted/schedule.ts';
 import { slideSchema, slideSlotSchema } from './persisted/slides.ts';
+import { templateIdSchema, templateSchema } from './persisted/templates.ts';
 
 export const scheduleInputSchema = scheduleSchema.omit({ schemaVersion: true });
 export type ScheduleInput = z.infer<typeof scheduleInputSchema>;
@@ -41,6 +42,8 @@ export type UpdateCheckResult = z.infer<typeof updateCheckResultSchema>;
 export const adminStateSchema = z.object({
   schedule: scheduleInputSchema,
   slides: z.array(slideSchema),
+  /** Every template, newest first. */
+  templates: z.array(templateSchema),
   slideIntervalSec: displaySchema.shape.slideIntervalSec,
   /** The main display's layout ("theme" in the admin). */
   layoutId: displaySchema.shape.layoutId,
@@ -66,6 +69,23 @@ export const SLIDE_UPLOAD_FIELDS = {
   title: 'title',
   original: 'original',
   image: 'image',
-  /** JSON of a `SlideDesign`, for slides made in the template editor. */
-  design: 'design',
 } as const;
+
+/** Form field names of a template save (multipart/form-data); `id` only to update one. */
+export const TEMPLATE_UPLOAD_FIELDS = {
+  id: 'id',
+  name: 'name',
+  /** JSON of a `SlideDesign`. */
+  design: 'design',
+  /** PNG, JPEG or WebP. */
+  background: 'background',
+  /** The JPEG rendered in the browser. */
+  image: 'image',
+} as const;
+
+export const templateRefInputSchema = z.object({ templateId: templateIdSchema });
+
+export const useTemplateInputSchema = z.object({
+  slot: slideSlotSchema,
+  templateId: templateIdSchema,
+});

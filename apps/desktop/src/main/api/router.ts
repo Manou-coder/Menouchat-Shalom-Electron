@@ -12,6 +12,8 @@ import {
   scheduleInputSchema,
   slideIntervalInputSchema,
   slideToggleInputSchema,
+  templateRefInputSchema,
+  useTemplateInputSchema,
   updateCheckResultSchema,
   type AdminState,
   type DayEventKind,
@@ -20,10 +22,12 @@ import {
   type ScheduleInput,
   type Slide,
   type SlideSlot,
+  type Template,
   type UpdateCheckResult,
 } from '@menouchat/shared';
 
 import { parseSlideUpload, type SlideUpload } from './slide-upload.ts';
+import { parseTemplateUpload, type TemplateUpload } from './template-upload.ts';
 import { publicProcedure, router } from './trpc.ts';
 
 export interface DisplayStateApi {
@@ -40,6 +44,10 @@ export interface AdminApi {
   setSlideInterval(seconds: number): Promise<void>;
   setLayout(layoutId: LayoutId): Promise<void>;
   setDayEventEnabled(kind: DayEventKind, enabled: boolean): Promise<void>;
+  saveTemplate(upload: TemplateUpload): Promise<Template>;
+  duplicateTemplate(templateId: string): Promise<Template>;
+  removeTemplate(templateId: string): Promise<void>;
+  useTemplate(slot: SlideSlot, templateId: string): Promise<Slide>;
 }
 
 /** What only the app's own windows may ask of the desktop app. */
@@ -146,6 +154,21 @@ export function createAppRouter({ version, displayStates, admin, desktop }: AppR
         setInterval: adminProcedure
           .input(slideIntervalInputSchema)
           .mutation(({ input }) => admin.setSlideInterval(input.slideIntervalSec)),
+        useTemplate: adminProcedure
+          .input(useTemplateInputSchema)
+          .mutation(({ input }) => admin.useTemplate(input.slot, input.templateId)),
+      }),
+
+      templates: router({
+        save: adminProcedure
+          .input(z.instanceof(FormData))
+          .mutation(({ input }) => admin.saveTemplate(parseTemplateUpload(input))),
+        duplicate: adminProcedure
+          .input(templateRefInputSchema)
+          .mutation(({ input }) => admin.duplicateTemplate(input.templateId)),
+        remove: adminProcedure
+          .input(templateRefInputSchema)
+          .mutation(({ input }) => admin.removeTemplate(input.templateId)),
       }),
     }),
   });

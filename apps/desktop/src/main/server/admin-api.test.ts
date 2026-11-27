@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createTRPCClient, httpLink, TRPCClientError } from '@trpc/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SLIDE_UPLOAD_FIELDS } from '@menouchat/shared';
+import { SLIDE_UPLOAD_FIELDS, TEMPLATE_UPLOAD_FIELDS, templateFileUrl } from '@menouchat/shared';
 
 import type { AppRouter } from '../api/router.ts';
 import { createTestApp, TEST_TOKEN, type TestApp } from '../testing/test-app.ts';
@@ -48,14 +48,40 @@ async function errorCode(promise: Promise<unknown>): Promise<string | undefined>
 
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
 
-/** A slide from the template editor: a PNG background, the rendered JPEG and the design. */
-function designForm(design: string): FormData {
-  const form = uploadForm(2);
+const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+
+const DESIGN = {
+  texts: [
+    {
+      id: 'title',
+      text: 'מזל טוב',
+      x: 100,
+      y: 80,
+      width: 1500,
+      fontSize: 120,
+      font: 'frank-ruhl-libre',
+      color: '#9b1b1b',
+      bold: true,
+      align: 'center',
+    },
+  ],
+};
+
+/** A template save from the editor: a PNG background, the rendered JPEG and the design. */
+function templateForm(
+  fields: { id?: string; name?: string; design?: string; background?: File } = {},
+): FormData {
+  const form = new FormData();
+  if (fields.id !== undefined) {
+    form.set(TEMPLATE_UPLOAD_FIELDS.id, fields.id);
+  }
+  form.set(TEMPLATE_UPLOAD_FIELDS.name, fields.name ?? 'מזל טוב');
+  form.set(TEMPLATE_UPLOAD_FIELDS.design, fields.design ?? JSON.stringify(DESIGN));
   form.set(
-    SLIDE_UPLOAD_FIELDS.original,
-    new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'background.png', { type: 'image/png' }),
+    TEMPLATE_UPLOAD_FIELDS.background,
+    fields.background ?? new File([PNG], 'background.png', { type: 'image/png' }),
   );
-  form.set(SLIDE_UPLOAD_FIELDS.design, design);
+  form.set(TEMPLATE_UPLOAD_FIELDS.image, new File([JPEG], 'page-1.jpg', { type: 'image/jpeg' }));
   return form;
 }
 
@@ -262,43 +288,6 @@ describe('slides', () => {
     await expect(local().admin.state.query()).resolves.toMatchObject({ slides: [] });
   });
 
-  it('keeps the design of a slide made in the template editor, with its background', async () => {
-    const design = {
-      texts: [
-        {
-          id: 'title',
-          text: 'מזל טוב',
-          x: 100,
-          y: 80,
-          width: 1500,
-          fontSize: 120,
-          font: 'frank-ruhl-libre',
-          color: '#9b1b1b',
-          bold: true,
-          align: 'center',
-        },
-      ],
-    };
-    const form = designForm(JSON.stringify(design));
-    const slide = await local().admin.slides.upload.mutate(form);
-    expect(slide).toMatchObject({ originalFile: 'original.png', design });
-    const { slides } = await local().admin.state.query();
-    expect(slides[0]?.design).toEqual(design);
-  });
-
-  it('refuses an invalid design or a PDF background', async () => {
-    await expect(
-      errorCode(local().admin.slides.upload.mutate(designForm('{"texts":[{"id":"x"}]}'))),
-    ).resolves.toBe('BAD_REQUEST');
-    await expect(
-      errorCode(local().admin.slides.upload.mutate(designForm('not json'))),
-    ).resolves.toBe('BAD_REQUEST');
-    const pdf = uploadForm(2);
-    pdf.set(SLIDE_UPLOAD_FIELDS.design, JSON.stringify({ texts: [] }));
-    await expect(errorCode(local().admin.slides.upload.mutate(pdf))).resolves.toBe('BAD_REQUEST');
-    await expect(local().admin.state.query()).resolves.toMatchObject({ slides: [] });
-  });
-
   it('cannot show an empty slot', async () => {
     await expect(
       errorCode(local().admin.slides.setEnabled.mutate({ slot: 1, enabled: true })),
@@ -355,5 +344,86 @@ describe('admin state stream', () => {
     );
     expect(text).toContain('"time":"20:10"');
     expect(text).toContain('"time":"20:30"');
+  });
+});
+
+describe('templates', () => {
+  it('keeps a template with its design, and serves its picture', async () => {
+    const template = await local().admin.templates.save.mutate(templateForm());
+    expect(template).toMatchObject({
+      name: 'מזל טוב',
+      design: DESIGN,
+      background: 'background.png',
+    });
+    await expect(local().admin.state.query()).resolves.toMatchObject({ templates: [template] });
+    const page = await fetch(`${baseUrl}${templateFileUrl(template, template.image)}`);
+    expect(page.status).toBe(200);
+  });
+
+  it('shows a template in a slot, and the slot follows when the template is edited', async () => {
+    const template = await local().admin.templates.save.mutate(templateForm());
+    const shown = await local().admin.slides.useTemplate.mutate({
+      slot: 2,
+      templateId: template.id,
+    });
+    expect(shown).toMatchObject({ slot: 2, title: 'מזל טוב', templateId: template.id });
+
+    const edited = await local().admin.templates.save.mutate(
+      templateForm({ id: template.id, name: 'שבת שלום' }),
+    );
+    expect(edited.revision).not.toBe(template.revision);
+    const { slides } = await local().admin.state.query();
+    expect(slides).toEqual([
+      expect.objectContaining({ slot: 2, title: 'שבת שלום', templateId: template.id }),
+    ]);
+    expect(slides[0]?.id).not.toBe(shown.id);
+    await expect(access(join(app.slidesRoot, shown.id))).rejects.toThrow();
+    await expect(
+      access(join(app.slidesRoot, 'templates', template.id, template.revision)),
+    ).rejects.toThrow();
+  });
+
+  it('duplicates a template under a new name', async () => {
+    const template = await local().admin.templates.save.mutate(templateForm());
+    const copy = await local().admin.templates.duplicate.mutate({ templateId: template.id });
+    expect(copy).toMatchObject({ name: 'מזל טוב (עותק)', design: DESIGN });
+    expect(copy.id).not.toBe(template.id);
+    const { templates } = await local().admin.state.query();
+    expect(templates.map((other) => other.id)).toEqual([copy.id, template.id]);
+  });
+
+  it('deletes a template; a slot showing it keeps its picture', async () => {
+    const template = await local().admin.templates.save.mutate(templateForm());
+    const shown = await local().admin.slides.useTemplate.mutate({
+      slot: 1,
+      templateId: template.id,
+    });
+    await local().admin.templates.remove.mutate({ templateId: template.id });
+    const { templates, slides } = await local().admin.state.query();
+    expect(templates).toEqual([]);
+    expect(slides).toEqual([expect.objectContaining({ id: shown.id, slot: 1 })]);
+    expect(slides[0]?.templateId).toBeUndefined();
+    await expect(access(join(app.slidesRoot, 'templates', template.id))).rejects.toThrow();
+  });
+
+  it('refuses an invalid design, a PDF background or an unknown template', async () => {
+    await expect(
+      errorCode(local().admin.templates.save.mutate(templateForm({ design: 'not json' }))),
+    ).resolves.toBe('BAD_REQUEST');
+    await expect(
+      errorCode(
+        local().admin.templates.save.mutate(
+          templateForm({ background: new File([PNG], 'b.pdf', { type: 'application/pdf' }) }),
+        ),
+      ),
+    ).resolves.toBe('BAD_REQUEST');
+    const unknown = '00000000-0000-4000-8000-000000000000';
+    await expect(
+      errorCode(local().admin.templates.save.mutate(templateForm({ id: unknown }))),
+    ).resolves.toBe('NOT_FOUND');
+    await expect(
+      errorCode(local().admin.slides.useTemplate.mutate({ slot: 1, templateId: unknown })),
+    ).resolves.toBe('NOT_FOUND');
+    await expect(local().admin.state.query()).resolves.toMatchObject({ templates: [], slides: [] });
   });
 });

@@ -39,6 +39,15 @@ export {
   type Settings,
 } from './settings.ts';
 export {
+  createDefaultTemplates,
+  templateIdSchema,
+  templateSchema,
+  templatesSchema,
+  TEMPLATES_SCHEMA_VERSION,
+  type Template,
+  type Templates,
+} from './templates.ts';
+export {
   createDefaultSlides,
   MAX_SLIDE_TEXT_LENGTH,
   MAX_SLIDE_TEXTS,

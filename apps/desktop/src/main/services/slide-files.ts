@@ -4,7 +4,7 @@ import { extname, join } from 'node:path';
 import type { SlideUpload } from '../api/slide-upload.ts';
 import { AdminError } from '../api/errors.ts';
 
-const ORIGINAL_EXTENSIONS: Record<string, string> = {
+export const ORIGINAL_EXTENSIONS: Record<string, string> = {
   'application/pdf': '.pdf',
   'image/png': '.png',
   'image/jpeg': '.jpg',
@@ -13,7 +13,7 @@ const ORIGINAL_EXTENSIONS: Record<string, string> = {
 
 const JPEG_SIGNATURE = [0xff, 0xd8, 0xff];
 
-async function readJpeg(file: File): Promise<Uint8Array> {
+export async function readJpeg(file: File): Promise<Uint8Array> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (!JPEG_SIGNATURE.every((byte, index) => bytes[index] === byte)) {
     throw new AdminError('BAD_REQUEST', 'The slide image is not a JPEG');

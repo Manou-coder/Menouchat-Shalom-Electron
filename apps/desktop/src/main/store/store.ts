@@ -5,6 +5,7 @@ import {
   createDefaultSchedule,
   createDefaultSettings,
   createDefaultSlides,
+  createDefaultTemplates,
   displaysSchema,
   DISPLAYS_SCHEMA_VERSION,
   scheduleSchema,
@@ -13,11 +14,14 @@ import {
   SETTINGS_SCHEMA_VERSION,
   slidesSchema,
   SLIDES_SCHEMA_VERSION,
+  templatesSchema,
+  TEMPLATES_SCHEMA_VERSION,
   V1_PRAYERS,
   type Displays,
   type Schedule,
   type Settings,
   type Slides,
+  type Templates,
 } from '@menouchat/shared';
 
 import {
@@ -32,6 +36,7 @@ export interface Store {
   settings: DocumentStore<Settings>;
   schedule: DocumentStore<Schedule>;
   slides: DocumentStore<Slides>;
+  templates: DocumentStore<Templates>;
   displays: DocumentStore<Displays>;
 }
 
@@ -104,6 +109,17 @@ export function createStore(dataDirectory: string, logger: StoreLogger): Store {
         currentVersion: SLIDES_SCHEMA_VERSION,
         migrations: {},
         createDefault: createDefaultSlides,
+      },
+      logger,
+    ),
+    templates: createDocumentStore(
+      dataDirectory,
+      {
+        fileName: 'templates.json',
+        schema: templatesSchema,
+        currentVersion: TEMPLATES_SCHEMA_VERSION,
+        migrations: {},
+        createDefault: createDefaultTemplates,
       },
       logger,
     ),

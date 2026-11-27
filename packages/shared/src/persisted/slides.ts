@@ -67,8 +67,11 @@ export const slideSchema = z.object({
   /** The JPEG shown on screen (first page of a PDF), in `slides/<id>/`. */
   image: storedFileNameSchema,
   enabled: z.boolean(),
-  /** Only for slides made in the template editor; optional, so version 1 files still read. */
-  design: slideDesignSchema.optional(),
+  /**
+   * The template this slot shows, whose files were copied here; the slot follows it when it
+   * is edited. Optional, so version 1 files still read.
+   */
+  templateId: z.uuid().optional(),
 });
 
 export type Slide = z.infer<typeof slideSchema>;

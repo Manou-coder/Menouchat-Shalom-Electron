@@ -77,3 +77,15 @@ export const SLIDES_PATH = '/slides';
 export function slidePageUrl(slideId: string, fileName: string): string {
   return `${SLIDES_PATH}/${encodeURIComponent(slideId)}/${encodeURIComponent(fileName)}`;
 }
+
+/** Templates are kept beside the slides, in `slides/templates/<id>/<revision>/`. */
+export const TEMPLATES_FOLDER = 'templates';
+
+export function templateFileUrl(
+  template: { id: string; revision: string },
+  fileName: string,
+): string {
+  return [SLIDES_PATH, TEMPLATES_FOLDER, template.id, template.revision, fileName]
+    .map((part, index) => (index === 0 ? part : encodeURIComponent(part)))
+    .join('/');
+}

@@ -9,21 +9,20 @@ import {
   MAX_SLIDE_TEXTS,
   SLIDE_DESIGN_SIZE,
   SLIDE_FONTS,
-  SLIDE_UPLOAD_FIELDS,
+  TEMPLATE_UPLOAD_FIELDS,
   slideFontSchema,
-  slidePageUrl,
+  templateFileUrl,
   strings,
-  type Slide,
   type SlideDesign,
-  type SlideSlot,
   type SlideText,
+  type Template,
 } from '@menouchat/shared';
 
 import { useApiClient } from '../../api/api-client.ts';
 import { Button } from '../../components/Button.tsx';
 import { errorMessage } from '../errors.ts';
 import { ErrorMessage } from '../ui/Card.tsx';
-import { SelectInput, Toggle } from '../ui/fields.tsx';
+import { SelectInput, TextInput, Toggle } from '../ui/fields.tsx';
 import {
   BACKGROUND_IDS,
   backgroundTextColor,
@@ -42,16 +41,16 @@ import './slide-editor.css';
 
 const labels = strings.admin.editor;
 
-/** Pictures a user may pick as a background; the server keeps them as the slide's original. */
+/** Pictures a user may pick as a background; the server keeps them with the template. */
 const BACKGROUND_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 type Background =
   | { kind: 'builtin'; id: BackgroundId }
   | { kind: 'file'; file: File }
-  /** The background of a slide being edited again, as stored on the server. */
+  /** The background of a template being edited again, as stored on the server. */
   | { kind: 'saved'; url: string };
 
-/** The background as a file to upload with the slide. */
+/** The background as a file to upload with the template. */
 async function backgroundFile(background: Background): Promise<File> {
   switch (background.kind) {
     case 'builtin':
@@ -160,13 +159,6 @@ function firstLine(text: string): string | undefined {
   const line = text.split('\n')[0]?.trim();
   return line === '' ? undefined : line;
 }
-
-const nextFrame = () =>
-  new Promise<void>((resolve) => {
-    requestAnimationFrame(() => {
-      resolve();
-    });
-  });
 
 function TextControls({
   text,
@@ -293,25 +285,23 @@ function TextControls({
 }
 
 /**
- * Makes a slide from a background and texts the user places on it: drag a text to move it,
+ * Makes a template from a background and texts the user places on it: drag a text to move it,
  * pull its side handles to change where it wraps, and style it in the panel. The result is
- * saved as an ordinary slide, with the design kept so it can be edited again.
+ * saved as a template, with the design kept so it can be edited again; slots showing it follow.
  */
 function Editor({
-  slot,
-  slide,
+  template,
+  onSaved,
   onClose,
 }: {
-  slot: SlideSlot;
-  slide: Slide | undefined;
+  /** The template to edit; a new one is made without it. */
+  template: Template | undefined;
+  onSaved: (template: Template) => void;
   onClose: () => void;
 }) {
   const api = useApiClient();
-  const savedDesign = slide?.design;
   const savedBackground =
-    savedDesign !== undefined && slide !== undefined && slide.originalFile !== null
-      ? slidePageUrl(slide.id, slide.originalFile)
-      : undefined;
+    template === undefined ? undefined : templateFileUrl(template, template.background);
 
   const [background, setBackground] = useState<Background>(() =>
     savedBackground === undefined
@@ -319,9 +309,10 @@ function Editor({
       : { kind: 'saved', url: savedBackground },
   );
   const [texts, setTexts] = useState<SlideText[]>(
-    () => savedDesign?.texts ?? [createText([], backgroundTextColor('parchment'))],
+    () => template?.design.texts ?? [createText([], backgroundTextColor('parchment'))],
   );
   const [selectedId, setSelectedId] = useState<string | undefined>(texts[0]?.id);
+  const [name, setName] = useState(template?.name ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -367,24 +358,28 @@ function Editor({
     setSaving(true);
     setError(undefined);
     try {
-      // The handles must not end up in the picture.
-      setSelectedId(undefined);
-      await nextFrame();
-      await nextFrame();
-      const rendered = await (
-        await fetch(
-          stage.toDataURL({ mimeType: 'image/jpeg', quality: 0.9, pixelRatio: 1 / scale }),
-        )
-      ).blob();
+      // The handles must not end up in the picture. Hidden on the node itself, at once:
+      // waiting for a re-render would need an animation frame, which a hidden page never gets.
+      const handles = transformerRef.current;
+      handles?.visible(false);
+      const dataUrl = stage.toDataURL({
+        mimeType: 'image/jpeg',
+        quality: 0.9,
+        pixelRatio: 1 / scale,
+      });
+      handles?.visible(true);
+      const rendered = await (await fetch(dataUrl)).blob();
       const design: SlideDesign = { texts };
       const form = new FormData();
-      form.set(SLIDE_UPLOAD_FIELDS.slot, String(slot));
-      form.set(SLIDE_UPLOAD_FIELDS.title, designTitle(design));
-      form.set(SLIDE_UPLOAD_FIELDS.original, await backgroundFile(background));
-      form.set(SLIDE_UPLOAD_FIELDS.image, rendered, 'page-1.jpg');
-      form.set(SLIDE_UPLOAD_FIELDS.design, JSON.stringify(design));
-      await api.admin.slides.upload.mutate(form);
-      onClose();
+      if (template !== undefined) {
+        form.set(TEMPLATE_UPLOAD_FIELDS.id, template.id);
+      }
+      // Without a name, the template is named after its first line of text.
+      form.set(TEMPLATE_UPLOAD_FIELDS.name, name.trim() === '' ? designTitle(design) : name.trim());
+      form.set(TEMPLATE_UPLOAD_FIELDS.background, await backgroundFile(background));
+      form.set(TEMPLATE_UPLOAD_FIELDS.image, rendered, 'page-1.jpg');
+      form.set(TEMPLATE_UPLOAD_FIELDS.design, JSON.stringify(design));
+      onSaved(await api.admin.templates.save.mutate(form));
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {
@@ -402,7 +397,7 @@ function Editor({
     <Dialog className="flex h-full flex-col outline-none">
       <div className="flex items-center gap-3 border-b border-border/70 px-4 py-3">
         <Heading slot="title" className="flex-1 text-lg font-semibold">
-          {labels.title(slot)}
+          {template === undefined ? labels.newTemplate : labels.editTemplate}
         </Heading>
         <Button variant="icon" aria-label={labels.cancel} onPress={onClose} isDisabled={saving}>
           <X aria-hidden className="mx-auto size-5" />
@@ -534,6 +529,13 @@ function Editor({
         </div>
 
         <div className="grid content-start gap-4">
+          <TextInput
+            label={labels.name}
+            placeholder={labels.namePlaceholder}
+            maxLength={100}
+            value={name}
+            onChange={setName}
+          />
           <div className="flex flex-wrap gap-2">
             {texts.map((text) => (
               <button
@@ -592,21 +594,22 @@ function Editor({
 }
 
 /** The editor in a full-screen dialog over the admin. */
-export function SlideEditorDialog({
-  slot,
-  slide,
+export function TemplateEditorDialog({
+  template,
   isOpen,
   onClose,
+  onSaved,
 }: {
-  slot: SlideSlot;
-  slide: Slide | undefined;
+  template: Template | undefined;
   isOpen: boolean;
   onClose: () => void;
+  /** Called with the saved template; the dialog is closed by its owner. */
+  onSaved: (template: Template) => void;
 }) {
   return (
     <ModalOverlay isOpen={isOpen} className="fixed inset-0 z-30 bg-black/50 md:p-6">
       <Modal className="mx-auto h-full max-w-6xl overflow-hidden bg-background md:rounded-2xl md:shadow-xl">
-        {isOpen && <Editor slot={slot} slide={slide} onClose={onClose} />}
+        {isOpen && <Editor template={template} onSaved={onSaved} onClose={onClose} />}
       </Modal>
     </ModalOverlay>
   );

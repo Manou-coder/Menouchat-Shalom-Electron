@@ -1,5 +1,5 @@
 import { ImageIcon, LoaderCircle, Palette } from 'lucide-react';
-import { lazy, Suspense, useState } from 'react';
+import { useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
 
 import {
@@ -9,6 +9,7 @@ import {
   strings,
   type Slide,
   type SlideSlot,
+  type Template,
 } from '@menouchat/shared';
 
 import { useApiClient } from '../../api/api-client.ts';
@@ -19,6 +20,8 @@ import {
   SlideConversionError,
 } from '../../slides/convert-slide.ts';
 import { errorMessage } from '../errors.ts';
+import { TemplateEditor } from '../templates/TemplateEditor.tsx';
+import { TemplatePicker } from '../templates/TemplatePicker.tsx';
 import { Card, ErrorMessage } from '../ui/Card.tsx';
 import { NumberInput, Toggle } from '../ui/fields.tsx';
 import { SaveButton } from '../ui/SaveButton.tsx';
@@ -27,12 +30,6 @@ import { useDraft } from '../use-draft.ts';
 import { useUnsavedWarning } from '../use-unsaved-warning.ts';
 
 const labels = strings.admin.slides;
-
-// Konva is heavy and only needed here: the screens and the rest of the admin load without it.
-const SlideEditorDialog = lazy(async () => {
-  const module = await import('../slide-editor/SlideEditor.tsx');
-  return { default: module.SlideEditorDialog };
-});
 
 function useSlotUpload(slot: SlideSlot) {
   const api = useApiClient();
@@ -87,10 +84,23 @@ function Thumbnail({ slide, busy }: { slide: Slide | undefined; busy: boolean })
   );
 }
 
-function SlotRow({ slot, slide }: { slot: SlideSlot; slide: Slide | undefined }) {
+function SlotRow({
+  slot,
+  slide,
+  templates,
+}: {
+  slot: SlideSlot;
+  slide: Slide | undefined;
+  templates: readonly Template[];
+}) {
   const api = useApiClient();
   const { upload, busy, error } = useSlotUpload(slot);
-  const [editing, setEditing] = useState(false);
+  // The template picker, or the editor: on the slot's template, or on a new one for it.
+  const [dialog, setDialog] = useState<'pick' | 'create' | 'edit'>();
+  const shownTemplate = templates.find((template) => template.id === slide?.templateId);
+  const useTemplate = useAction((templateId: string) =>
+    api.admin.slides.useTemplate.mutate({ slot, templateId }),
+  );
   const toggle = useAction((enabled: boolean) =>
     api.admin.slides.setEnabled.mutate({ slot, enabled }),
   );
@@ -119,16 +129,27 @@ function SlotRow({ slot, slide }: { slot: SlideSlot; slide: Slide | undefined })
           onChange={(enabled) => void toggle.run(enabled)}
         />
         <span className="flex-1" />
+        {shownTemplate !== undefined && (
+          <Button
+            variant="secondary"
+            isDisabled={busy}
+            onPress={() => {
+              setDialog('edit');
+            }}
+          >
+            {labels.editTemplate}
+          </Button>
+        )}
         <Button
           variant="secondary"
-          isDisabled={busy}
+          isDisabled={busy || useTemplate.pending}
           onPress={() => {
-            setEditing(true);
+            setDialog('pick');
           }}
         >
           <span className="flex items-center gap-2">
             <Palette aria-hidden className="size-5" />
-            {slide?.design === undefined ? labels.design : labels.editDesign}
+            {labels.chooseTemplate}
           </span>
         </Button>
         <FileTrigger
@@ -145,25 +166,37 @@ function SlotRow({ slot, slide }: { slot: SlideSlot; slide: Slide | undefined })
           </Button>
         </FileTrigger>
       </div>
-      <ErrorMessage message={error ?? toggle.error} />
-      {editing && (
-        <Suspense
-          fallback={
-            <LoaderCircle
-              aria-label={labels.converting}
-              className="size-6 animate-spin text-accent"
-            />
-          }
-        >
-          <SlideEditorDialog
-            slot={slot}
-            slide={slide}
-            isOpen
-            onClose={() => {
-              setEditing(false);
-            }}
-          />
-        </Suspense>
+      <ErrorMessage message={error ?? toggle.error ?? useTemplate.error} />
+      {dialog === 'pick' && (
+        <TemplatePicker
+          slot={slot}
+          templates={templates}
+          onPick={(template) => {
+            setDialog(undefined);
+            void useTemplate.run(template.id);
+          }}
+          onCreate={() => {
+            setDialog('create');
+          }}
+          onClose={() => {
+            setDialog(undefined);
+          }}
+        />
+      )}
+      {(dialog === 'create' || dialog === 'edit') && (
+        <TemplateEditor
+          template={dialog === 'edit' ? shownTemplate : undefined}
+          onClose={() => {
+            setDialog(undefined);
+          }}
+          onSaved={(template) => {
+            setDialog(undefined);
+            // An edited template already reaches its slots; a new one is put in this slot.
+            if (dialog === 'create') {
+              void useTemplate.run(template.id);
+            }
+          }}
+        />
       )}
     </li>
   );
@@ -172,9 +205,11 @@ function SlotRow({ slot, slide }: { slot: SlideSlot; slide: Slide | undefined })
 /** v1's four slide slots: a picture each, shown or not, and the seconds per slide. */
 export function SlidesCard({
   slides,
+  templates,
   slideIntervalSec,
 }: {
   slides: readonly Slide[];
+  templates: readonly Template[];
   slideIntervalSec: number;
 }) {
   const api = useApiClient();
@@ -189,7 +224,12 @@ export function SlidesCard({
       <p className="-mt-2 text-sm text-text-muted">{labels.accepted}</p>
       <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {SLIDE_SLOTS.map((slot) => (
-          <SlotRow key={slot} slot={slot} slide={slides.find((slide) => slide.slot === slot)} />
+          <SlotRow
+            key={slot}
+            slot={slot}
+            slide={slides.find((slide) => slide.slot === slot)}
+            templates={templates}
+          />
         ))}
       </ul>
       <form

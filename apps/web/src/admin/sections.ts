@@ -1,7 +1,7 @@
 import { strings } from '@menouchat/shared';
 
 /** The admin's menu entries, in menu order; each has its own address under /admin. */
-export const ADMIN_SECTIONS = ['times', 'slides', 'layout', 'settings'] as const;
+export const ADMIN_SECTIONS = ['times', 'slides', 'templates', 'layout', 'settings'] as const;
 export type AdminSection = (typeof ADMIN_SECTIONS)[number];
 
 export const DEFAULT_SECTION: AdminSection = 'times';
