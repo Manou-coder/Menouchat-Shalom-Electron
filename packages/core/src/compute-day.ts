@@ -1,5 +1,6 @@
 import type { CivilDate } from './civil-date.ts';
 import { computeDailyZmanim, type DailyZmanim } from './daily-zmanim.ts';
+import { computeDayEvents, type DayEvent } from './day-events.ts';
 import { computeHebrewCalendarInfo, type HebrewCalendarInfo } from './hebrew-calendar.ts';
 import type { Location } from './location.ts';
 import {
@@ -14,6 +15,7 @@ export interface DayZmanim {
   dailyZmanim: DailyZmanim;
   shabbat: ShabbatTimes;
   calendar: HebrewCalendarInfo;
+  events: DayEvent[];
 }
 
 export function computeDay(
@@ -26,5 +28,6 @@ export function computeDay(
     dailyZmanim: computeDailyZmanim(date, location),
     shabbat: computeShabbatTimes(date, location, options),
     calendar: computeHebrewCalendarInfo(date, location),
+    events: computeDayEvents(date, location),
   };
 }

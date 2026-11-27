@@ -1,4 +1,4 @@
-import { createDefaultSchedule, strings, type Schedule } from '@menouchat/shared';
+import { SCHEDULE_SCHEMA_VERSION, strings, V1_PRAYERS, type Schedule } from '@menouchat/shared';
 
 import { V1_SLOTS, type V1Data, type V1Slot } from './read-v1-data.ts';
 
@@ -49,7 +49,6 @@ function slideTitle(name: unknown, slot: V1Slot): string {
 /** Maps v1's data onto v2's documents (plan §5). Pure: file copies are done by the caller. */
 export function convertV1Data(v1: V1Data): V1Conversion {
   const notes = [...v1.problems];
-  const defaults = createDefaultSchedule();
 
   function time(value: unknown, fallback: string, label: string): string {
     const normalised = normaliseTime(value);
@@ -60,19 +59,29 @@ export function convertV1Data(v1: V1Data): V1Conversion {
     return normalised;
   }
 
+  // v1's field name and value for each prayer, in the order of V1_PRAYERS.
+  const v1Times = {
+    weekday: [
+      ['shacharitChol', v1.weekday?.shacharitChol],
+      ['minchaChol', v1.weekday?.minchaChol],
+      ['arvitChol', v1.weekday?.arvitChol],
+    ],
+    shabbat: [
+      ['shirAshirim', v1.shabbat?.shirAshirim],
+      ['minchaErevShbt', v1.shabbat?.minchaErevShbt],
+      ['shaharitShbt', v1.shabbat?.shaharitShbt],
+      ['minchaShbt', v1.shabbat?.minchaShbt],
+    ],
+  } as const;
+  const group = (key: 'weekday' | 'shabbat') =>
+    V1_PRAYERS[key].map(({ id, name, time: fallback }, index) => {
+      const [field, value] = v1Times[key][index] ?? [id, undefined];
+      return { id, name, time: time(value, fallback, field) };
+    });
   const schedule: Schedule = {
-    schemaVersion: 1,
-    weekday: {
-      shacharit: time(v1.weekday?.shacharitChol, defaults.weekday.shacharit, 'shacharitChol'),
-      mincha: time(v1.weekday?.minchaChol, defaults.weekday.mincha, 'minchaChol'),
-      arvit: time(v1.weekday?.arvitChol, defaults.weekday.arvit, 'arvitChol'),
-    },
-    shabbat: {
-      shirHashirim: time(v1.shabbat?.shirAshirim, defaults.shabbat.shirHashirim, 'shirAshirim'),
-      minchaErev: time(v1.shabbat?.minchaErevShbt, defaults.shabbat.minchaErev, 'minchaErevShbt'),
-      shacharit: time(v1.shabbat?.shaharitShbt, defaults.shabbat.shacharit, 'shaharitShbt'),
-      mincha: time(v1.shabbat?.minchaShbt, defaults.shabbat.mincha, 'minchaShbt'),
-    },
+    schemaVersion: SCHEDULE_SCHEMA_VERSION,
+    weekday: group('weekday'),
+    shabbat: group('shabbat'),
   };
 
   const rawInterval = v1.checkbox?.secInterval;

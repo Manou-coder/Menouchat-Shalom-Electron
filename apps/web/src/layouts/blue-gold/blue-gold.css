@@ -35,6 +35,17 @@
   gap: 0.3em;
 }
 
+.blue-gold-date-with-events {
+  gap: 2px;
+  font-size: 25px;
+  line-height: 1.1;
+}
+
+.blue-gold-events {
+  font-weight: 700;
+  color: #9b1b1b;
+}
+
 .blue-gold-panel {
   display: flex;
   flex-direction: column;
@@ -59,6 +70,10 @@
   font-size: 46px;
   font-weight: 700;
   line-height: 1.05;
+}
+
+.blue-gold-compact .blue-gold-time {
+  font-size: 36px;
 }
 
 .blue-gold-tile {

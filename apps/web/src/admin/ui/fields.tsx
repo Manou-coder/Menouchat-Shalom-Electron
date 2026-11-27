@@ -7,6 +7,11 @@ const inputClass = `${fieldClass} border-border bg-surface`;
 /** A field the user changed but has not saved yet. */
 const changedInputClass = `${fieldClass} border-accent bg-accent-soft`;
 
+/** For inputs laid out without a visible label of their own, such as the rows of a list. */
+export function inputClassFor(changed: boolean): string {
+  return changed ? changedInputClass : inputClass;
+}
+
 interface FieldProps {
   label: string;
   /** Shown under the field, e.g. a unit or a hint. */
@@ -34,36 +39,6 @@ function Field({ label, description, children }: FieldProps) {
 }
 
 type NativeInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'value' | 'onChange'>;
-
-export function TimeInput({
-  label,
-  value,
-  onChange,
-  changed = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  changed?: boolean;
-}) {
-  return (
-    <Field label={label}>
-      {({ id }) => (
-        <input
-          id={id}
-          type="time"
-          required
-          dir="ltr"
-          value={value}
-          onChange={(event) => {
-            onChange(event.target.value);
-          }}
-          className={`${changed ? changedInputClass : inputClass} text-xl font-medium tabular-nums`}
-        />
-      )}
-    </Field>
-  );
-}
 
 export function TextInput({
   label,
@@ -183,7 +158,7 @@ export function Toggle({
 }) {
   return (
     <SwitchField isSelected={isSelected} onChange={onChange} isDisabled={isDisabled}>
-      <SwitchButton className="group flex min-h-11 cursor-pointer items-center gap-3 data-disabled:cursor-default data-disabled:opacity-60">
+      <SwitchButton className="group flex min-h-11 cursor-pointer items-center gap-3 whitespace-nowrap data-disabled:cursor-default data-disabled:opacity-60">
         <span className="flex h-7 w-12 shrink-0 items-center rounded-full bg-border px-1 transition-colors group-data-focus-visible:ring-3 group-data-focus-visible:ring-focus group-data-selected:bg-accent">
           <span className="size-5 rounded-full bg-white shadow transition-transform group-data-selected:-translate-x-5 ltr:group-data-selected:translate-x-5" />
         </span>
