@@ -4,7 +4,9 @@ import {
   createDefaultDisplays,
   createDefaultSchedule,
   createDefaultSettings,
-  type Slide,
+  createDefaultSlides,
+  type LibraryItem,
+  type Slot,
 } from '@menouchat/shared';
 
 import {
@@ -13,12 +15,18 @@ import {
   type DisplayInputs,
 } from './build-display-state.ts';
 
-const slide = (id: string, slot: Slide['slot'], enabled: boolean): Slide => ({
+const picture = (id: string): LibraryItem => ({
+  kind: 'file',
   id,
-  slot,
-  title: id,
-  originalFile: null,
+  name: id,
+  folder: id,
+  original: null,
   image: 'page-1.jpg',
+});
+
+const slot = (itemId: string, number: Slot['slot'], enabled: boolean): Slot => ({
+  slot: number,
+  itemId,
   enabled,
 });
 
@@ -31,8 +39,9 @@ function inputs(overrides: Partial<DisplayInputs> = {}): DisplayInputs {
     settings: createDefaultSettings(),
     schedule: createDefaultSchedule(),
     slides: {
-      schemaVersion: 1,
-      slides: [slide(C, 4, true), slide(B, 2, false), slide(A, 1, true)],
+      ...createDefaultSlides(),
+      library: [picture(A), picture(B), picture(C)],
+      slots: [slot(C, 4, true), slot(B, 2, false), slot(A, 1, true)],
     },
     displays: createDefaultDisplays(),
     ...overrides,
@@ -43,6 +52,20 @@ function inputs(overrides: Partial<DisplayInputs> = {}): DisplayInputs {
 const FRIDAY_NOON = Date.UTC(2026, 10, 27, 10);
 
 describe('buildDisplayState', () => {
+  it('announces the day events of the kinds switched on', () => {
+    // 30 Kislev 5787: Rosh Chodesh Tevet and the seventh Chanukah candle.
+    const roshChodeshNoon = Date.UTC(2026, 11, 10, 10);
+    const all = buildDisplayState(inputs(), 'main', roshChodeshNoon).events;
+    expect(all).toContainEqual({ kind: 'roshChodesh', text: 'ראש חודש טבת' });
+    expect(all).toContainEqual({ kind: 'chanukah', text: 'חנוכה: ז׳ נרות' });
+
+    const settings = createDefaultSettings();
+    settings.events.chanukah = false;
+    const some = buildDisplayState(inputs({ settings }), 'main', roshChodeshNoon).events;
+    expect(some.map((event) => event.kind)).not.toContain('chanukah');
+    expect(some).toContainEqual({ kind: 'roshChodesh', text: 'ראש חודש טבת' });
+  });
+
   it("computes the location's day with v1's values and the corrected candle lighting", () => {
     const state = buildDisplayState(inputs(), 'main', FRIDAY_NOON);
     expect(state.date).toEqual({ year: 2026, month: 11, day: 27 });
