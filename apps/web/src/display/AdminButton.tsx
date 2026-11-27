@@ -7,8 +7,9 @@ import { Button } from '../components/Button.tsx';
 export function AdminButton() {
   const api = useApiClient();
   return (
-    <div className="fixed inset-x-0 top-4 z-10 flex justify-center">
+    <div className="fixed top-4 right-4 z-10">
       <Button
+        variant="alert"
         onPress={() => {
           void api.desktop.showAdmin.mutate();
         }}

@@ -6,6 +6,8 @@ const variants = {
     'border border-border bg-surface px-4 font-medium text-text shadow-sm data-hovered:bg-background',
   danger:
     'border border-danger/40 bg-surface px-4 font-medium text-danger data-hovered:bg-danger-soft',
+  /** Fixed red and white, so it stands out on every display theme, light or dark. */
+  alert: 'bg-red-600 px-5 font-semibold text-white shadow-lg data-hovered:bg-red-700',
   /** Square, for an icon or a single character; give it an aria-label. */
   icon: 'w-11 border border-border bg-surface text-text data-hovered:bg-background',
 } as const;
