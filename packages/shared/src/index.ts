@@ -6,9 +6,11 @@ export {
   SLIDE_UPLOAD_LIMITS,
   slideIntervalInputSchema,
   slideToggleInputSchema,
+  updateCheckResultSchema,
   updateStatusSchema,
   type AdminState,
   type ScheduleInput,
+  type UpdateCheckResult,
   type UpdateStatus,
 } from './admin.ts';
 export {

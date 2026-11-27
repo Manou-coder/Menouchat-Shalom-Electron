@@ -19,6 +19,17 @@ export const updateStatusSchema = z.discriminatedUnion('status', [
 ]);
 export type UpdateStatus = z.infer<typeof updateStatusSchema>;
 
+/** The answer to "check for an update now", asked from the admin. */
+export const updateCheckResultSchema = z.discriminatedUnion('result', [
+  z.object({ result: z.literal('upToDate') }),
+  /** Found, or already downloading or ready: `UpdateStatus` follows its download. */
+  z.object({ result: z.literal('found'), version: z.string() }),
+  /** Only an installed build knows where its updates come from. */
+  z.object({ result: z.literal('disabled') }),
+  z.object({ result: z.literal('failed') }),
+]);
+export type UpdateCheckResult = z.infer<typeof updateCheckResultSchema>;
+
 /** Everything the admin shows, pushed again after every change. */
 export const adminStateSchema = z.object({
   schedule: scheduleInputSchema,

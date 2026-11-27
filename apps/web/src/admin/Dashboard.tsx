@@ -1,34 +1,16 @@
-import { useEffect, useState } from 'react';
-
 import { strings } from '@menouchat/shared';
 
-import { useApiClient } from '../api/api-client.ts';
 import logo from '../assets/logo.png';
 import { LayoutCard } from './cards/LayoutCard.tsx';
 import { ShabbatTimesCard, WeekdayTimesCard } from './cards/ScheduleCards.tsx';
 import { SlidesCard } from './cards/SlidesCard.tsx';
+import { UpdateCard } from './cards/UpdateCard.tsx';
 import { PhoneAddress } from './PhoneAddress.tsx';
-import { UpdateBanner } from './UpdateBanner.tsx';
 import { useAdminState } from './use-admin-state.ts';
-
-function useVersion(): string | undefined {
-  const api = useApiClient();
-  const [version, setVersion] = useState<string>();
-  useEffect(() => {
-    void api.health.query().then(
-      (health) => {
-        setVersion(health.version);
-      },
-      () => undefined,
-    );
-  }, [api]);
-  return version;
-}
 
 /** Every card on one page: one column on a phone, a grid on wider screens (plan §9). */
 export function Dashboard() {
   const { state, reconnecting } = useAdminState();
-  const version = useVersion();
 
   return (
     <>
@@ -54,8 +36,6 @@ export function Dashboard() {
           </p>
         )}
 
-        {state !== undefined && <UpdateBanner update={state.update} />}
-
         {state === undefined ? (
           <p role="status">{strings.admin.loading}</p>
         ) : (
@@ -68,13 +48,10 @@ export function Dashboard() {
             <div className="md:col-span-2">
               <LayoutCard layoutId={state.layoutId} />
             </div>
+            <div className="md:col-span-2">
+              <UpdateCard update={state.update} />
+            </div>
           </div>
-        )}
-
-        {version !== undefined && (
-          <footer className="text-center text-sm text-text-muted" dir="ltr">
-            v{version}
-          </footer>
         )}
       </main>
     </>

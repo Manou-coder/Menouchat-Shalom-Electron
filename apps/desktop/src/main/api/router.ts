@@ -11,12 +11,14 @@ import {
   scheduleInputSchema,
   slideIntervalInputSchema,
   slideToggleInputSchema,
+  updateCheckResultSchema,
   type AdminState,
   type DisplayState,
   type LayoutId,
   type ScheduleInput,
   type Slide,
   type SlideSlot,
+  type UpdateCheckResult,
 } from '@menouchat/shared';
 
 import { parseSlideUpload, type SlideUpload } from './slide-upload.ts';
@@ -42,6 +44,7 @@ export interface DesktopApi {
   showAdmin(): void;
   /** Restarts into a downloaded update. */
   installUpdate(): void;
+  checkForUpdate(): Promise<UpdateCheckResult>;
 }
 
 export interface AppRouterDependencies {
@@ -107,6 +110,10 @@ export function createAppRouter({ version, displayStates, admin, desktop }: AppR
       installUpdate: adminProcedure.mutation(() => {
         desktop.installUpdate();
       }),
+
+      checkForUpdate: adminProcedure
+        .output(updateCheckResultSchema)
+        .mutation(() => desktop.checkForUpdate()),
 
       state: adminProcedure.output(adminStateSchema).query(() => admin.getState()),
 

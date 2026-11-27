@@ -100,6 +100,11 @@ describe('desktop actions', () => {
     await local().admin.installUpdate.mutate();
     expect(app.desktopCalls).toEqual(['installUpdate']);
   });
+
+  it('checks for an update on request, from a phone too', async () => {
+    await expect(client().admin.checkForUpdate.mutate()).resolves.toEqual({ result: 'upToDate' });
+    expect(app.desktopCalls).toEqual(['checkForUpdate']);
+  });
 });
 
 describe('editing', () => {

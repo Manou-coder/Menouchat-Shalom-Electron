@@ -8,7 +8,9 @@ import { createUpdateService, type Updater } from './update-service.ts';
 class FakeUpdater extends EventEmitter implements Updater {
   autoDownload = false;
   autoInstallOnAppQuit = false;
-  checkForUpdates = vi.fn(() => Promise.resolve(undefined));
+  checkForUpdates = vi.fn<Updater['checkForUpdates']>(() =>
+    Promise.resolve({ isUpdateAvailable: false, updateInfo: { version: '2.0.0' } }),
+  );
   quitAndInstall = vi.fn();
 }
 
@@ -26,8 +28,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const create = () =>
-  createUpdateService({ updater, changes, logError, checkIntervalMs: 6 * 3_600_000 });
+const create = (enabled = true) =>
+  createUpdateService({ updater, changes, logError, checkIntervalMs: 6 * 3_600_000, enabled });
 
 describe('update service', () => {
   it('downloads in the background and installs on the next start', () => {
@@ -69,5 +71,35 @@ describe('update service', () => {
     await vi.runOnlyPendingTimersAsync();
     updater.emit('error', new Error('bad signature'));
     expect(logError).toHaveBeenCalledTimes(2);
+  });
+
+  it('never checks outside an installed build', async () => {
+    const service = create(false);
+    service.start();
+    await expect(service.checkNow()).resolves.toEqual({ result: 'disabled' });
+    expect(updater.checkForUpdates).not.toHaveBeenCalled();
+  });
+
+  it('checks on request and says whether a newer version exists', async () => {
+    const service = create();
+    await expect(service.checkNow()).resolves.toEqual({ result: 'upToDate' });
+    updater.checkForUpdates.mockResolvedValueOnce({
+      isUpdateAvailable: true,
+      updateInfo: { version: '2.0.1' },
+    });
+    await expect(service.checkNow()).resolves.toEqual({ result: 'found', version: '2.0.1' });
+  });
+
+  it('does not check again while a version downloads or waits to install', async () => {
+    const service = create();
+    updater.emit('update-available', { version: '2.0.1' });
+    await expect(service.checkNow()).resolves.toEqual({ result: 'found', version: '2.0.1' });
+    expect(updater.checkForUpdates).not.toHaveBeenCalled();
+  });
+
+  it('reports a failed check on request', async () => {
+    updater.checkForUpdates.mockRejectedValueOnce(new Error('offline'));
+    await expect(create().checkNow()).resolves.toEqual({ result: 'failed' });
+    expect(logError).toHaveBeenCalledOnce();
   });
 });

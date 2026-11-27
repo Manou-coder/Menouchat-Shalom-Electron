@@ -1,4 +1,4 @@
-import type { UpdateStatus } from '@menouchat/shared';
+import type { UpdateCheckResult, UpdateStatus } from '@menouchat/shared';
 
 import type { ChangeHub } from './change-hub.ts';
 
@@ -6,7 +6,11 @@ import type { ChangeHub } from './change-hub.ts';
 export interface Updater {
   autoDownload: boolean;
   autoInstallOnAppQuit: boolean;
-  checkForUpdates(): Promise<unknown>;
+  /** `null` when the updater is inactive (not an installed build). */
+  checkForUpdates(): Promise<{
+    isUpdateAvailable: boolean;
+    updateInfo: { version: string };
+  } | null>;
   quitAndInstall(): void;
   on(
     event: 'update-available' | 'update-downloaded',
@@ -21,12 +25,16 @@ export interface UpdateServiceDependencies {
   logError: (message: string, error: unknown) => void;
   /** How often GitHub is asked for a newer release. */
   checkIntervalMs: number;
+  /** False outside an installed build, which does not know where its updates come from. */
+  enabled: boolean;
 }
 
 export interface UpdateService {
   status(): UpdateStatus;
-  /** Checks now, then every `checkIntervalMs`. */
+  /** Checks now, then every `checkIntervalMs`; does nothing when updates are disabled. */
   start(): void;
+  /** Checks at once for the admin; a version found downloads like any other. */
+  checkNow(): Promise<UpdateCheckResult>;
   /** Restarts into the downloaded version; does nothing when none is ready. */
   installNow(): void;
 }
@@ -62,8 +70,32 @@ export function createUpdateService(dependencies: UpdateServiceDependencies): Up
   return {
     status: () => current,
     start() {
+      if (!dependencies.enabled) {
+        return;
+      }
       check();
       setInterval(check, dependencies.checkIntervalMs);
+    },
+    async checkNow() {
+      if (!dependencies.enabled) {
+        return { result: 'disabled' };
+      }
+      // Asking again would only restart a download already under way.
+      if (current.status !== 'none') {
+        return { result: 'found', version: current.version };
+      }
+      try {
+        const found = await updater.checkForUpdates();
+        if (found === null) {
+          return { result: 'disabled' };
+        }
+        return found.isUpdateAvailable
+          ? { result: 'found', version: found.updateInfo.version }
+          : { result: 'upToDate' };
+      } catch (error) {
+        dependencies.logError('Update check failed:', error);
+        return { result: 'failed' };
+      }
     },
     installNow() {
       if (current.status === 'ready') {
