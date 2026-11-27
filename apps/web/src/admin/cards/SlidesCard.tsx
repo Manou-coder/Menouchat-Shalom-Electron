@@ -128,8 +128,8 @@ function SlotCard({
       )}
 
       <div className="grid min-h-11 content-center gap-0.5">
-        <span className="truncate font-medium" dir="auto" title={item?.name}>
-          {item?.name ?? labels.empty}
+        <span className="truncate font-medium" title={item?.name}>
+          <bdi>{item?.name ?? labels.empty}</bdi>
         </span>
         {template !== undefined && (
           <button

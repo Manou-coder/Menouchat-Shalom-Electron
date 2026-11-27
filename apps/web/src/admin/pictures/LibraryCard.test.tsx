@@ -8,12 +8,10 @@ import { ApiClientContext, type ApiClient } from '../../api/api-client.ts';
 import { LibraryCard } from './LibraryCard.tsx';
 
 const labels = strings.admin.library;
-const show = vi.fn(() => Promise.resolve());
 const remove = vi.fn(() => Promise.resolve());
 // Only the procedures the card calls are needed.
 const api = {
   admin: {
-    slides: { show: { mutate: show } },
     library: { remove: { mutate: remove } },
   },
 } as unknown as ApiClient;
@@ -70,22 +68,29 @@ describe('LibraryCard', () => {
     expect(screen.getByText('מזל טוב')).toBeTruthy();
   });
 
-  it('shows an item in the slot picked', () => {
+  it('has no slot buttons: what the screen shows is chosen in the pictures page', () => {
     renderCard();
-    const [first] = screen.getAllByRole('button', { name: labels.showInSlot(3) });
-    if (first === undefined) throw new Error('Expected a slot button');
-    fireEvent.click(first);
-    expect(show).toHaveBeenCalledWith({ slot: 3, itemId: template.id });
+    expect(screen.queryByRole('button', { name: /משבצת/ })).toBeNull();
+  });
+
+  it('opens a menu of actions for each item', () => {
+    renderCard();
+    fireEvent.click(screen.getByRole('button', { name: labels.actions('מזל טוב') }));
+    expect(screen.getByRole('menuitem', { name: labels.edit })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: labels.duplicate })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: labels.remove })).toBeTruthy();
   });
 
   it('refuses to delete what the screen shows, and asks before deleting the rest', () => {
     renderCard();
-    const [onTemplate, onFile] = screen.getAllByRole('button', { name: labels.remove });
-    if (onTemplate === undefined || onFile === undefined) throw new Error('Expected two items');
-    fireEvent.click(onTemplate);
+    fireEvent.click(screen.getByRole('button', { name: labels.actions('מזל טוב') }));
+    fireEvent.click(screen.getByRole('menuitem', { name: labels.remove }));
     expect(screen.getByText(labels.cannotRemove)).toBeTruthy();
-    fireEvent.click(onFile);
-    expect(screen.getByText(labels.confirmRemove)).toBeTruthy();
+    cleanup();
+    renderCard();
+    fireEvent.click(screen.getByRole('button', { name: labels.actions('הלכה יומית') }));
+    fireEvent.click(screen.getByRole('menuitem', { name: labels.remove }));
+    expect(screen.getByText(labels.confirmRemove('הלכה יומית'))).toBeTruthy();
     expect(remove).not.toHaveBeenCalled();
   });
 });

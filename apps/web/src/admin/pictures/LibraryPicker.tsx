@@ -43,8 +43,8 @@ export function LibraryPicker({
                 className="grid w-full gap-1 rounded-xl border border-border/70 bg-surface p-2 text-start hover:border-accent focus-visible:outline-3 focus-visible:outline-focus"
               >
                 <LibraryThumbnail item={item} />
-                <span className="truncate text-sm font-medium" dir="auto">
-                  {item.name}
+                <span className="truncate text-sm font-medium">
+                  <bdi>{item.name}</bdi>
                 </span>
                 <span className="text-xs text-text-muted">{labels.kinds[item.kind]}</span>
               </button>
