@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 
 import { strings, type Prayer, type ZmanSnapshot } from '@menouchat/shared';
 
-import logo from '../../assets/logo.png';
+import logo from '../../assets/logo-symbol.png';
 import { Slideshow } from '../../display/Slideshow.tsx';
 import { useClock } from '../../display/use-clock.ts';
 import { useFitFontSize } from '../../display/use-fit-font-size.ts';
