@@ -3,6 +3,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { strings, type Prayer, type ZmanSnapshot } from '@menouchat/shared';
 
 import logo from '../../assets/logo-symbol.png';
+import { DayEventsLine } from '../../display/DayEventsLine.tsx';
 import { Slideshow } from '../../display/Slideshow.tsx';
 import { useClock } from '../../display/use-clock.ts';
 import { useFitFontSize } from '../../display/use-fit-font-size.ts';
@@ -240,9 +241,21 @@ export function BlueGold({ state }: LayoutProps<BlueGoldOptions>) {
           <DigitalClock timeZoneId={state.timeZoneId} />
         </div>
 
-        <div className="blue-gold-date flex items-center justify-center" style={at(date)}>
-          {calendar.hebrewDate} ·{' '}
-          <span className="blue-gold-red">{labels.parashaOf(calendar.parasha)}</span>
+        {/* On a day with events, they get a second line and the date a smaller size. */}
+        <div
+          className={`blue-gold-date flex flex-col items-center justify-center ${state.events.length > 0 ? 'blue-gold-date-with-events' : ''}`}
+          style={at(date)}
+        >
+          <div>
+            {calendar.hebrewDate} ·{' '}
+            <span className="blue-gold-red">{labels.parashaOf(calendar.parasha)}</span>
+          </div>
+          <DayEventsLine
+            events={state.events}
+            size={21}
+            maxWidth={date.width - 40}
+            className="blue-gold-events"
+          />
         </div>
 
         <section className="blue-gold-panel" style={at(weekdayBox)}>

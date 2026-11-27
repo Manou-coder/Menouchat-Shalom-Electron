@@ -1,4 +1,4 @@
-import { Clock, Images, MonitorSmartphone, Settings, type LucideIcon } from 'lucide-react';
+import { Clock, Images, Library, MonitorSmartphone, Settings, type LucideIcon } from 'lucide-react';
 import { NavLink } from 'react-router';
 
 import { strings } from '@menouchat/shared';
@@ -8,6 +8,7 @@ import { ADMIN_SECTIONS, sectionLabel, sectionPath, type AdminSection } from './
 const icons: Record<AdminSection, LucideIcon> = {
   times: Clock,
   slides: Images,
+  library: Library,
   layout: MonitorSmartphone,
   settings: Settings,
 };
@@ -22,7 +23,7 @@ export function AdminNav({ updatePending }: { updatePending: boolean }) {
       aria-label={strings.admin.menu.label}
       className="fixed inset-x-0 bottom-0 z-10 border-t border-border/70 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:static md:w-52 md:shrink-0 md:border-0 md:bg-transparent md:pb-0 md:backdrop-blur-none"
     >
-      <ul className="grid grid-cols-4 md:sticky md:top-24 md:flex md:flex-col md:gap-1">
+      <ul className="grid grid-cols-5 md:sticky md:top-24 md:flex md:flex-col md:gap-1">
         {ADMIN_SECTIONS.map((section) => {
           const Icon = icons[section];
           const label = sectionLabel(section);

@@ -5,6 +5,7 @@ import { LAYOUT_IDS, layoutIdSchema, strings, type LayoutId } from '@menouchat/s
 
 import { useApiClient } from '../../api/api-client.ts';
 import blueGoldPreview from '../assets/theme-blue-gold.jpg';
+import classicNewPreview from '../assets/theme-classic-new.jpg';
 import classicPreview from '../assets/theme-classic-portrait.jpg';
 import { ErrorMessage } from '../ui/Card.tsx';
 import { useAction } from '../use-action.ts';
@@ -13,6 +14,7 @@ const labels = strings.admin.layout;
 
 const previews: Record<LayoutId, string> = {
   'classic-portrait': classicPreview,
+  'classic-new': classicNewPreview,
   'blue-gold': blueGoldPreview,
 };
 
