@@ -27,7 +27,7 @@ describe('AdminNav', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/admin/times',
       '/admin/slides',
-      '/admin/templates',
+      '/admin/library',
       '/admin/layout',
       '/admin/settings',
     ]);

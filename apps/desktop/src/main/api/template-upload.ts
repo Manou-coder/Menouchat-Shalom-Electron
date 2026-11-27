@@ -2,7 +2,7 @@ import {
   SLIDE_UPLOAD_LIMITS,
   slideDesignSchema,
   TEMPLATE_UPLOAD_FIELDS,
-  templateIdSchema,
+  libraryItemIdSchema,
   type SlideDesign,
 } from '@menouchat/shared';
 
@@ -37,7 +37,7 @@ function parseDesign(value: ReturnType<FormData['get']>): SlideDesign {
 /** Validates the multipart form of a template save. */
 export function parseTemplateUpload(form: FormData): TemplateUpload {
   const rawId = form.get(TEMPLATE_UPLOAD_FIELDS.id);
-  const id = rawId === null ? undefined : templateIdSchema.safeParse(rawId);
+  const id = rawId === null ? undefined : libraryItemIdSchema.safeParse(rawId);
   const name = form.get(TEMPLATE_UPLOAD_FIELDS.name);
   const background = form.get(TEMPLATE_UPLOAD_FIELDS.background);
   const image = form.get(TEMPLATE_UPLOAD_FIELDS.image);

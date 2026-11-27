@@ -5,7 +5,6 @@ import {
   createDefaultSchedule,
   createDefaultSettings,
   createDefaultSlides,
-  createDefaultTemplates,
   displaysSchema,
   DISPLAYS_SCHEMA_VERSION,
   scheduleSchema,
@@ -14,14 +13,12 @@ import {
   SETTINGS_SCHEMA_VERSION,
   slidesSchema,
   SLIDES_SCHEMA_VERSION,
-  templatesSchema,
-  TEMPLATES_SCHEMA_VERSION,
+  strings,
   V1_PRAYERS,
   type Displays,
   type Schedule,
   type Settings,
   type Slides,
-  type Templates,
 } from '@menouchat/shared';
 
 import {
@@ -36,7 +33,6 @@ export interface Store {
   settings: DocumentStore<Settings>;
   schedule: DocumentStore<Schedule>;
   slides: DocumentStore<Slides>;
-  templates: DocumentStore<Templates>;
   displays: DocumentStore<Displays>;
 }
 
@@ -76,6 +72,39 @@ export const migrateScheduleFrom1: Migration = ({ weekday, shabbat, ...rest }) =
   };
 };
 
+/**
+ * Slides 1 → 2: every picture becomes an item of the library, its files left where they
+ * are (`slides/<id>/`), and the slot shows that item.
+ */
+export const migrateSlidesFrom1: Migration = ({ slides, ...rest }) => {
+  const pictures: unknown[] = Array.isArray(slides) ? slides : [];
+  const field = (picture: unknown, name: string): unknown =>
+    typeof picture === 'object' && picture !== null ? Reflect.get(picture, name) : undefined;
+  return {
+    ...rest,
+    library: pictures.map((picture) => {
+      const title = field(picture, 'title');
+      return {
+        kind: 'file',
+        id: field(picture, 'id'),
+        // v1 imports could have an empty title; the library needs a name.
+        name:
+          typeof title === 'string' && title.trim() !== ''
+            ? title
+            : strings.defaults.importedSlideTitle(Number(field(picture, 'slot'))),
+        folder: field(picture, 'id'),
+        original: field(picture, 'originalFile') ?? null,
+        image: field(picture, 'image'),
+      };
+    }),
+    slots: pictures.map((picture) => ({
+      slot: field(picture, 'slot'),
+      itemId: field(picture, 'id'),
+      enabled: field(picture, 'enabled'),
+    })),
+  };
+};
+
 /** `dataDirectory` is `userData/data`. */
 export function createStore(dataDirectory: string, logger: StoreLogger): Store {
   return {
@@ -107,19 +136,8 @@ export function createStore(dataDirectory: string, logger: StoreLogger): Store {
         fileName: 'slides.json',
         schema: slidesSchema,
         currentVersion: SLIDES_SCHEMA_VERSION,
-        migrations: {},
+        migrations: { 1: migrateSlidesFrom1 },
         createDefault: createDefaultSlides,
-      },
-      logger,
-    ),
-    templates: createDocumentStore(
-      dataDirectory,
-      {
-        fileName: 'templates.json',
-        schema: templatesSchema,
-        currentVersion: TEMPLATES_SCHEMA_VERSION,
-        migrations: {},
-        createDefault: createDefaultTemplates,
       },
       logger,
     ),

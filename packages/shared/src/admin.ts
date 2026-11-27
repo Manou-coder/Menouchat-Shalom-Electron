@@ -3,8 +3,12 @@ import { z } from 'zod';
 import { displaySchema, layoutIdSchema } from './persisted/displays.ts';
 import { DAY_EVENT_KINDS, dayEventSettingsSchema } from './persisted/settings.ts';
 import { scheduleSchema } from './persisted/schedule.ts';
-import { slideSchema, slideSlotSchema } from './persisted/slides.ts';
-import { templateIdSchema, templateSchema } from './persisted/templates.ts';
+import {
+  libraryItemIdSchema,
+  libraryItemSchema,
+  slideSlotSchema,
+  slotSchema,
+} from './persisted/slides.ts';
 
 export const scheduleInputSchema = scheduleSchema.omit({ schemaVersion: true });
 export type ScheduleInput = z.infer<typeof scheduleInputSchema>;
@@ -41,9 +45,10 @@ export type UpdateCheckResult = z.infer<typeof updateCheckResultSchema>;
 /** Everything the admin shows, pushed again after every change. */
 export const adminStateSchema = z.object({
   schedule: scheduleInputSchema,
-  slides: z.array(slideSchema),
-  /** Every template, newest first. */
-  templates: z.array(templateSchema),
+  /** The filled slots. */
+  slots: z.array(slotSchema),
+  /** Every picture and template, newest first, with the room its files take on disk. */
+  library: z.array(z.intersection(libraryItemSchema, z.object({ sizeBytes: z.number() }))),
   slideIntervalSec: displaySchema.shape.slideIntervalSec,
   /** The main display's layout ("theme" in the admin). */
   layoutId: displaySchema.shape.layoutId,
@@ -63,7 +68,7 @@ export const SLIDE_UPLOAD_LIMITS = {
   imageBytes: 10 * 1024 * 1024,
 } as const;
 
-/** Form field names of the slide upload (multipart/form-data). */
+/** Form field names of a file upload (multipart/form-data); without `slot`, to the library only. */
 export const SLIDE_UPLOAD_FIELDS = {
   slot: 'slot',
   title: 'title',
@@ -83,9 +88,14 @@ export const TEMPLATE_UPLOAD_FIELDS = {
   image: 'image',
 } as const;
 
-export const templateRefInputSchema = z.object({ templateId: templateIdSchema });
+export const libraryItemRefInputSchema = z.object({ itemId: libraryItemIdSchema });
 
-export const useTemplateInputSchema = z.object({
+export const showLibraryItemInputSchema = z.object({
   slot: slideSlotSchema,
-  templateId: templateIdSchema,
+  itemId: libraryItemIdSchema,
+});
+
+export const renameLibraryItemInputSchema = z.object({
+  itemId: libraryItemIdSchema,
+  name: libraryItemSchema.options[0].shape.name,
 });

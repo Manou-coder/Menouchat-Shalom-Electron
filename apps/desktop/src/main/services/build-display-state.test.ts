@@ -4,7 +4,9 @@ import {
   createDefaultDisplays,
   createDefaultSchedule,
   createDefaultSettings,
-  type Slide,
+  createDefaultSlides,
+  type LibraryItem,
+  type Slot,
 } from '@menouchat/shared';
 
 import {
@@ -13,12 +15,18 @@ import {
   type DisplayInputs,
 } from './build-display-state.ts';
 
-const slide = (id: string, slot: Slide['slot'], enabled: boolean): Slide => ({
+const picture = (id: string): LibraryItem => ({
+  kind: 'file',
   id,
-  slot,
-  title: id,
-  originalFile: null,
+  name: id,
+  folder: id,
+  original: null,
   image: 'page-1.jpg',
+});
+
+const slot = (itemId: string, number: Slot['slot'], enabled: boolean): Slot => ({
+  slot: number,
+  itemId,
   enabled,
 });
 
@@ -31,8 +39,9 @@ function inputs(overrides: Partial<DisplayInputs> = {}): DisplayInputs {
     settings: createDefaultSettings(),
     schedule: createDefaultSchedule(),
     slides: {
-      schemaVersion: 1,
-      slides: [slide(C, 4, true), slide(B, 2, false), slide(A, 1, true)],
+      ...createDefaultSlides(),
+      library: [picture(A), picture(B), picture(C)],
+      slots: [slot(C, 4, true), slot(B, 2, false), slot(A, 1, true)],
     },
     displays: createDefaultDisplays(),
     ...overrides,

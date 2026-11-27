@@ -8,7 +8,8 @@ import {
 import { AdminError } from './errors.ts';
 
 export interface SlideUpload {
-  slot: SlideSlot;
+  /** The slot to show it in; without one, the file only goes to the library. */
+  slot?: SlideSlot;
   /** Name of the file the user picked, shown next to the slot. */
   title: string;
   /** The PDF or image the user picked, kept as is. */
@@ -21,12 +22,13 @@ const ORIGINAL_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg', 'i
 
 /** Validates the multipart form of a slide upload. */
 export function parseSlideUpload(form: FormData): SlideUpload {
-  const slot = slideSlotSchema.safeParse(Number(form.get(SLIDE_UPLOAD_FIELDS.slot)));
+  const rawSlot = form.get(SLIDE_UPLOAD_FIELDS.slot);
+  const slot = rawSlot === null ? undefined : slideSlotSchema.safeParse(Number(rawSlot));
   const title = form.get(SLIDE_UPLOAD_FIELDS.title);
   const original = form.get(SLIDE_UPLOAD_FIELDS.original);
   const image = form.get(SLIDE_UPLOAD_FIELDS.image);
 
-  if (!slot.success) {
+  if (slot !== undefined && !slot.success) {
     throw new AdminError('BAD_REQUEST', 'Expected a slot from 1 to 4');
   }
   if (typeof title !== 'string' || title.trim().length === 0 || title.length > 200) {
@@ -46,5 +48,10 @@ export function parseSlideUpload(form: FormData): SlideUpload {
   ) {
     throw new AdminError('BAD_REQUEST', 'Expected the slide as a JPEG image');
   }
-  return { slot: slot.data, title: title.trim(), original, image };
+  return {
+    ...(slot === undefined ? {} : { slot: slot.data }),
+    title: title.trim(),
+    original,
+    image,
+  };
 }

@@ -11,17 +11,18 @@ import {
   SLIDE_FONTS,
   TEMPLATE_UPLOAD_FIELDS,
   slideFontSchema,
-  templateFileUrl,
   strings,
   type SlideDesign,
   type SlideText,
-  type Template,
+  type LibraryItem,
 } from '@menouchat/shared';
 
 import { useApiClient } from '../../api/api-client.ts';
 import { Button } from '../../components/Button.tsx';
 import { errorMessage } from '../errors.ts';
 import { ErrorMessage } from '../ui/Card.tsx';
+import { itemBackgroundUrl, type TemplateItem } from '../pictures/library.ts';
+import { LibraryPicker } from '../pictures/LibraryPicker.tsx';
 import { SelectInput, TextInput, Toggle } from '../ui/fields.tsx';
 import {
   BACKGROUND_IDS,
@@ -291,17 +292,22 @@ function TextControls({
  */
 function Editor({
   template,
+  startFrom,
+  library,
   onSaved,
   onClose,
 }: {
   /** The template to edit; a new one is made without it. */
-  template: Template | undefined;
-  onSaved: (template: Template) => void;
+  template: TemplateItem | undefined;
+  /** For a new template: the library item whose picture it starts on. */
+  startFrom: LibraryItem | undefined;
+  library: readonly LibraryItem[];
+  onSaved: (template: LibraryItem) => void;
   onClose: () => void;
 }) {
   const api = useApiClient();
-  const savedBackground =
-    template === undefined ? undefined : templateFileUrl(template, template.background);
+  const startingItem = template ?? startFrom;
+  const savedBackground = startingItem === undefined ? undefined : itemBackgroundUrl(startingItem);
 
   const [background, setBackground] = useState<Background>(() =>
     savedBackground === undefined
@@ -312,7 +318,8 @@ function Editor({
     () => template?.design.texts ?? [createText([], backgroundTextColor('parchment'))],
   );
   const [selectedId, setSelectedId] = useState<string | undefined>(texts[0]?.id);
-  const [name, setName] = useState(template?.name ?? '');
+  const [name, setName] = useState(template?.name ?? startFrom?.name ?? '');
+  const [pickingBackground, setPickingBackground] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -379,7 +386,7 @@ function Editor({
       form.set(TEMPLATE_UPLOAD_FIELDS.background, await backgroundFile(background));
       form.set(TEMPLATE_UPLOAD_FIELDS.image, rendered, 'page-1.jpg');
       form.set(TEMPLATE_UPLOAD_FIELDS.design, JSON.stringify(design));
-      onSaved(await api.admin.templates.save.mutate(form));
+      onSaved(await api.admin.library.saveTemplate.mutate(form));
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {
@@ -523,6 +530,14 @@ function Editor({
               >
                 <Button variant="secondary">{labels.ownImage}</Button>
               </FileTrigger>
+              <Button
+                variant="secondary"
+                onPress={() => {
+                  setPickingBackground(true);
+                }}
+              >
+                {labels.fromLibrary}
+              </Button>
             </div>
             {failed && <ErrorMessage message={labels.backgroundFailed} />}
           </fieldset>
@@ -589,6 +604,28 @@ function Editor({
         </Button>
         <ErrorMessage message={error} />
       </div>
+      {pickingBackground && (
+        <ModalOverlay
+          isOpen
+          isDismissable
+          onOpenChange={(open) => {
+            setPickingBackground(open);
+          }}
+          className="fixed inset-0 z-40 grid place-items-center bg-black/50 p-4"
+        >
+          <Modal className="max-h-full w-full max-w-2xl overflow-y-auto rounded-2xl bg-background p-5 shadow-xl">
+            <Dialog aria-label={labels.fromLibrary} className="outline-none">
+              <LibraryPicker
+                library={library}
+                onPick={(item) => {
+                  setBackground({ kind: 'saved', url: itemBackgroundUrl(item) });
+                  setPickingBackground(false);
+                }}
+              />
+            </Dialog>
+          </Modal>
+        </ModalOverlay>
+      )}
     </Dialog>
   );
 }
@@ -596,20 +633,32 @@ function Editor({
 /** The editor in a full-screen dialog over the admin. */
 export function TemplateEditorDialog({
   template,
+  startFrom,
+  library,
   isOpen,
   onClose,
   onSaved,
 }: {
-  template: Template | undefined;
+  template?: TemplateItem | undefined;
+  startFrom?: LibraryItem | undefined;
+  library: readonly LibraryItem[];
   isOpen: boolean;
   onClose: () => void;
   /** Called with the saved template; the dialog is closed by its owner. */
-  onSaved: (template: Template) => void;
+  onSaved: (template: LibraryItem) => void;
 }) {
   return (
     <ModalOverlay isOpen={isOpen} className="fixed inset-0 z-30 bg-black/50 md:p-6">
       <Modal className="mx-auto h-full max-w-6xl overflow-hidden bg-background md:rounded-2xl md:shadow-xl">
-        {isOpen && <Editor template={template} onSaved={onSaved} onClose={onClose} />}
+        {isOpen && (
+          <Editor
+            template={template}
+            startFrom={startFrom}
+            library={library}
+            onSaved={onSaved}
+            onClose={onClose}
+          />
+        )}
       </Modal>
     </ModalOverlay>
   );

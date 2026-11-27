@@ -55,31 +55,64 @@ describe('settingsSchema', () => {
 });
 
 describe('slidesSchema', () => {
-  const slide = {
-    id: slideId,
-    slot: 1,
-    title: 'Halacha',
-    originalFile: 'original.pdf',
+  const second = '0b7f8a59-3a3e-4c55-9d0e-2f61c1f0a6a2';
+  const picture = (id: string) => ({
+    kind: 'file',
+    id,
+    name: 'Halacha',
+    folder: `library/${id}`,
+    original: 'original.pdf',
     image: 'page-1.jpg',
-    enabled: true,
-  };
-
-  it('accepts one slide per slot', () => {
-    const second = { ...slide, id: '0b7f8a59-3a3e-4c55-9d0e-2f61c1f0a6a2', slot: 4 };
-    expect(slidesSchema.safeParse({ schemaVersion: 1, slides: [slide, second] }).success).toBe(
-      true,
-    );
+  });
+  const document = (slots: unknown[]) => ({
+    schemaVersion: 2,
+    library: [picture(slideId), picture(second)],
+    slots,
   });
 
-  it('rejects two slides in the same slot', () => {
-    const twin = { ...slide, id: '0b7f8a59-3a3e-4c55-9d0e-2f61c1f0a6a2' };
-    expect(slidesSchema.safeParse({ schemaVersion: 1, slides: [slide, twin] }).success).toBe(false);
+  it('accepts one picture per slot', () => {
+    expect(
+      slidesSchema.safeParse(
+        document([
+          { slot: 1, itemId: slideId, enabled: true },
+          { slot: 4, itemId: second, enabled: false },
+        ]),
+      ).success,
+    ).toBe(true);
+  });
+
+  it('rejects two pictures in the same slot', () => {
+    expect(
+      slidesSchema.safeParse(
+        document([
+          { slot: 1, itemId: slideId, enabled: true },
+          { slot: 1, itemId: second, enabled: true },
+        ]),
+      ).success,
+    ).toBe(false);
+  });
+
+  it('rejects a slot showing a picture that is not in the library', () => {
+    expect(
+      slidesSchema.safeParse(
+        document([{ slot: 1, itemId: '9b7f8a59-3a3e-4c55-9d0e-2f61c1f0a6a9', enabled: true }]),
+      ).success,
+    ).toBe(false);
   });
 
   it.each([0, 5])('rejects slot %i: v1 had four', (slot) => {
-    expect(slidesSchema.safeParse({ schemaVersion: 1, slides: [{ ...slide, slot }] }).success).toBe(
-      false,
-    );
+    expect(
+      slidesSchema.safeParse(document([{ slot, itemId: slideId, enabled: true }])).success,
+    ).toBe(false);
+  });
+
+  it('refuses a folder outside slides/', () => {
+    expect(
+      slidesSchema.safeParse({
+        ...document([]),
+        library: [{ ...picture(slideId), folder: '../data' }],
+      }).success,
+    ).toBe(false);
   });
 });
 

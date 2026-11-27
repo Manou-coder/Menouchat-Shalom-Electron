@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createTRPCClient, httpLink, TRPCClientError } from '@trpc/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SLIDE_UPLOAD_FIELDS, TEMPLATE_UPLOAD_FIELDS, templateFileUrl } from '@menouchat/shared';
+import { libraryFileUrl, SLIDE_UPLOAD_FIELDS, TEMPLATE_UPLOAD_FIELDS } from '@menouchat/shared';
 
 import type { AppRouter } from '../api/router.ts';
 import { createTestApp, TEST_TOKEN, type TestApp } from '../testing/test-app.ts';
@@ -86,12 +86,14 @@ function templateForm(
 }
 
 function uploadForm(
-  slot: number | string = 2,
+  slot: number | string | null = 2,
   image: Uint8Array = JPEG,
   imageType = 'image/jpeg',
 ): FormData {
   const form = new FormData();
-  form.set(SLIDE_UPLOAD_FIELDS.slot, String(slot));
+  if (slot !== null) {
+    form.set(SLIDE_UPLOAD_FIELDS.slot, String(slot));
+  }
   form.set(SLIDE_UPLOAD_FIELDS.title, 'halacha.pdf');
   form.set(
     SLIDE_UPLOAD_FIELDS.original,
@@ -237,29 +239,45 @@ describe('theme', () => {
 });
 
 describe('slides', () => {
-  it('stores a picture in its slot with the original file, then serves it', async () => {
-    const slide = await local().admin.slides.upload.mutate(uploadForm(2));
-    expect(slide).toMatchObject({
-      slot: 2,
-      title: 'halacha.pdf',
-      originalFile: 'original.pdf',
+  it('keeps an uploaded file in the library, shows it in its slot, then serves it', async () => {
+    const item = await local().admin.slides.upload.mutate(uploadForm(2));
+    expect(item).toMatchObject({
+      kind: 'file',
+      name: 'halacha.pdf',
+      original: 'original.pdf',
       image: 'page-1.jpg',
-      enabled: true,
     });
-    const folder = join(app.slidesRoot, slide.id);
+    const folder = join(app.slidesRoot, ...item.folder.split('/'));
     await expect(readFile(join(folder, 'original.pdf'))).resolves.toEqual(Buffer.from('%PDF'));
-    const page = await fetch(`${baseUrl}/slides/${slide.id}/page-1.jpg`);
+    const page = await fetch(`${baseUrl}${libraryFileUrl(item, item.image)}`);
     expect(page.status).toBe(200);
+    const state = await local().admin.state.query();
+    expect(state.slots).toEqual([{ slot: 2, itemId: item.id, enabled: true }]);
+    expect(state.library).toEqual([
+      expect.objectContaining({ id: item.id, sizeBytes: 4 + JPEG.length }),
+    ]);
   });
 
-  it('replaces what a slot held, keeping whether it was shown', async () => {
+  it('keeps what a slot showed in the library when it gets a new picture', async () => {
     const first = await local().admin.slides.upload.mutate(uploadForm(2));
     await local().admin.slides.setEnabled.mutate({ slot: 2, enabled: false });
     const second = await local().admin.slides.upload.mutate(uploadForm(2));
 
-    await expect(access(join(app.slidesRoot, first.id))).rejects.toThrow();
-    const { slides } = await local().admin.state.query();
-    expect(slides).toEqual([expect.objectContaining({ id: second.id, slot: 2, enabled: false })]);
+    const { slots, library } = await local().admin.state.query();
+    expect(slots).toEqual([{ slot: 2, itemId: second.id, enabled: false }]);
+    expect(library.map((item) => item.id)).toEqual([second.id, first.id]);
+    await local().admin.slides.show.mutate({ slot: 3, itemId: first.id });
+    await expect(local().admin.state.query()).resolves.toMatchObject({
+      slots: expect.arrayContaining([{ slot: 3, itemId: first.id, enabled: true }]) as unknown,
+    });
+  });
+
+  it('uploads to the library alone when no slot is named', async () => {
+    const item = await local().admin.slides.upload.mutate(uploadForm(null));
+    await expect(local().admin.state.query()).resolves.toMatchObject({
+      slots: [],
+      library: [expect.objectContaining({ id: item.id })],
+    });
   });
 
   it('shows the enabled slots on the display in slot order', async () => {
@@ -270,8 +288,8 @@ describe('slides', () => {
 
     const display = await client().display.state.query({ displayId: 'main' });
     expect(display.slideshow.pages.map((p) => p.url)).toEqual([
-      `/slides/${first.id}/page-1.jpg`,
-      `/slides/${third.id}/page-1.jpg`,
+      libraryFileUrl(first, first.image),
+      libraryFileUrl(third, third.image),
     ]);
   });
 
@@ -285,13 +303,42 @@ describe('slides', () => {
     await expect(errorCode(local().admin.slides.upload.mutate(uploadForm(5)))).resolves.toBe(
       'BAD_REQUEST',
     );
-    await expect(local().admin.state.query()).resolves.toMatchObject({ slides: [] });
+    await expect(local().admin.state.query()).resolves.toMatchObject({ slots: [], library: [] });
   });
 
-  it('cannot show an empty slot', async () => {
+  it('cannot show an empty slot, or a picture that is not in the library', async () => {
     await expect(
       errorCode(local().admin.slides.setEnabled.mutate({ slot: 1, enabled: true })),
     ).resolves.toBe('NOT_FOUND');
+    await expect(
+      errorCode(
+        local().admin.slides.show.mutate({
+          slot: 1,
+          itemId: '00000000-0000-4000-8000-000000000000',
+        }),
+      ),
+    ).resolves.toBe('NOT_FOUND');
+  });
+});
+
+describe('library', () => {
+  it('renames an item', async () => {
+    const item = await local().admin.slides.upload.mutate(uploadForm(null));
+    await local().admin.library.rename.mutate({ itemId: item.id, name: 'הלכה יומית' });
+    const { library } = await local().admin.state.query();
+    expect(library[0]?.name).toBe('הלכה יומית');
+  });
+
+  it('deletes an item and its files, but never one a slot shows', async () => {
+    const shown = await local().admin.slides.upload.mutate(uploadForm(1));
+    const old = await local().admin.slides.upload.mutate(uploadForm(null));
+    await expect(
+      errorCode(local().admin.library.remove.mutate({ itemId: shown.id })),
+    ).resolves.toBe('PRECONDITION_FAILED');
+    await local().admin.library.remove.mutate({ itemId: old.id });
+    const { library } = await local().admin.state.query();
+    expect(library.map((item) => item.id)).toEqual([shown.id]);
+    await expect(access(join(app.slidesRoot, ...old.folder.split('/')))).rejects.toThrow();
   });
 });
 
@@ -348,82 +395,64 @@ describe('admin state stream', () => {
 });
 
 describe('templates', () => {
-  it('keeps a template with its design, and serves its picture', async () => {
-    const template = await local().admin.templates.save.mutate(templateForm());
+  it('keeps a template with its design in the library, and serves its picture', async () => {
+    const template = await local().admin.library.saveTemplate.mutate(templateForm());
     expect(template).toMatchObject({
+      kind: 'template',
       name: 'מזל טוב',
       design: DESIGN,
       background: 'background.png',
     });
-    await expect(local().admin.state.query()).resolves.toMatchObject({ templates: [template] });
-    const page = await fetch(`${baseUrl}${templateFileUrl(template, template.image)}`);
+    await expect(local().admin.state.query()).resolves.toMatchObject({
+      library: [expect.objectContaining({ id: template.id })],
+    });
+    const page = await fetch(`${baseUrl}${libraryFileUrl(template, template.image)}`);
     expect(page.status).toBe(200);
   });
 
-  it('shows a template in a slot, and the slot follows when the template is edited', async () => {
-    const template = await local().admin.templates.save.mutate(templateForm());
-    const shown = await local().admin.slides.useTemplate.mutate({
-      slot: 2,
-      templateId: template.id,
-    });
-    expect(shown).toMatchObject({ slot: 2, title: 'מזל טוב', templateId: template.id });
+  it('shows a template in a slot, and the screens follow when the template is edited', async () => {
+    const template = await local().admin.library.saveTemplate.mutate(templateForm());
+    await local().admin.slides.show.mutate({ slot: 2, itemId: template.id });
 
-    const edited = await local().admin.templates.save.mutate(
+    const edited = await local().admin.library.saveTemplate.mutate(
       templateForm({ id: template.id, name: 'שבת שלום' }),
     );
-    expect(edited.revision).not.toBe(template.revision);
-    const { slides } = await local().admin.state.query();
-    expect(slides).toEqual([
-      expect.objectContaining({ slot: 2, title: 'שבת שלום', templateId: template.id }),
+    expect(edited.folder).not.toBe(template.folder);
+    const display = await client().display.state.query({ displayId: 'main' });
+    expect(display.slideshow.pages.map((page) => page.url)).toEqual([
+      libraryFileUrl(edited, edited.image),
     ]);
-    expect(slides[0]?.id).not.toBe(shown.id);
-    await expect(access(join(app.slidesRoot, shown.id))).rejects.toThrow();
+    await expect(access(join(app.slidesRoot, ...template.folder.split('/')))).rejects.toThrow();
+  });
+
+  it('duplicates an item under a new name', async () => {
+    const template = await local().admin.library.saveTemplate.mutate(templateForm());
+    const copy = await local().admin.library.duplicate.mutate({ itemId: template.id });
+    expect(copy).toMatchObject({ kind: 'template', name: 'מזל טוב (עותק)', design: DESIGN });
+    const { library } = await local().admin.state.query();
+    expect(library.map((item) => item.id)).toEqual([copy.id, template.id]);
+    const page = await fetch(`${baseUrl}${libraryFileUrl(copy, copy.image)}`);
+    expect(page.status).toBe(200);
+  });
+
+  it('refuses an invalid design, a PDF background, an unknown item or editing a file', async () => {
     await expect(
-      access(join(app.slidesRoot, 'templates', template.id, template.revision)),
-    ).rejects.toThrow();
-  });
-
-  it('duplicates a template under a new name', async () => {
-    const template = await local().admin.templates.save.mutate(templateForm());
-    const copy = await local().admin.templates.duplicate.mutate({ templateId: template.id });
-    expect(copy).toMatchObject({ name: 'מזל טוב (עותק)', design: DESIGN });
-    expect(copy.id).not.toBe(template.id);
-    const { templates } = await local().admin.state.query();
-    expect(templates.map((other) => other.id)).toEqual([copy.id, template.id]);
-  });
-
-  it('deletes a template; a slot showing it keeps its picture', async () => {
-    const template = await local().admin.templates.save.mutate(templateForm());
-    const shown = await local().admin.slides.useTemplate.mutate({
-      slot: 1,
-      templateId: template.id,
-    });
-    await local().admin.templates.remove.mutate({ templateId: template.id });
-    const { templates, slides } = await local().admin.state.query();
-    expect(templates).toEqual([]);
-    expect(slides).toEqual([expect.objectContaining({ id: shown.id, slot: 1 })]);
-    expect(slides[0]?.templateId).toBeUndefined();
-    await expect(access(join(app.slidesRoot, 'templates', template.id))).rejects.toThrow();
-  });
-
-  it('refuses an invalid design, a PDF background or an unknown template', async () => {
-    await expect(
-      errorCode(local().admin.templates.save.mutate(templateForm({ design: 'not json' }))),
+      errorCode(local().admin.library.saveTemplate.mutate(templateForm({ design: 'not json' }))),
     ).resolves.toBe('BAD_REQUEST');
     await expect(
       errorCode(
-        local().admin.templates.save.mutate(
+        local().admin.library.saveTemplate.mutate(
           templateForm({ background: new File([PNG], 'b.pdf', { type: 'application/pdf' }) }),
         ),
       ),
     ).resolves.toBe('BAD_REQUEST');
     const unknown = '00000000-0000-4000-8000-000000000000';
     await expect(
-      errorCode(local().admin.templates.save.mutate(templateForm({ id: unknown }))),
+      errorCode(local().admin.library.saveTemplate.mutate(templateForm({ id: unknown }))),
     ).resolves.toBe('NOT_FOUND');
+    const file = await local().admin.slides.upload.mutate(uploadForm(null));
     await expect(
-      errorCode(local().admin.slides.useTemplate.mutate({ slot: 1, templateId: unknown })),
-    ).resolves.toBe('NOT_FOUND');
-    await expect(local().admin.state.query()).resolves.toMatchObject({ templates: [], slides: [] });
+      errorCode(local().admin.library.saveTemplate.mutate(templateForm({ id: file.id }))),
+    ).resolves.toBe('BAD_REQUEST');
   });
 });
