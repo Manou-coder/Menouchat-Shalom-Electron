@@ -1,6 +1,6 @@
 import { civilDateAt, computeDay, startOfNextCivilDate } from '@menouchat/core';
 import {
-  slidePageUrl,
+  libraryFileUrl,
   type DisplayState,
   type Displays,
   type Schedule,
@@ -59,13 +59,16 @@ export function buildDisplayState(
     slideshow: {
       intervalSec: display.slideIntervalSec,
       // The enabled slots, in slot order, as v1 did.
-      pages: inputs.slides.slides
-        .filter((slide) => slide.enabled)
+      pages: inputs.slides.slots
+        .filter((slot) => slot.enabled)
         .toSorted((a, b) => a.slot - b.slot)
-        .map((slide) => ({
-          key: `${slide.id}/${slide.image}`,
-          url: slidePageUrl(slide.id, slide.image),
-        })),
+        .flatMap((slot) => {
+          const item = inputs.slides.library.find((candidate) => candidate.id === slot.itemId);
+          // The folder changes with every version of a template: a new key, a new fade.
+          return item === undefined
+            ? []
+            : [{ key: `${item.folder}/${item.image}`, url: libraryFileUrl(item, item.image) }];
+        }),
     },
   };
 }

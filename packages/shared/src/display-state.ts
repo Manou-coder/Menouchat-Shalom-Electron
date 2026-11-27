@@ -74,6 +74,9 @@ export type DisplayState = z.infer<typeof displayStateSchema>;
 /** URL path under which the server serves `userData/slides/<id>/<file>`. */
 export const SLIDES_PATH = '/slides';
 
-export function slidePageUrl(slideId: string, fileName: string): string {
-  return `${SLIDES_PATH}/${encodeURIComponent(slideId)}/${encodeURIComponent(fileName)}`;
+/** The URL of a file of a library item, in its folder under `slides/`. */
+export function libraryFileUrl(item: { folder: string }, fileName: string): string {
+  return [SLIDES_PATH, ...item.folder.split('/'), fileName]
+    .map((part, index) => (index === 0 ? part : encodeURIComponent(part)))
+    .join('/');
 }

@@ -1,5 +1,9 @@
 export {
   adminStateSchema,
+  TEMPLATE_UPLOAD_FIELDS,
+  libraryItemRefInputSchema,
+  renameLibraryItemInputSchema,
+  showLibraryItemInputSchema,
   dayEventToggleInputSchema,
   layoutInputSchema,
   scheduleInputSchema,
@@ -27,7 +31,7 @@ export {
   type DayEventSnapshot,
   displayStateSchema,
   SLIDES_PATH,
-  slidePageUrl,
+  libraryFileUrl,
   zmanSchema,
   type DisplayState,
   type ZmanSnapshot,

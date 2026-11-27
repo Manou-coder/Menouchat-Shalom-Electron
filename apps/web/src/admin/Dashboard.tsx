@@ -10,6 +10,7 @@ import { LayoutCard } from './cards/LayoutCard.tsx';
 import { ShabbatTimesCard, WeekdayTimesCard } from './cards/ScheduleCards.tsx';
 import { SlidesCard } from './cards/SlidesCard.tsx';
 import { UpdateCard } from './cards/UpdateCard.tsx';
+import { LibraryCard } from './pictures/LibraryCard.tsx';
 import { PhoneAddress } from './PhoneAddress.tsx';
 import { DEFAULT_SECTION, parseSection, sectionPath, type AdminSection } from './sections.ts';
 import { Card } from './ui/Card.tsx';
@@ -75,7 +76,14 @@ export function Dashboard() {
                 <ShabbatTimesCard schedule={state.schedule} />
               </div>
               <div {...shown('slides')}>
-                <SlidesCard slides={state.slides} slideIntervalSec={state.slideIntervalSec} />
+                <SlidesCard
+                  slots={state.slots}
+                  library={state.library}
+                  slideIntervalSec={state.slideIntervalSec}
+                />
+              </div>
+              <div {...shown('library')}>
+                <LibraryCard library={state.library} slots={state.slots} />
               </div>
               <div {...shown('layout')}>
                 <LayoutCard layoutId={state.layoutId} />
