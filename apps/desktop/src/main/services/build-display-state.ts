@@ -55,6 +55,7 @@ export function buildDisplayState(
       rabbeinuTam: day.shabbat.rabbeinuTam,
     },
     calendar: day.calendar,
+    events: day.events.filter((event) => inputs.settings.events[event.kind]),
     slideshow: {
       intervalSec: display.slideIntervalSec,
       // The enabled slots, in slot order, as v1 did.

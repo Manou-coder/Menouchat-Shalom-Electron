@@ -26,7 +26,12 @@ export {
   type Schedule,
 } from './schedule.ts';
 export {
+  createDefaultDayEventSettings,
   createDefaultSettings,
+  DAY_EVENT_KINDS,
+  dayEventSettingsSchema,
+  type DayEventKind,
+  type DayEventSettings,
   locationSchema,
   settingsSchema,
   SETTINGS_SCHEMA_VERSION,

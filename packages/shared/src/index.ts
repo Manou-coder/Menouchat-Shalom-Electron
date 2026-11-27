@@ -1,5 +1,6 @@
 export {
   adminStateSchema,
+  dayEventToggleInputSchema,
   layoutInputSchema,
   scheduleInputSchema,
   SLIDE_UPLOAD_FIELDS,
@@ -22,6 +23,8 @@ export {
   type DesktopBridge,
 } from './desktop-bridge.ts';
 export {
+  dayEventSchema,
+  type DayEventSnapshot,
   displayStateSchema,
   SLIDES_PATH,
   slidePageUrl,

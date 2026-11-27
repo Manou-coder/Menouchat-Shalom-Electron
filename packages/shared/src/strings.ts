@@ -115,6 +115,16 @@ export const strings = {
       title: 'עיצוב המסך',
       names: { 'classic-portrait': 'קלאסי', 'classic-new': 'קלאסי חדש', 'blue-gold': 'כחול וזהב' },
     },
+    events: {
+      title: 'אירועים בלוח',
+      hint: 'מוצגים במסך בשורה מתחת לתאריך, בימים שיש בהם אירוע.',
+      kinds: {
+        roshChodesh: 'ראש חודש ושבת מברכים',
+        holiday: 'חגים, חול המועד וצומות',
+        chanukah: 'חנוכה והנרות של הערב',
+        omer: 'ספירת העומר של הלילה',
+      },
+    },
     phone: {
       title: 'עריכה מהטלפון',
       address: 'לעריכה מהטלפון (באותה רשת Wi-Fi):',
@@ -143,6 +153,9 @@ export const strings = {
       chatzos: 'חצות',
       sunset: 'שקיעה',
       tzais: 'צאת הכוכבים',
+    },
+    events: {
+      omerTonight: (dayText: string) => `ספירת העומר הלילה: ${dayText} לעומר`,
     },
     dafYomi: 'דף היומי',
     amudYomi: 'עמוד היומי',

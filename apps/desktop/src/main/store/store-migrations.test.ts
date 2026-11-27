@@ -6,7 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDefaultSettings } from '@menouchat/shared';
 
-import { createStore, migrateScheduleFrom1, migrateSettingsFrom1 } from './store.ts';
+import {
+  createStore,
+  migrateScheduleFrom1,
+  migrateSettingsFrom1,
+  migrateSettingsFrom2,
+} from './store.ts';
 
 let directory: string;
 
@@ -40,6 +45,16 @@ describe('settings 1 → 2', () => {
     );
     const store = createStore(directory, { info: vi.fn(), warn: vi.fn() });
     await expect(store.settings.read()).resolves.toEqual(createDefaultSettings());
+  });
+});
+
+describe('settings 2 → 3', () => {
+  it('switches every kind of day event on', () => {
+    expect(migrateSettingsFrom2({ schemaVersion: 2, lan: { port: 3741 } })).toEqual({
+      schemaVersion: 2,
+      lan: { port: 3741 },
+      events: { roshChodesh: true, holiday: true, chanukah: true, omer: true },
+    });
   });
 });
 

@@ -43,6 +43,20 @@ function inputs(overrides: Partial<DisplayInputs> = {}): DisplayInputs {
 const FRIDAY_NOON = Date.UTC(2026, 10, 27, 10);
 
 describe('buildDisplayState', () => {
+  it('announces the day events of the kinds switched on', () => {
+    // 30 Kislev 5787: Rosh Chodesh Tevet and the seventh Chanukah candle.
+    const roshChodeshNoon = Date.UTC(2026, 11, 10, 10);
+    const all = buildDisplayState(inputs(), 'main', roshChodeshNoon).events;
+    expect(all).toContainEqual({ kind: 'roshChodesh', text: 'ראש חודש טבת' });
+    expect(all).toContainEqual({ kind: 'chanukah', text: 'חנוכה: ז׳ נרות' });
+
+    const settings = createDefaultSettings();
+    settings.events.chanukah = false;
+    const some = buildDisplayState(inputs({ settings }), 'main', roshChodeshNoon).events;
+    expect(some.map((event) => event.kind)).not.toContain('chanukah');
+    expect(some).toContainEqual({ kind: 'roshChodesh', text: 'ראש חודש טבת' });
+  });
+
   it("computes the location's day with v1's values and the corrected candle lighting", () => {
     const state = buildDisplayState(inputs(), 'main', FRIDAY_NOON);
     expect(state.date).toEqual({ year: 2026, month: 11, day: 27 });

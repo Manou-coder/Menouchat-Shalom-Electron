@@ -118,6 +118,17 @@ describe('desktop actions', () => {
 });
 
 describe('editing', () => {
+  it('switches a kind of day event off and on', async () => {
+    await expect(local().admin.state.query()).resolves.toMatchObject({
+      events: { roshChodesh: true, holiday: true, chanukah: true, omer: true },
+    });
+    await client().admin.setDayEventEnabled.mutate({ kind: 'omer', enabled: false });
+    await expect(local().admin.state.query()).resolves.toMatchObject({
+      events: { roshChodesh: true, omer: false },
+    });
+    await expect(app.store.settings.read()).resolves.toMatchObject({ events: { omer: false } });
+  });
+
   it('saves the schedule and the display follows', async () => {
     const { schedule } = await local().admin.state.query();
     // Reordered, one removed, one renamed and retimed.

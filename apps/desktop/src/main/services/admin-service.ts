@@ -5,6 +5,7 @@ import {
   MAIN_DISPLAY_ID,
   SCHEDULE_SCHEMA_VERSION,
   type AdminState,
+  type DayEventKind,
   type LayoutId,
   type ScheduleInput,
   type Slide,
@@ -40,6 +41,7 @@ export interface AdminService {
   setSlideInterval(seconds: number): Promise<void>;
   /** Switches the main display to another layout; its options start from the defaults. */
   setLayout(layoutId: LayoutId): Promise<void>;
+  setDayEventEnabled(kind: DayEventKind, enabled: boolean): Promise<void>;
 }
 
 export function createAdminService(dependencies: AdminServiceDependencies): AdminService {
@@ -71,6 +73,7 @@ export function createAdminService(dependencies: AdminServiceDependencies): Admi
       slideIntervalSec: main?.slideIntervalSec ?? 10,
       layoutId: main?.layoutId ?? DEFAULT_LAYOUT_ID,
       phoneUrls: dependencies.phoneUrls(settings.lan.port),
+      events: settings.events,
       update: dependencies.updateStatus(),
     };
   }
@@ -151,6 +154,15 @@ export function createAdminService(dependencies: AdminServiceDependencies): Admi
           displays: document.displays.map((display) =>
             display.id === MAIN_DISPLAY_ID ? { ...display, layoutId, layoutOptions: {} } : display,
           ),
+        });
+      }),
+
+    setDayEventEnabled: (kind, enabled) =>
+      exclusive(async () => {
+        const settings = await store.settings.read();
+        await store.settings.write({
+          ...settings,
+          events: { ...settings.events, [kind]: enabled },
         });
       }),
   };

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { displaySchema, layoutIdSchema } from './persisted/displays.ts';
+import { DAY_EVENT_KINDS, dayEventSettingsSchema } from './persisted/settings.ts';
 import { scheduleSchema } from './persisted/schedule.ts';
 import { slideSchema, slideSlotSchema } from './persisted/slides.ts';
 
@@ -10,6 +11,12 @@ export type ScheduleInput = z.infer<typeof scheduleInputSchema>;
 export const slideIntervalInputSchema = displaySchema.pick({ slideIntervalSec: true });
 
 export const layoutInputSchema = z.object({ layoutId: layoutIdSchema });
+
+/** Switches one kind of day event on or off on the screens. */
+export const dayEventToggleInputSchema = z.object({
+  kind: z.enum(DAY_EVENT_KINDS),
+  enabled: z.boolean(),
+});
 
 /** A newer version found on GitHub: downloaded in the background, installed on restart. */
 export const updateStatusSchema = z.discriminatedUnion('status', [
@@ -39,6 +46,8 @@ export const adminStateSchema = z.object({
   layoutId: displaySchema.shape.layoutId,
   /** Full addresses of the admin on this PC's local network, to type on a phone. */
   phoneUrls: z.array(z.string()),
+  /** Which kinds of day events the screens announce. */
+  events: dayEventSettingsSchema,
   update: updateStatusSchema,
 });
 export type AdminState = z.infer<typeof adminStateSchema>;

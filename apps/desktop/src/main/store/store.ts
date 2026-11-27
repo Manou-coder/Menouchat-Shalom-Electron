@@ -1,4 +1,5 @@
 import {
+  createDefaultDayEventSettings,
   createDefaultDisplays,
   DEFAULT_HTTP_PORT,
   createDefaultSchedule,
@@ -46,6 +47,12 @@ export const migrateSettingsFrom1: Migration = ({ lan, ...rest }) => {
   return { ...rest, lan: { port } };
 };
 
+/** Settings 2 → 3: the screens announce day events, every kind on to begin with. */
+export const migrateSettingsFrom2: Migration = (document) => ({
+  ...document,
+  events: createDefaultDayEventSettings(),
+});
+
 /**
  * Schedule 1 → 2: the fixed prayers became lists the admin can add to, remove from and
  * reorder. Each keeps its stored time under its v1 name, in v1's order.
@@ -73,7 +80,7 @@ export function createStore(dataDirectory: string, logger: StoreLogger): Store {
         fileName: 'settings.json',
         schema: settingsSchema,
         currentVersion: SETTINGS_SCHEMA_VERSION,
-        migrations: { 1: migrateSettingsFrom1 },
+        migrations: { 1: migrateSettingsFrom1, 2: migrateSettingsFrom2 },
         createDefault: createDefaultSettings,
       },
       logger,

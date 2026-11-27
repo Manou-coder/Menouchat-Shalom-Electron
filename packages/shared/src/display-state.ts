@@ -14,6 +14,16 @@ export type ZmanSnapshot = z.infer<typeof zmanSchema>;
 
 const nullableZman = zmanSchema.nullable();
 
+/** A day event the screen announces, of a kind switched on in the admin. */
+export const dayEventSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('roshChodesh'), text: z.string() }),
+  z.object({ kind: z.literal('holiday'), text: z.string() }),
+  z.object({ kind: z.literal('chanukah'), text: z.string() }),
+  /** Tonight's count, after nightfall. */
+  z.object({ kind: z.literal('omer'), day: z.number().int().min(1).max(49), dayText: z.string() }),
+]);
+export type DayEventSnapshot = z.infer<typeof dayEventSchema>;
+
 /**
  * Everything a display renders, computed on the server (plan §4.5). Displays only lay it
  * out and animate the clock and slideshow; they never compute zmanim.
@@ -50,6 +60,8 @@ export const displayStateSchema = z.object({
     dafYomi: z.string(),
     amudYomi: z.string().nullable(),
   }),
+  /** In display order; empty on most days. */
+  events: z.array(dayEventSchema),
   slideshow: z.object({
     intervalSec: z.number().int().positive(),
     /** Every page of every slide shown on this display, in order. */

@@ -1,5 +1,6 @@
 import { strings, type ZmanSnapshot } from '@menouchat/shared';
 
+import { DayEventsLine } from '../../display/DayEventsLine.tsx';
 import { Slideshow } from '../../display/Slideshow.tsx';
 import { useFitFontSize } from '../../display/use-fit-font-size.ts';
 import { useFitScale } from '../../display/use-fit-scale.ts';
@@ -8,6 +9,7 @@ import { AnalogClock } from './AnalogClock.tsx';
 import background from './assets/background.jpg';
 import type { ClassicPortraitOptions } from './options.ts';
 import {
+  eventsLine,
   frameRows,
   leftPanel,
   rightPanel,
@@ -170,6 +172,18 @@ export function ClassicPortrait({ state, options }: LayoutProps<ClassicPortraitO
             value={timeOf(dailyZmanim[key])}
           />
         ))}
+
+        <div
+          className="absolute inset-x-0 flex items-center justify-center"
+          style={{ top: eventsLine.top, height: eventsLine.height }}
+        >
+          <DayEventsLine
+            events={state.events}
+            size={24}
+            maxWidth={eventsLine.maxWidth}
+            className="classic-portrait-panel classic-portrait-decor"
+          />
+        </div>
 
         {options.showClock && <AnalogClock timeZoneId={state.timeZoneId} />}
 

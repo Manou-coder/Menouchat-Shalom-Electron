@@ -5,6 +5,7 @@ import { strings } from '@menouchat/shared';
 import logoFull from '../assets/logo-full.png';
 import logoSymbol from '../assets/logo-symbol.png';
 import { AdminNav } from './AdminNav.tsx';
+import { DayEventsCard } from './cards/DayEventsCard.tsx';
 import { LayoutCard } from './cards/LayoutCard.tsx';
 import { ShabbatTimesCard, WeekdayTimesCard } from './cards/ScheduleCards.tsx';
 import { SlidesCard } from './cards/SlidesCard.tsx';
@@ -83,6 +84,7 @@ export function Dashboard() {
                 <Card title={strings.admin.phone.title}>
                   <PhoneAddress urls={state.phoneUrls} />
                 </Card>
+                <DayEventsCard events={state.events} />
                 <UpdateCard update={state.update} />
               </div>
             </>

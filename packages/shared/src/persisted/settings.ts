@@ -3,8 +3,28 @@ import { z } from 'zod';
 import { DEFAULT_HTTP_PORT } from '../network.ts';
 import { strings } from '../strings.ts';
 
-/** 2 since 2.0.1: phone access is always on, without a PIN (owner's decision). */
-export const SETTINGS_SCHEMA_VERSION = 2;
+/**
+ * 2 since 2.0.1: phone access is always on, without a PIN (owner's decision).
+ * 3: which kinds of day events the screens announce.
+ */
+export const SETTINGS_SCHEMA_VERSION = 3;
+
+/** The kinds of day events the screens can announce, each switched on or off in the admin. */
+export const DAY_EVENT_KINDS = ['roshChodesh', 'holiday', 'chanukah', 'omer'] as const;
+export type DayEventKind = (typeof DAY_EVENT_KINDS)[number];
+
+export const dayEventSettingsSchema = z.object({
+  roshChodesh: z.boolean(),
+  holiday: z.boolean(),
+  chanukah: z.boolean(),
+  omer: z.boolean(),
+}) satisfies z.ZodType<Record<DayEventKind, boolean>>;
+export type DayEventSettings = z.infer<typeof dayEventSettingsSchema>;
+
+/** Every kind on, as the owner asked. */
+export function createDefaultDayEventSettings(): DayEventSettings {
+  return { roshChodesh: true, holiday: true, chanukah: true, omer: true };
+}
 
 export const locationSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -26,6 +46,7 @@ export const settingsSchema = z.object({
   lan: z.object({
     port: z.number().int().min(1024).max(65535),
   }),
+  events: dayEventSettingsSchema,
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
@@ -54,5 +75,6 @@ export function createDefaultSettings(): Settings {
     candleLightingMinutes: 40,
     motzashArvitOffsetMinutes: 1,
     lan: { port: DEFAULT_HTTP_PORT },
+    events: createDefaultDayEventSettings(),
   };
 }

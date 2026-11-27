@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import {
   adminStateSchema,
+  dayEventToggleInputSchema,
   displayStateSchema,
   healthSchema,
   layoutInputSchema,
@@ -13,6 +14,7 @@ import {
   slideToggleInputSchema,
   updateCheckResultSchema,
   type AdminState,
+  type DayEventKind,
   type DisplayState,
   type LayoutId,
   type ScheduleInput,
@@ -37,6 +39,7 @@ export interface AdminApi {
   setSlideEnabled(slot: SlideSlot, enabled: boolean): Promise<void>;
   setSlideInterval(seconds: number): Promise<void>;
   setLayout(layoutId: LayoutId): Promise<void>;
+  setDayEventEnabled(kind: DayEventKind, enabled: boolean): Promise<void>;
 }
 
 /** What only the app's own windows may ask of the desktop app. */
@@ -124,6 +127,10 @@ export function createAppRouter({ version, displayStates, admin, desktop }: AppR
       updateSchedule: adminProcedure
         .input(scheduleInputSchema)
         .mutation(({ input }) => admin.updateSchedule(input)),
+
+      setDayEventEnabled: adminProcedure
+        .input(dayEventToggleInputSchema)
+        .mutation(({ input }) => admin.setDayEventEnabled(input.kind, input.enabled)),
 
       setLayout: adminProcedure
         .input(layoutInputSchema)

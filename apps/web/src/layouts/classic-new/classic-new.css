@@ -60,6 +60,14 @@
     0 0 4px #000000aa;
 }
 
+.classic-new-events {
+  font-family: 'Secular One', sans-serif;
+  color: #f6dc8f;
+  text-shadow:
+    0 1px 2px #000000,
+    0 0 6px #000000cc;
+}
+
 .classic-new-panel-label {
   font-family: 'Secular One', sans-serif;
 }
