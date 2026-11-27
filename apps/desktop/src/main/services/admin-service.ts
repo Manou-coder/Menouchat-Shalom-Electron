@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import {
   DEFAULT_LAYOUT_ID,
   MAIN_DISPLAY_ID,
+  SCHEDULE_SCHEMA_VERSION,
   type AdminState,
   type LayoutId,
   type ScheduleInput,
@@ -85,7 +86,7 @@ export function createAdminService(dependencies: AdminServiceDependencies): Admi
     },
 
     updateSchedule: (input) =>
-      exclusive(() => store.schedule.write({ schemaVersion: 1, ...input })),
+      exclusive(() => store.schedule.write({ schemaVersion: SCHEDULE_SCHEMA_VERSION, ...input })),
 
     uploadSlide: (upload) =>
       exclusive(async () => {

@@ -16,21 +16,68 @@ export interface Placement {
   valueLeft: number;
 }
 
-/** Weekday frame ("זמני חול"), 32 px bold. */
-export const weekday = {
-  shacharit: { top: 322, labelRight: 641.7, valueLeft: 455 },
-  mincha: { top: 378, labelRight: 641.7, valueLeft: 455 },
-  arvit: { top: 434, labelRight: 641.7, valueLeft: 455 },
-} satisfies Record<string, Placement>;
+/**
+ * A parchment frame holding a list of times. Rows are spread evenly and centred between
+ * `top` and `bottom` (the tops of the first and last possible rows), at most `maxStep` apart;
+ * text shrinks when many rows share the frame.
+ */
+export interface Frame {
+  top: number;
+  bottom: number;
+  maxStep: number;
+  labelRight: number;
+  valueLeft: number;
+  /** v1's size, used while the rows are far enough apart. */
+  fontSize: number;
+}
 
-/** Shabbat frame ("זמני שבת"), 28.8 px bold; Shir Hashirim smaller. */
-export const shabbat = {
-  shirHashirim: { top: 304.5, labelRight: 264.8, valueLeft: 80 },
-  minchaErev: { top: 332.1, labelRight: 274.8, valueLeft: 70 },
-  shacharit: { top: 374.7, labelRight: 274.8, valueLeft: 70 },
-  mincha: { top: 417.2, labelRight: 274.8, valueLeft: 70 },
-  arvit: { top: 459.8, labelRight: 259.8, valueLeft: 93 },
-} satisfies Record<string, Placement>;
+/** Weekday frame ("זמני חול"): v1's three rows, 32 px bold, 56 px apart, fall at 322, 378, 434. */
+export const weekdayFrame: Frame = {
+  top: 294,
+  bottom: 462,
+  maxStep: 56,
+  labelRight: 641.7,
+  valueLeft: 455,
+  fontSize: 32,
+};
+
+/** Shabbat frame ("זמני שבת"), 28.8 px bold; its last row is the computed Arvit. */
+export const shabbatFrame: Frame = {
+  top: 300,
+  bottom: 462,
+  maxStep: 42.6,
+  labelRight: 274.8,
+  valueLeft: 70,
+  fontSize: 28.8,
+};
+
+/** Rows this close together get text this much smaller than the gap between them. */
+const MAX_FONT_TO_STEP = 0.72;
+/** A time at the frame's size is about this many font sizes wide, plus a gap. */
+const TIME_WIDTH_IN_FONT_SIZES = 2.8;
+const LABEL_GAP = 10;
+
+export interface FrameRow extends Placement {
+  fontSize: number;
+  /** The widest a label may be before it is shrunk to fit beside its time. */
+  labelMaxWidth: number;
+}
+
+export function frameRows(frame: Frame, count: number): FrameRow[] {
+  const span = frame.bottom - frame.top;
+  const step = count < 2 ? 0 : Math.min(frame.maxStep, span / (count - 1));
+  const first = frame.top + (span - step * (count - 1)) / 2;
+  const fontSize = count < 2 ? frame.fontSize : Math.min(frame.fontSize, step * MAX_FONT_TO_STEP);
+  const labelMaxWidth =
+    frame.labelRight - frame.valueLeft - fontSize * TIME_WIDTH_IN_FONT_SIZES - LABEL_GAP;
+  return Array.from({ length: count }, (_, index) => ({
+    top: first + step * index,
+    labelRight: frame.labelRight,
+    valueLeft: frame.valueLeft,
+    fontSize,
+    labelMaxWidth,
+  }));
+}
 
 /** Left wooden panel, 21.6 px. */
 export const leftPanel = {

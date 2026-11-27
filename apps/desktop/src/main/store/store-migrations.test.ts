@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDefaultSettings } from '@menouchat/shared';
 
-import { createStore, migrateSettingsFrom1 } from './store.ts';
+import { createStore, migrateScheduleFrom1, migrateSettingsFrom1 } from './store.ts';
 
 let directory: string;
 
@@ -40,5 +40,38 @@ describe('settings 1 → 2', () => {
     );
     const store = createStore(directory, { info: vi.fn(), warn: vi.fn() });
     await expect(store.settings.read()).resolves.toEqual(createDefaultSettings());
+  });
+});
+
+describe('schedule 1 → 2', () => {
+  const version1 = {
+    schemaVersion: 1,
+    weekday: { shacharit: '06:45', mincha: '13:30', arvit: '21:00' },
+    shabbat: { shirHashirim: '18:00', minchaErev: '18:15', shacharit: '09:00', mincha: '17:00' },
+  };
+
+  it('turns the fixed prayers into lists, keeping every time in v1 order', () => {
+    expect(migrateScheduleFrom1(version1)).toEqual({
+      schemaVersion: 1,
+      weekday: [
+        { id: 'weekday-shacharit', name: 'שחרית', time: '06:45' },
+        { id: 'weekday-mincha', name: 'מנחה', time: '13:30' },
+        { id: 'weekday-arvit', name: 'ערבית', time: '21:00' },
+      ],
+      shabbat: [
+        { id: 'shabbat-shir-hashirim', name: 'שיר השירים', time: '18:00' },
+        { id: 'shabbat-mincha-erev', name: 'מנחה ע״ש', time: '18:15' },
+        { id: 'shabbat-shacharit', name: 'שחרית', time: '09:00' },
+        { id: 'shabbat-mincha', name: 'מנחה', time: '17:00' },
+      ],
+    });
+  });
+
+  it('reads a schedule.json written by 2.0.4 as version 2', async () => {
+    await writeFile(join(directory, 'schedule.json'), JSON.stringify(version1));
+    const store = createStore(directory, { info: vi.fn(), warn: vi.fn() });
+    const schedule = await store.schedule.read();
+    expect(schedule.schemaVersion).toBe(2);
+    expect(schedule.weekday.map((prayer) => prayer.time)).toEqual(['06:45', '13:30', '21:00']);
   });
 });

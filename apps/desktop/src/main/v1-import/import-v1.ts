@@ -6,6 +6,7 @@ import {
   createDefaultDisplays,
   createDefaultSettings,
   MAIN_DISPLAY_ID,
+  type Prayer,
   type Slide,
 } from '@menouchat/shared';
 
@@ -98,9 +99,10 @@ export async function importV1IfNeeded(
     ),
   });
 
+  const times = (prayers: readonly Prayer[]) => prayers.map((prayer) => prayer.time).join(' ');
   const report = [
     `${now().toISOString()} Imported Menouchat Chalom v1 data from ${userData}`,
-    `schedule: weekday ${Object.values(conversion.schedule.weekday).join(' ')}, shabbat ${Object.values(conversion.schedule.shabbat).join(' ')}`,
+    `schedule: weekday ${times(conversion.schedule.weekday)}, shabbat ${times(conversion.schedule.shabbat)}`,
     `slide interval: ${String(conversion.slideIntervalSec)} s`,
     ...slides.map(
       (slide) =>

@@ -72,11 +72,10 @@ describe('admin access', () => {
     const { schedule } = await phone.admin.state.query();
     await phone.admin.updateSchedule.mutate({
       ...schedule,
-      weekday: { ...schedule.weekday, arvit: '20:30' },
+      weekday: [...schedule.weekday, { id: 'late', name: 'ערבית ב׳', time: '20:30' }],
     });
-    await expect(local().admin.state.query()).resolves.toMatchObject({
-      schedule: { weekday: { arvit: '20:30' } },
-    });
+    const { schedule: saved } = await local().admin.state.query();
+    expect(saved.weekday.at(-1)).toEqual({ id: 'late', name: 'ערבית ב׳', time: '20:30' });
   });
 
   it('shows the full address to type on a phone', async () => {
@@ -110,12 +109,39 @@ describe('desktop actions', () => {
 describe('editing', () => {
   it('saves the schedule and the display follows', async () => {
     const { schedule } = await local().admin.state.query();
-    await local().admin.updateSchedule.mutate({
-      ...schedule,
-      weekday: { ...schedule.weekday, shacharit: '06:45' },
-    });
+    // Reordered, one removed, one renamed and retimed.
+    const [shacharit, mincha] = schedule.weekday;
+    if (shacharit === undefined || mincha === undefined) {
+      throw new Error('Expected the default weekday prayers');
+    }
+    const weekday = [{ ...mincha, name: 'מנחה גדולה', time: '13:15' }, shacharit];
+    await local().admin.updateSchedule.mutate({ ...schedule, weekday });
     const display = await client().display.state.query({ displayId: 'main' });
-    expect(display.schedule.weekday.shacharit).toBe('06:45');
+    expect(display.schedule.weekday).toEqual(weekday);
+  });
+
+  it.each([
+    ['an empty name', [{ id: 'a', name: '  ', time: '07:00' }]],
+    [
+      'a repeated id',
+      [
+        { id: 'a', name: 'שחרית', time: '07:00' },
+        { id: 'a', name: 'מנחה', time: '13:00' },
+      ],
+    ],
+    [
+      'too many prayers',
+      Array.from({ length: 7 }, (_, index) => ({
+        id: `p${String(index)}`,
+        name: 'תפילה',
+        time: '07:00',
+      })),
+    ],
+  ])('rejects %s', async (_case, weekday) => {
+    const { schedule } = await local().admin.state.query();
+    await expect(
+      errorCode(local().admin.updateSchedule.mutate({ ...schedule, weekday })),
+    ).resolves.toBe('BAD_REQUEST');
   });
 
   it('rejects invalid times', async () => {
@@ -124,7 +150,7 @@ describe('editing', () => {
       errorCode(
         local().admin.updateSchedule.mutate({
           ...schedule,
-          weekday: { ...schedule.weekday, mincha: '25:00' },
+          weekday: [{ id: 'bad', name: 'מנחה', time: '25:00' }],
         }),
       ),
     ).resolves.toBe('BAD_REQUEST');
@@ -264,11 +290,11 @@ describe('admin state stream', () => {
         const { schedule } = await local().admin.state.query();
         await local().admin.updateSchedule.mutate({
           ...schedule,
-          weekday: { ...schedule.weekday, arvit: '20:30' },
+          weekday: [...schedule.weekday, { id: 'late', name: 'ערבית ב׳', time: '20:30' }],
         });
       },
     );
-    expect(text).toContain('"arvit":"20:10"');
-    expect(text).toContain('"arvit":"20:30"');
+    expect(text).toContain('"time":"20:10"');
+    expect(text).toContain('"time":"20:30"');
   });
 });

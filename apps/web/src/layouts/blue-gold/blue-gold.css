@@ -61,6 +61,10 @@
   line-height: 1.05;
 }
 
+.blue-gold-compact .blue-gold-time {
+  font-size: 36px;
+}
+
 .blue-gold-tile {
   display: flex;
   flex-direction: column;

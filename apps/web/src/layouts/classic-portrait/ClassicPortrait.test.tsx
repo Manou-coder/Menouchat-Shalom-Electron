@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import type { DisplayState } from '@menouchat/shared';
+import { createDefaultSchedule, type DisplayState } from '@menouchat/shared';
 
 import { findLayout } from '../registry.ts';
 
@@ -17,8 +17,8 @@ const state: DisplayState = {
   date: { year: 2026, month: 11, day: 27 },
   validUntil: 0,
   schedule: {
-    weekday: { shacharit: '06:20', mincha: '17:50', arvit: '20:10' },
-    shabbat: { shirHashirim: '19:10', minchaErev: '19:25', shacharit: '08:20', mincha: '18:40' },
+    weekday: createDefaultSchedule().weekday,
+    shabbat: createDefaultSchedule().shabbat,
   },
   dailyZmanim: {
     alosHashachar: zman('05:01'),
@@ -43,15 +43,45 @@ const state: DisplayState = {
   slideshow: { intervalSec: 10, pages: [] },
 };
 
+const manyPrayers = Array.from({ length: 6 }, (_, index) => ({
+  id: `p${String(index)}`,
+  name: `תפילה ${String(index + 1)}`,
+  time: `1${String(index)}:00`,
+}));
+
 function renderLayout(layoutOptions: Record<string, unknown> = {}) {
   const layout = findLayout('classic-portrait');
   if (layout === undefined) throw new Error('classic-portrait is not registered');
   return render(layout.render({ ...state, layoutOptions }));
 }
 
+// jsdom has no FontFaceSet; frame labels wait for the fonts before fitting.
+beforeAll(() => {
+  Object.defineProperty(document, 'fonts', {
+    value: { ready: Promise.resolve() },
+    configurable: true,
+  });
+});
+
 afterEach(cleanup);
 
 describe('classic-portrait layout', () => {
+  it('shows every prayer the admin entered, in order, however many', () => {
+    const layout = findLayout('classic-portrait');
+    if (layout === undefined) throw new Error('classic-portrait is not registered');
+    render(
+      layout.render({
+        ...state,
+        schedule: { weekday: manyPrayers, shabbat: manyPrayers.slice(0, 1) },
+      }),
+    );
+    for (const prayer of manyPrayers) {
+      expect(screen.getAllByText(prayer.name).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(prayer.time).length).toBeGreaterThan(0);
+    }
+    expect(screen.queryByText('שחרית')).toBeNull();
+  });
+
   it('shows the entered times, the computed zmanim and the calendar', () => {
     renderLayout();
     for (const text of ['06:20', '19:10', '17:15', '16:40', '16:00', '17:52']) {

@@ -14,8 +14,15 @@ export {
 } from './displays.ts';
 export {
   createDefaultSchedule,
+  MAX_PRAYER_NAME_LENGTH,
+  MAX_PRAYERS_PER_GROUP,
+  prayerIdSchema,
+  prayerListSchema,
+  prayerSchema,
   scheduleSchema,
   SCHEDULE_SCHEMA_VERSION,
+  V1_PRAYERS,
+  type Prayer,
   type Schedule,
 } from './schedule.ts';
 export {

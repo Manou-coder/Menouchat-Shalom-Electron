@@ -30,7 +30,7 @@ describe('store', () => {
   it('keeps each document in its own file', async () => {
     const store = createStore(dataDirectory, { info: vi.fn(), warn: vi.fn() });
     const schedule = createDefaultSchedule();
-    schedule.weekday.shacharit = '06:45';
+    schedule.weekday.push({ id: 'weekday-late', name: 'ערבית ב׳', time: '22:00' });
     await store.schedule.write(schedule);
     await store.slides.write({ schemaVersion: 1, slides: [] });
     await expect(store.schedule.read()).resolves.toEqual(schedule);

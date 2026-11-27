@@ -12,6 +12,7 @@ import {
   SETTINGS_SCHEMA_VERSION,
   slidesSchema,
   SLIDES_SCHEMA_VERSION,
+  V1_PRAYERS,
   type Displays,
   type Schedule,
   type Settings,
@@ -45,6 +46,24 @@ export const migrateSettingsFrom1: Migration = ({ lan, ...rest }) => {
   return { ...rest, lan: { port } };
 };
 
+/**
+ * Schedule 1 → 2: the fixed prayers became lists the admin can add to, remove from and
+ * reorder. Each keeps its stored time under its v1 name, in v1's order.
+ */
+export const migrateScheduleFrom1: Migration = ({ weekday, shabbat, ...rest }) => {
+  const group = (stored: unknown, prayers: (typeof V1_PRAYERS)[keyof typeof V1_PRAYERS]) =>
+    prayers.map(({ key, id, name, time }) => {
+      const value: unknown =
+        typeof stored === 'object' && stored !== null ? Reflect.get(stored, key) : undefined;
+      return { id, name, time: typeof value === 'string' ? value : time };
+    });
+  return {
+    ...rest,
+    weekday: group(weekday, V1_PRAYERS.weekday),
+    shabbat: group(shabbat, V1_PRAYERS.shabbat),
+  };
+};
+
 /** `dataDirectory` is `userData/data`. */
 export function createStore(dataDirectory: string, logger: StoreLogger): Store {
   return {
@@ -65,7 +84,7 @@ export function createStore(dataDirectory: string, logger: StoreLogger): Store {
         fileName: 'schedule.json',
         schema: scheduleSchema,
         currentVersion: SCHEDULE_SCHEMA_VERSION,
-        migrations: {},
+        migrations: { 1: migrateScheduleFrom1 },
         createDefault: createDefaultSchedule,
       },
       logger,

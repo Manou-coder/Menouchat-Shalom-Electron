@@ -56,7 +56,7 @@ describe('buildDisplayState', () => {
       dafYomi: 'ערכין י׳',
       amudYomi: 'סוכה כב.',
     });
-    expect(state.schedule.weekday.shacharit).toBe('06:20');
+    expect(state.schedule.weekday[0]).toMatchObject({ name: 'שחרית', time: '06:20' });
     expect(state.layoutId).toBe('classic-portrait');
   });
 
