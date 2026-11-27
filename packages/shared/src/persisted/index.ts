@@ -39,15 +39,6 @@ export {
   type Settings,
 } from './settings.ts';
 export {
-  createDefaultTemplates,
-  templateIdSchema,
-  templateSchema,
-  templatesSchema,
-  TEMPLATES_SCHEMA_VERSION,
-  type Template,
-  type Templates,
-} from './templates.ts';
-export {
   createDefaultSlides,
   MAX_SLIDE_TEXT_LENGTH,
   MAX_SLIDE_TEXTS,
@@ -59,13 +50,16 @@ export {
   type SlideDesign,
   type SlideFont,
   type SlideText,
+  libraryFolderSchema,
+  libraryItemIdSchema,
+  libraryItemSchema,
   SLIDE_SLOTS,
-  slideIdSchema,
-  slideSchema,
   slideSlotSchema,
   slidesSchema,
   SLIDES_SCHEMA_VERSION,
-  type Slide,
+  slotSchema,
+  type LibraryItem,
   type SlideSlot,
   type Slides,
+  type Slot,
 } from './slides.ts';

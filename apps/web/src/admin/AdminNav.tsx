@@ -1,11 +1,4 @@
-import {
-  Clock,
-  Images,
-  LayoutTemplate,
-  MonitorSmartphone,
-  Settings,
-  type LucideIcon,
-} from 'lucide-react';
+import { Clock, Images, Library, MonitorSmartphone, Settings, type LucideIcon } from 'lucide-react';
 import { NavLink } from 'react-router';
 
 import { strings } from '@menouchat/shared';
@@ -15,7 +8,7 @@ import { ADMIN_SECTIONS, sectionLabel, sectionPath, type AdminSection } from './
 const icons: Record<AdminSection, LucideIcon> = {
   times: Clock,
   slides: Images,
-  templates: LayoutTemplate,
+  library: Library,
   layout: MonitorSmartphone,
   settings: Settings,
 };
