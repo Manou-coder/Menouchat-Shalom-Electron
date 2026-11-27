@@ -14,8 +14,9 @@ import {
 } from '../classic-portrait/placements.ts';
 import type { LayoutProps } from '../define-layout.tsx';
 import background from './assets/background.jpg';
-import frame from './assets/frame.jpg';
+import parchment from './assets/parchment.jpg';
 import type { ClassicNewOptions } from './options.ts';
+import { FrameOrnaments } from './FrameOrnaments.tsx';
 import './classic-new.css';
 
 const labels = strings.display;
@@ -26,20 +27,17 @@ function timeOf(zman: ZmanSnapshot | null): string {
 
 /**
  * The new classic look: v1's wood, clock and slide frame, with the new logo engraved at the
- * top and both prayer lists in one frame, moulded like the slide frame, where v1 had two. Same 720 × 1280
+ * top and both prayer lists in one gold frame, with scrollwork in its corners, where v1 had two
+ * ornate ones. Same 720 × 1280
  * surface as the classic theme, whose panel and clock positions it keeps.
  */
 const LOGO = { top: 12, height: 152 } as const;
 /** Where v1's two frames stood, side by side. */
 const FRAME = { left: 26, top: 184, width: 668, height: 368 } as const;
-/**
- * The slide frame's wooden moulding, cut from the background and drawn as a border image:
- * its thickness on the surface (v1's 52-58 px at 1080 px wide, times 2/3), then the
- * matching slices of `frame.jpg`, which is at the background's full size.
- */
-const BORDER = { top: 37, right: 39, bottom: 35, left: 39 } as const;
-const BORDER_SLICE = { top: 56, right: 58, bottom: 52, left: 58 } as const;
-const FRAME_PADDING = { x: 24, top: 6, bottom: 12 } as const;
+/** The gold moulding around the parchment. */
+const MOULDING = 12;
+/** Room inside the parchment, kept clear of the corner scrollwork. */
+const FRAME_PADDING = { x: 46, top: 20, bottom: 26 } as const;
 const TITLE_HEIGHT = 50;
 const MAX_ROW_STEP = 54;
 const MAX_FONT_SIZE = 34;
@@ -48,6 +46,8 @@ const FONT_TO_STEP = 0.66;
 /** A time is about this many font sizes wide; names get the rest of their column. */
 const TIME_WIDTH_IN_FONT_SIZES = 2.9;
 const DIVIDER_WIDTH = 28;
+/** The least space between a name and its time. */
+const NAME_GAP = 26;
 
 interface Row {
   key: string;
@@ -78,7 +78,7 @@ function Column({
   fontSize: number;
   width: number;
 }) {
-  const nameMaxWidth = width - fontSize * TIME_WIDTH_IN_FONT_SIZES - 12;
+  const nameMaxWidth = width - fontSize * TIME_WIDTH_IN_FONT_SIZES - NAME_GAP;
   return (
     <div className="flex flex-col" style={{ width }}>
       <h2
@@ -143,16 +143,10 @@ export function ClassicNew({ state, options }: LayoutProps<ClassicNewOptions>) {
   ];
   const rowCount = Math.max(weekday.length, shabbatRows.length, 1);
   const rowsHeight =
-    FRAME.height -
-    BORDER.top -
-    BORDER.bottom -
-    FRAME_PADDING.top -
-    FRAME_PADDING.bottom -
-    TITLE_HEIGHT;
+    FRAME.height - 2 * MOULDING - FRAME_PADDING.top - FRAME_PADDING.bottom - TITLE_HEIGHT;
   const step = Math.min(MAX_ROW_STEP, rowsHeight / rowCount);
   const fontSize = Math.min(MAX_FONT_SIZE, step * FONT_TO_STEP);
-  const columnWidth =
-    (FRAME.width - BORDER.left - BORDER.right - 2 * FRAME_PADDING.x - DIVIDER_WIDTH) / 2;
+  const columnWidth = (FRAME.width - 2 * MOULDING - 2 * FRAME_PADDING.x - DIVIDER_WIDTH) / 2;
 
   return (
     <div className="flex h-dvh w-dvw items-center justify-center overflow-hidden bg-black">
@@ -178,18 +172,11 @@ export function ClassicNew({ state, options }: LayoutProps<ClassicNewOptions>) {
           />
         </div>
 
-        <div
-          className="classic-new-frame absolute"
-          style={{
-            ...FRAME,
-            borderStyle: 'solid',
-            borderWidth: `${String(BORDER.top)}px ${String(BORDER.right)}px ${String(BORDER.bottom)}px ${String(BORDER.left)}px`,
-            borderImage: `url(${frame}) ${String(BORDER_SLICE.top)} ${String(BORDER_SLICE.right)} ${String(BORDER_SLICE.bottom)} ${String(BORDER_SLICE.left)} fill / 1 / 0 stretch`,
-          }}
-        >
+        <div className="classic-new-frame absolute" style={{ ...FRAME, padding: MOULDING }}>
           <div
-            className="flex size-full items-start justify-between"
+            className="classic-new-parchment flex size-full items-start justify-between"
             style={{
+              backgroundImage: `url(${parchment})`,
               padding: `${String(FRAME_PADDING.top)}px ${String(FRAME_PADDING.x)}px ${String(FRAME_PADDING.bottom)}px`,
             }}
           >
@@ -218,6 +205,7 @@ export function ClassicNew({ state, options }: LayoutProps<ClassicNewOptions>) {
               width={columnWidth}
             />
           </div>
+          <FrameOrnaments inset={MOULDING} />
         </div>
 
         {options.showDafYomi && (
