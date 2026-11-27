@@ -158,7 +158,7 @@ export function Toggle({
 }) {
   return (
     <SwitchField isSelected={isSelected} onChange={onChange} isDisabled={isDisabled}>
-      <SwitchButton className="group flex min-h-11 cursor-pointer items-center gap-3 data-disabled:cursor-default data-disabled:opacity-60">
+      <SwitchButton className="group flex min-h-11 cursor-pointer items-center gap-3 whitespace-nowrap data-disabled:cursor-default data-disabled:opacity-60">
         <span className="flex h-7 w-12 shrink-0 items-center rounded-full bg-border px-1 transition-colors group-data-focus-visible:ring-3 group-data-focus-visible:ring-focus group-data-selected:bg-accent">
           <span className="size-5 rounded-full bg-white shadow transition-transform group-data-selected:-translate-x-5 ltr:group-data-selected:translate-x-5" />
         </span>

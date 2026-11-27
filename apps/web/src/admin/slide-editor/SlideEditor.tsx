@@ -1,5 +1,5 @@
 import type Konva from 'konva';
-import { AlignCenter, AlignLeft, AlignRight, Plus, Trash2, X } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, Plus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, FileTrigger, Heading, Modal, ModalOverlay } from 'react-aria-components';
 import { Image as KonvaImage, Layer, Stage, Text, Transformer } from 'react-konva';
@@ -9,21 +9,21 @@ import {
   MAX_SLIDE_TEXTS,
   SLIDE_DESIGN_SIZE,
   SLIDE_FONTS,
-  SLIDE_UPLOAD_FIELDS,
+  TEMPLATE_UPLOAD_FIELDS,
   slideFontSchema,
-  slidePageUrl,
   strings,
-  type Slide,
   type SlideDesign,
-  type SlideSlot,
   type SlideText,
+  type LibraryItem,
 } from '@menouchat/shared';
 
 import { useApiClient } from '../../api/api-client.ts';
 import { Button } from '../../components/Button.tsx';
 import { errorMessage } from '../errors.ts';
 import { ErrorMessage } from '../ui/Card.tsx';
-import { SelectInput, Toggle } from '../ui/fields.tsx';
+import { itemBackgroundUrl, type TemplateItem } from '../pictures/library.ts';
+import { LibraryPicker } from '../pictures/LibraryPicker.tsx';
+import { SelectInput, TextInput, Toggle } from '../ui/fields.tsx';
 import {
   BACKGROUND_IDS,
   backgroundTextColor,
@@ -42,16 +42,16 @@ import './slide-editor.css';
 
 const labels = strings.admin.editor;
 
-/** Pictures a user may pick as a background; the server keeps them as the slide's original. */
+/** Pictures a user may pick as a background; the server keeps them with the template. */
 const BACKGROUND_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 type Background =
   | { kind: 'builtin'; id: BackgroundId }
   | { kind: 'file'; file: File }
-  /** The background of a slide being edited again, as stored on the server. */
+  /** The background of a template being edited again, as stored on the server. */
   | { kind: 'saved'; url: string };
 
-/** The background as a file to upload with the slide. */
+/** The background as a file to upload with the template. */
 async function backgroundFile(background: Background): Promise<File> {
   switch (background.kind) {
     case 'builtin':
@@ -161,21 +161,12 @@ function firstLine(text: string): string | undefined {
   return line === '' ? undefined : line;
 }
 
-const nextFrame = () =>
-  new Promise<void>((resolve) => {
-    requestAnimationFrame(() => {
-      resolve();
-    });
-  });
-
 function TextControls({
   text,
   onChange,
-  onRemove,
 }: {
   text: SlideText;
   onChange: (text: SlideText) => void;
-  onRemove: () => void;
 }) {
   const alignIcons = { right: AlignRight, center: AlignCenter, left: AlignLeft } as const;
   return (
@@ -279,39 +270,33 @@ function TextControls({
           })}
         </div>
       </div>
-
-      <div>
-        <Button variant="danger" onPress={onRemove}>
-          <span className="flex items-center gap-2">
-            <Trash2 aria-hidden className="size-5" />
-            {labels.removeText}
-          </span>
-        </Button>
-      </div>
     </div>
   );
 }
 
 /**
- * Makes a slide from a background and texts the user places on it: drag a text to move it,
+ * Makes a template from a background and texts the user places on it: drag a text to move it,
  * pull its side handles to change where it wraps, and style it in the panel. The result is
- * saved as an ordinary slide, with the design kept so it can be edited again.
+ * saved as a template, with the design kept so it can be edited again; slots showing it follow.
  */
 function Editor({
-  slot,
-  slide,
+  template,
+  startFrom,
+  library,
+  onSaved,
   onClose,
 }: {
-  slot: SlideSlot;
-  slide: Slide | undefined;
+  /** The template to edit; a new one is made without it. */
+  template: TemplateItem | undefined;
+  /** For a new template: the library item whose picture it starts on. */
+  startFrom: LibraryItem | undefined;
+  library: readonly LibraryItem[];
+  onSaved: (template: LibraryItem) => void;
   onClose: () => void;
 }) {
   const api = useApiClient();
-  const savedDesign = slide?.design;
-  const savedBackground =
-    savedDesign !== undefined && slide !== undefined && slide.originalFile !== null
-      ? slidePageUrl(slide.id, slide.originalFile)
-      : undefined;
+  const startingItem = template ?? startFrom;
+  const savedBackground = startingItem === undefined ? undefined : itemBackgroundUrl(startingItem);
 
   const [background, setBackground] = useState<Background>(() =>
     savedBackground === undefined
@@ -319,9 +304,11 @@ function Editor({
       : { kind: 'saved', url: savedBackground },
   );
   const [texts, setTexts] = useState<SlideText[]>(
-    () => savedDesign?.texts ?? [createText([], backgroundTextColor('parchment'))],
+    () => template?.design.texts ?? [createText([], backgroundTextColor('parchment'))],
   );
   const [selectedId, setSelectedId] = useState<string | undefined>(texts[0]?.id);
+  const [name, setName] = useState(template?.name ?? startFrom?.name ?? '');
+  const [pickingBackground, setPickingBackground] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -337,10 +324,15 @@ function Editor({
   const newTextColor =
     background.kind === 'builtin' ? backgroundTextColor(background.id) : '#ffffff';
 
+  // After every render: when the layer is drawn again (fonts loaded, picture changed), the
+  // handles must be put back on the selected text, which a narrower list of triggers missed.
   useEffect(() => {
     const node = selectedId === undefined ? undefined : textNodes.current.get(selectedId);
-    transformerRef.current?.nodes(node === undefined ? [] : [node]);
-  }, [selectedId, texts, fontsReady]);
+    const handles = transformerRef.current;
+    if (handles !== null && handles.nodes()[0] !== node) {
+      handles.nodes(node === undefined ? [] : [node]);
+    }
+  });
 
   function update(next: SlideText) {
     setTexts(texts.map((text) => (text.id === next.id ? next : text)));
@@ -352,6 +344,36 @@ function Editor({
     setTexts(texts.map((text) => (text.color === newTextColor ? { ...text, color } : text)));
     setBackground({ kind: 'builtin', id });
   }
+
+  function removeText(id: string) {
+    setTexts(texts.filter((text) => text.id !== id));
+    if (selectedId === id) {
+      setSelectedId(undefined);
+    }
+  }
+
+  // Delete or Backspace removes the selected text, unless a field is being typed in.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target;
+      const typing =
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+      if (
+        (event.key === 'Delete' || event.key === 'Backspace') &&
+        !typing &&
+        selectedId !== undefined
+      ) {
+        event.preventDefault();
+        setTexts((current) => current.filter((text) => text.id !== selectedId));
+        setSelectedId(undefined);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [selectedId]);
 
   function addText() {
     const text = createText(texts, newTextColor);
@@ -367,24 +389,28 @@ function Editor({
     setSaving(true);
     setError(undefined);
     try {
-      // The handles must not end up in the picture.
-      setSelectedId(undefined);
-      await nextFrame();
-      await nextFrame();
-      const rendered = await (
-        await fetch(
-          stage.toDataURL({ mimeType: 'image/jpeg', quality: 0.9, pixelRatio: 1 / scale }),
-        )
-      ).blob();
+      // The handles must not end up in the picture. Hidden on the node itself, at once:
+      // waiting for a re-render would need an animation frame, which a hidden page never gets.
+      const handles = transformerRef.current;
+      handles?.visible(false);
+      const dataUrl = stage.toDataURL({
+        mimeType: 'image/jpeg',
+        quality: 0.9,
+        pixelRatio: 1 / scale,
+      });
+      handles?.visible(true);
+      const rendered = await (await fetch(dataUrl)).blob();
       const design: SlideDesign = { texts };
       const form = new FormData();
-      form.set(SLIDE_UPLOAD_FIELDS.slot, String(slot));
-      form.set(SLIDE_UPLOAD_FIELDS.title, designTitle(design));
-      form.set(SLIDE_UPLOAD_FIELDS.original, await backgroundFile(background));
-      form.set(SLIDE_UPLOAD_FIELDS.image, rendered, 'page-1.jpg');
-      form.set(SLIDE_UPLOAD_FIELDS.design, JSON.stringify(design));
-      await api.admin.slides.upload.mutate(form);
-      onClose();
+      if (template !== undefined) {
+        form.set(TEMPLATE_UPLOAD_FIELDS.id, template.id);
+      }
+      // Without a name, the template is named after its first line of text.
+      form.set(TEMPLATE_UPLOAD_FIELDS.name, name.trim() === '' ? designTitle(design) : name.trim());
+      form.set(TEMPLATE_UPLOAD_FIELDS.background, await backgroundFile(background));
+      form.set(TEMPLATE_UPLOAD_FIELDS.image, rendered, 'page-1.jpg');
+      form.set(TEMPLATE_UPLOAD_FIELDS.design, JSON.stringify(design));
+      onSaved(await api.admin.library.saveTemplate.mutate(form));
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {
@@ -402,7 +428,7 @@ function Editor({
     <Dialog className="flex h-full flex-col outline-none">
       <div className="flex items-center gap-3 border-b border-border/70 px-4 py-3">
         <Heading slot="title" className="flex-1 text-lg font-semibold">
-          {labels.title(slot)}
+          {template === undefined ? labels.newTemplate : labels.editTemplate}
         </Heading>
         <Button variant="icon" aria-label={labels.cancel} onPress={onClose} isDisabled={saving}>
           <X aria-hidden className="mx-auto size-5" />
@@ -410,92 +436,101 @@ function Editor({
       </div>
 
       <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-4 lg:grid-cols-[1fr_22rem]">
-        <div className="grid content-start gap-4">
-          <div ref={frameRef} className="w-full overflow-hidden rounded-xl bg-black shadow-sm">
-            {width > 0 && (
-              <Stage
-                ref={stageRef}
-                width={width}
-                height={SLIDE_DESIGN_SIZE.height * scale}
-                scaleX={scale}
-                scaleY={scale}
-                onMouseDown={deselectOnEmpty}
-                onTouchStart={deselectOnEmpty}
-                aria-label={labels.canvasLabel}
-              >
-                {/* Remounted once the fonts load, so Konva measures the texts again. */}
-                <Layer key={fontsReady ? 'fonts-ready' : 'fonts-loading'}>
-                  {image !== undefined && (
-                    <KonvaImage
-                      name="background"
-                      image={image}
-                      width={SLIDE_DESIGN_SIZE.width}
-                      height={SLIDE_DESIGN_SIZE.height}
-                      crop={coverCrop({ width: image.naturalWidth, height: image.naturalHeight })}
-                    />
-                  )}
-                  {texts.map((text) => (
-                    <Text
-                      key={text.id}
-                      ref={(node) => {
-                        if (node === null) {
-                          textNodes.current.delete(text.id);
-                        } else {
-                          textNodes.current.set(text.id, node);
+        {/*
+          On a phone the columns stack and this one dissolves into the scrolling grid, so the
+          picture can stay at the top while the settings under it scroll.
+        */}
+        <div className="grid content-start gap-4 max-lg:contents">
+          <div className="sticky top-0 z-10 bg-background pb-1 lg:static lg:pb-0">
+            <div ref={frameRef} className="w-full overflow-hidden rounded-xl bg-black shadow-sm">
+              {width > 0 && (
+                <Stage
+                  ref={stageRef}
+                  width={width}
+                  height={SLIDE_DESIGN_SIZE.height * scale}
+                  scaleX={scale}
+                  scaleY={scale}
+                  onMouseDown={deselectOnEmpty}
+                  onTouchStart={deselectOnEmpty}
+                  aria-label={labels.canvasLabel}
+                >
+                  {/* Remounted once the fonts load, so Konva measures the texts again. */}
+                  <Layer key={fontsReady ? 'fonts-ready' : 'fonts-loading'}>
+                    {image !== undefined && (
+                      <KonvaImage
+                        name="background"
+                        image={image}
+                        width={SLIDE_DESIGN_SIZE.width}
+                        height={SLIDE_DESIGN_SIZE.height}
+                        crop={coverCrop({ width: image.naturalWidth, height: image.naturalHeight })}
+                      />
+                    )}
+                    {texts.map((text) => (
+                      <Text
+                        key={text.id}
+                        ref={(node) => {
+                          if (node === null) {
+                            textNodes.current.delete(text.id);
+                          } else {
+                            textNodes.current.set(text.id, node);
+                          }
+                        }}
+                        text={text.text}
+                        x={text.x}
+                        y={text.y}
+                        width={text.width}
+                        fontSize={text.fontSize}
+                        fontFamily={FONT_FAMILIES[text.font]}
+                        fontStyle={text.bold ? 'bold' : 'normal'}
+                        fill={text.color}
+                        align={text.align}
+                        direction="rtl"
+                        lineHeight={1.2}
+                        wrap="word"
+                        draggable
+                        onMouseDown={() => {
+                          setSelectedId(text.id);
+                        }}
+                        onTouchStart={() => {
+                          setSelectedId(text.id);
+                        }}
+                        onDragEnd={(event) => {
+                          update({ ...text, x: event.target.x(), y: event.target.y() });
+                        }}
+                        onTransform={(event) => {
+                          // Side handles change where lines wrap, never stretch the letters.
+                          const node = event.target;
+                          node.setAttrs({
+                            width: Math.max(40, node.width() * node.scaleX()),
+                            scaleX: 1,
+                          });
+                        }}
+                        onTransformEnd={(event) => {
+                          const node = event.target;
+                          update({ ...text, x: node.x(), y: node.y(), width: node.width() });
+                        }}
+                      />
+                    ))}
+                    {selected !== undefined && (
+                      <Transformer
+                        ref={transformerRef}
+                        enabledAnchors={['middle-left', 'middle-right']}
+                        rotateEnabled={false}
+                        // Smaller on a phone, where the picture itself is small.
+                        anchorSize={width < 500 ? 16 : 28}
+                        anchorCornerRadius={width < 500 ? 8 : 14}
+                        anchorStroke="#b8892f"
+                        borderStroke="#d6a64d"
+                        borderStrokeWidth={2}
+                        boundBoxFunc={(previous, next) =>
+                          next.width < 40 * scale ? previous : next
                         }
-                      }}
-                      text={text.text}
-                      x={text.x}
-                      y={text.y}
-                      width={text.width}
-                      fontSize={text.fontSize}
-                      fontFamily={FONT_FAMILIES[text.font]}
-                      fontStyle={text.bold ? 'bold' : 'normal'}
-                      fill={text.color}
-                      align={text.align}
-                      direction="rtl"
-                      lineHeight={1.2}
-                      wrap="word"
-                      draggable
-                      onMouseDown={() => {
-                        setSelectedId(text.id);
-                      }}
-                      onTouchStart={() => {
-                        setSelectedId(text.id);
-                      }}
-                      onDragEnd={(event) => {
-                        update({ ...text, x: event.target.x(), y: event.target.y() });
-                      }}
-                      onTransform={(event) => {
-                        // Side handles change where lines wrap, never stretch the letters.
-                        const node = event.target;
-                        node.setAttrs({
-                          width: Math.max(40, node.width() * node.scaleX()),
-                          scaleX: 1,
-                        });
-                      }}
-                      onTransformEnd={(event) => {
-                        const node = event.target;
-                        update({ ...text, x: node.x(), y: node.y(), width: node.width() });
-                      }}
-                    />
-                  ))}
-                  {selected !== undefined && (
-                    <Transformer
-                      ref={transformerRef}
-                      enabledAnchors={['middle-left', 'middle-right']}
-                      rotateEnabled={false}
-                      anchorSize={28}
-                      anchorCornerRadius={14}
-                      anchorStroke="#b8892f"
-                      borderStroke="#d6a64d"
-                      borderStrokeWidth={2}
-                      boundBoxFunc={(previous, next) => (next.width < 40 * scale ? previous : next)}
-                    />
-                  )}
-                </Layer>
-              </Stage>
-            )}
+                      />
+                    )}
+                  </Layer>
+                </Stage>
+              )}
+            </div>
           </div>
           <p className="text-sm text-text-muted">{labels.selectHint}</p>
 
@@ -528,27 +563,59 @@ function Editor({
               >
                 <Button variant="secondary">{labels.ownImage}</Button>
               </FileTrigger>
+              <Button
+                variant="secondary"
+                onPress={() => {
+                  setPickingBackground(true);
+                }}
+              >
+                {labels.fromLibrary}
+              </Button>
             </div>
             {failed && <ErrorMessage message={labels.backgroundFailed} />}
           </fieldset>
         </div>
 
         <div className="grid content-start gap-4">
+          <TextInput
+            label={labels.name}
+            placeholder={labels.namePlaceholder}
+            maxLength={100}
+            value={name}
+            onChange={setName}
+          />
           <div className="flex flex-wrap gap-2">
-            {texts.map((text) => (
-              <button
-                key={text.id}
-                type="button"
-                aria-pressed={text.id === selectedId}
-                onClick={() => {
-                  setSelectedId(text.id);
-                }}
-                className="min-h-11 max-w-full truncate rounded-xl border border-border bg-surface px-3 focus-visible:outline-3 focus-visible:outline-focus aria-pressed:border-accent aria-pressed:bg-accent-soft"
-                dir="auto"
-              >
-                {firstLine(text.text) ?? labels.newText}
-              </button>
-            ))}
+            {texts.map((text) => {
+              const name = firstLine(text.text) ?? labels.newText;
+              const isSelected = text.id === selectedId;
+              return (
+                <span
+                  key={text.id}
+                  className={`flex max-w-full items-center rounded-xl border ${isSelected ? 'border-accent bg-accent-soft' : 'border-border bg-surface'}`}
+                >
+                  <button
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      setSelectedId(text.id);
+                    }}
+                    className="min-h-11 min-w-0 truncate rounded-xl ps-3 pe-1 focus-visible:outline-3 focus-visible:outline-focus"
+                  >
+                    <bdi>{name}</bdi>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={labels.removeNamed(name)}
+                    onClick={() => {
+                      removeText(text.id);
+                    }}
+                    className="grid size-11 shrink-0 place-items-center rounded-xl text-text-muted hover:text-danger focus-visible:outline-3 focus-visible:outline-focus"
+                  >
+                    <X aria-hidden className="size-4" />
+                  </button>
+                </span>
+              );
+            })}
             <Button
               variant="secondary"
               onPress={addText}
@@ -566,14 +633,7 @@ function Editor({
           {selected === undefined ? (
             texts.length === 0 && <p className="text-text-muted">{labels.noText}</p>
           ) : (
-            <TextControls
-              text={selected}
-              onChange={update}
-              onRemove={() => {
-                setTexts(texts.filter((text) => text.id !== selected.id));
-                setSelectedId(undefined);
-              }}
-            />
+            <TextControls text={selected} onChange={update} />
           )}
         </div>
       </div>
@@ -587,26 +647,61 @@ function Editor({
         </Button>
         <ErrorMessage message={error} />
       </div>
+      {pickingBackground && (
+        <ModalOverlay
+          isOpen
+          isDismissable
+          onOpenChange={(open) => {
+            setPickingBackground(open);
+          }}
+          className="fixed inset-0 z-40 grid place-items-center bg-black/50 p-4"
+        >
+          <Modal className="max-h-full w-full max-w-2xl overflow-y-auto rounded-2xl bg-background p-5 shadow-xl">
+            <Dialog aria-label={labels.fromLibrary} className="outline-none">
+              <LibraryPicker
+                library={library}
+                onPick={(item) => {
+                  setBackground({ kind: 'saved', url: itemBackgroundUrl(item) });
+                  setPickingBackground(false);
+                }}
+              />
+            </Dialog>
+          </Modal>
+        </ModalOverlay>
+      )}
     </Dialog>
   );
 }
 
 /** The editor in a full-screen dialog over the admin. */
-export function SlideEditorDialog({
-  slot,
-  slide,
+export function TemplateEditorDialog({
+  template,
+  startFrom,
+  library,
   isOpen,
   onClose,
+  onSaved,
 }: {
-  slot: SlideSlot;
-  slide: Slide | undefined;
+  template?: TemplateItem | undefined;
+  startFrom?: LibraryItem | undefined;
+  library: readonly LibraryItem[];
   isOpen: boolean;
   onClose: () => void;
+  /** Called with the saved template; the dialog is closed by its owner. */
+  onSaved: (template: LibraryItem) => void;
 }) {
   return (
     <ModalOverlay isOpen={isOpen} className="fixed inset-0 z-30 bg-black/50 md:p-6">
       <Modal className="mx-auto h-full max-w-6xl overflow-hidden bg-background md:rounded-2xl md:shadow-xl">
-        {isOpen && <Editor slot={slot} slide={slide} onClose={onClose} />}
+        {isOpen && (
+          <Editor
+            template={template}
+            startFrom={startFrom}
+            library={library}
+            onSaved={onSaved}
+            onClose={onClose}
+          />
+        )}
       </Modal>
     </ModalOverlay>
   );

@@ -79,6 +79,9 @@ export function frameRows(frame: Frame, count: number): FrameRow[] {
   }));
 }
 
+/** The strip of wood between the frames and the panels, where the day's events go. */
+export const eventsLine = { top: 556, height: 38, maxWidth: 660 } as const;
+
 /** Left wooden panel, 21.6 px. */
 export const leftPanel = {
   dafYomi: { top: 594.6, labelRight: 255.5, valueLeft: 25 },

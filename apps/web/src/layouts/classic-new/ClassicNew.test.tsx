@@ -40,6 +40,7 @@ const state: DisplayState = {
     dafYomi: 'ערכין י׳',
     amudYomi: 'סוכה כא:',
   },
+  events: [],
   slideshow: { intervalSec: 10, pages: [] },
 };
 

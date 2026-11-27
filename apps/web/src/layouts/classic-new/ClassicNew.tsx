@@ -1,11 +1,13 @@
 import { strings, type Prayer, type ZmanSnapshot } from '@menouchat/shared';
 
 import logo from '../../assets/logo-full.png';
+import { DayEventsLine } from '../../display/DayEventsLine.tsx';
 import { Slideshow } from '../../display/Slideshow.tsx';
 import { useFitFontSize } from '../../display/use-fit-font-size.ts';
 import { useFitScale } from '../../display/use-fit-scale.ts';
 import { AnalogClock } from '../classic-portrait/AnalogClock.tsx';
 import {
+  eventsLine,
   leftPanel,
   rightPanel,
   slideshow,
@@ -244,6 +246,18 @@ export function ClassicNew({ state, options }: LayoutProps<ClassicNewOptions>) {
             value={timeOf(dailyZmanim[key])}
           />
         ))}
+
+        <div
+          className="absolute inset-x-0 flex items-center justify-center"
+          style={{ top: eventsLine.top, height: eventsLine.height }}
+        >
+          <DayEventsLine
+            events={state.events}
+            size={24}
+            maxWidth={eventsLine.maxWidth}
+            className="classic-new-events"
+          />
+        </div>
 
         {options.showClock && <AnalogClock timeZoneId={state.timeZoneId} />}
 
