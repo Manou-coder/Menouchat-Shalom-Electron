@@ -71,11 +71,9 @@ async function start(): Promise<void> {
       log.error(message, error);
     },
     checkIntervalMs: UPDATE_CHECK_INTERVAL_MS,
+    enabled: app.isPackaged,
   });
-  // Only an installed build knows where its updates come from.
-  if (app.isPackaged) {
-    updates.start();
-  }
+  updates.start();
 
   const displayStates = createDisplayStateService({
     readInputs: async () => {
@@ -131,6 +129,7 @@ async function start(): Promise<void> {
           updates.installNow();
         }, RESTART_DELAY_MS);
       },
+      checkForUpdate: () => updates.checkNow(),
     },
     slidesRoot,
     ...(import.meta.env.DEV ? {} : { webRoot: resolveWebRoot() }),

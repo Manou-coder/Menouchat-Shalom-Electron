@@ -1,10 +1,12 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 
-import { strings, type ZmanSnapshot } from '@menouchat/shared';
+import { strings, type Prayer, type ZmanSnapshot } from '@menouchat/shared';
 
-import logo from '../../assets/logo.png';
+import logo from '../../assets/logo-symbol.png';
+import { DayEventsLine } from '../../display/DayEventsLine.tsx';
 import { Slideshow } from '../../display/Slideshow.tsx';
 import { useClock } from '../../display/use-clock.ts';
+import { useFitFontSize } from '../../display/use-fit-font-size.ts';
 import { useFitScale } from '../../display/use-fit-scale.ts';
 import type { LayoutProps } from '../define-layout.tsx';
 import background from './assets/background.jpg';
@@ -43,22 +45,53 @@ function DigitalClock({ timeZoneId }: { timeZoneId: string }) {
 }
 
 interface Item {
+  key: string;
   label: string;
   value: string;
   /** Candle lighting and Rabbeinu Tam stand out in red, as on the synagogue's posters. */
   highlight?: boolean;
 }
 
-/** A row of times, each name above its time. */
-function Row({ items }: { items: Item[] }) {
+/** The most times side by side in a panel; more go on a second row. */
+const MAX_PER_ROW = 4;
+/** The panels' inner width (the frame less 26 px of padding each side). */
+const PANEL_TEXT_WIDTH = 590;
+const LABEL_SIZE = 24;
+const COMPACT_LABEL_SIZE = 19;
+
+/** Splits a panel's items into rows of at most MAX_PER_ROW, as even as possible. */
+function splitRows(items: Item[]): Item[][] {
+  const rowCount = Math.ceil(items.length / MAX_PER_ROW);
+  const perRow = Math.ceil(items.length / Math.max(rowCount, 1));
+  return Array.from({ length: rowCount }, (_, row) =>
+    items.slice(row * perRow, (row + 1) * perRow),
+  );
+}
+
+function Label({ text, size, maxWidth }: { text: string; size: number; maxWidth: number }) {
+  const { ref, fontSize } = useFitFontSize<HTMLDivElement>(text, size, maxWidth);
   return (
-    <div className="flex w-full justify-around">
+    <div ref={ref} className="blue-gold-label whitespace-nowrap" style={{ fontSize }}>
+      {text}
+    </div>
+  );
+}
+
+/** A row of times, each name above its time; `compact` when a panel needs several rows. */
+function Row({ items, compact = false }: { items: Item[]; compact?: boolean }) {
+  const cellWidth = PANEL_TEXT_WIDTH / Math.max(items.length, MAX_PER_ROW - 1) - 8;
+  return (
+    <div className={`flex w-full justify-around ${compact ? 'blue-gold-compact' : ''}`}>
       {items.map((item) => (
         <div
-          key={item.label}
+          key={item.key}
           className={`flex-1 text-center ${item.highlight === true ? 'blue-gold-red' : ''}`}
         >
-          <div className="blue-gold-label whitespace-nowrap">{item.label}</div>
+          <Label
+            text={item.label}
+            size={compact ? COMPACT_LABEL_SIZE : LABEL_SIZE}
+            maxWidth={cellWidth}
+          />
           <div dir="ltr" className="blue-gold-time">
             {item.value}
           </div>
@@ -66,6 +99,14 @@ function Row({ items }: { items: Item[] }) {
       ))}
     </div>
   );
+}
+
+/** A panel's entered prayers, on one row or, when there are many, on two smaller ones. */
+function PrayerRows({ prayers }: { prayers: readonly Prayer[] }) {
+  const rows = splitRows(
+    prayers.map((prayer) => ({ key: prayer.id, label: prayer.name, value: prayer.time })),
+  );
+  return rows.map((items, index) => <Row key={index} items={items} compact={rows.length > 1} />);
 }
 
 /** How long each of the daf yomi and the amud yomi stays in their shared tile. */
@@ -80,38 +121,13 @@ const TILE_TEXT_SIZE = 24;
  * longest names (בבא מציעא, בבא בתרא, עבודה זרה, בבא קמא, ראש השנה) get a smaller size.
  */
 function TileText({ text }: { text: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [size, setSize] = useState(TILE_TEXT_SIZE);
-
-  useLayoutEffect(() => {
-    const element = ref.current;
-    if (element === null) {
-      return undefined;
-    }
-    let active = true;
-    const fit = () => {
-      // offsetWidth ignores the surface's scale, so this is the width on the 720 px surface.
-      element.style.fontSize = `${String(TILE_TEXT_SIZE)}px`;
-      const width = element.offsetWidth;
-      element.style.fontSize = '';
-      if (active) {
-        setSize(
-          width > TILE_TEXT_MAX_WIDTH
-            ? Math.floor((TILE_TEXT_SIZE * TILE_TEXT_MAX_WIDTH * 10) / width) / 10
-            : TILE_TEXT_SIZE,
-        );
-      }
-    };
-    fit();
-    // Measure again once David Libre has loaded: the fallback font has other widths.
-    void document.fonts.ready.then(fit);
-    return () => {
-      active = false;
-    };
-  }, [text]);
-
+  const { ref, fontSize } = useFitFontSize<HTMLSpanElement>(
+    text,
+    TILE_TEXT_SIZE,
+    TILE_TEXT_MAX_WIDTH,
+  );
   return (
-    <span ref={ref} className="blue-gold-tile-text blue-gold-red" style={{ fontSize: size }}>
+    <span ref={ref} className="blue-gold-tile-text blue-gold-red" style={{ fontSize }}>
       {text}
     </span>
   );
@@ -225,39 +241,52 @@ export function BlueGold({ state }: LayoutProps<BlueGoldOptions>) {
           <DigitalClock timeZoneId={state.timeZoneId} />
         </div>
 
-        <div className="blue-gold-date flex items-center justify-center" style={at(date)}>
-          {calendar.hebrewDate} ·{' '}
-          <span className="blue-gold-red">{labels.parashaOf(calendar.parasha)}</span>
+        {/* On a day with events, they get a second line and the date a smaller size. */}
+        <div
+          className={`blue-gold-date flex flex-col items-center justify-center ${state.events.length > 0 ? 'blue-gold-date-with-events' : ''}`}
+          style={at(date)}
+        >
+          <div>
+            {calendar.hebrewDate} ·{' '}
+            <span className="blue-gold-red">{labels.parashaOf(calendar.parasha)}</span>
+          </div>
+          <DayEventsLine
+            events={state.events}
+            size={21}
+            maxWidth={date.width - 40}
+            className="blue-gold-events"
+          />
         </div>
 
         <section className="blue-gold-panel" style={at(weekdayBox)}>
           <h2>{labels.weekdayTitle}</h2>
-          <Row
-            items={(['shacharit', 'mincha', 'arvit'] as const).map((key) => ({
-              label: labels.weekday[key],
-              value: schedule.weekday[key],
-            }))}
-          />
+          <PrayerRows prayers={schedule.weekday} />
         </section>
 
         <section className="blue-gold-panel" style={at(shabbatBox)}>
           <h2>{labels.shabbatTitle}</h2>
-          <Row
-            items={(['shirHashirim', 'minchaErev', 'shacharit', 'mincha'] as const).map((key) => ({
-              label: labels.shabbat[key],
-              value: schedule.shabbat[key],
-            }))}
-          />
+          <PrayerRows prayers={schedule.shabbat} />
           <div className="h-2" />
           <Row
+            compact={schedule.shabbat.length > MAX_PER_ROW}
             items={[
-              { label: labels.shabbat.arvit, value: timeOf(shabbat.motzeiShabbatArvit) },
               {
+                key: 'arvit',
+                label: labels.shabbat.arvit,
+                value: timeOf(shabbat.motzeiShabbatArvit),
+              },
+              {
+                key: 'candleLighting',
                 label: labels.candleLighting,
                 value: timeOf(shabbat.candleLighting),
                 highlight: true,
               },
-              { label: labels.rabbeinuTam, value: timeOf(shabbat.rabbeinuTam), highlight: true },
+              {
+                key: 'rabbeinuTam',
+                label: labels.rabbeinuTam,
+                value: timeOf(shabbat.rabbeinuTam),
+                highlight: true,
+              },
             ]}
           />
         </section>

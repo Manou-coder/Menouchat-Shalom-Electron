@@ -49,15 +49,15 @@ describe('display state service', () => {
     const states = service.watch('main', controller.signal);
 
     const first = await states.next();
-    expect((first.value as DisplayState).schedule.weekday.shacharit).toBe('06:20');
+    expect((first.value as DisplayState).schedule.weekday[0]?.time).toBe('06:20');
 
     inputs.schedule = {
       ...inputs.schedule,
-      weekday: { ...inputs.schedule.weekday, shacharit: '06:45' },
+      weekday: [{ id: 'early', name: 'שחרית', time: '06:45' }],
     };
     const next = states.next();
     changes.notify();
-    expect(((await next).value as DisplayState).schedule.weekday.shacharit).toBe('06:45');
+    expect(((await next).value as DisplayState).schedule.weekday[0]?.time).toBe('06:45');
     controller.abort();
   });
 

@@ -5,21 +5,29 @@ import { z } from 'zod';
 
 import {
   adminStateSchema,
+  dayEventToggleInputSchema,
   displayStateSchema,
   healthSchema,
   layoutInputSchema,
   scheduleInputSchema,
   slideIntervalInputSchema,
   slideToggleInputSchema,
+  libraryItemRefInputSchema,
+  renameLibraryItemInputSchema,
+  showLibraryItemInputSchema,
+  updateCheckResultSchema,
   type AdminState,
+  type DayEventKind,
   type DisplayState,
   type LayoutId,
   type ScheduleInput,
-  type Slide,
+  type LibraryItem,
   type SlideSlot,
+  type UpdateCheckResult,
 } from '@menouchat/shared';
 
 import { parseSlideUpload, type SlideUpload } from './slide-upload.ts';
+import { parseTemplateUpload, type TemplateUpload } from './template-upload.ts';
 import { publicProcedure, router } from './trpc.ts';
 
 export interface DisplayStateApi {
@@ -31,10 +39,16 @@ export interface AdminApi {
   getState(): Promise<AdminState>;
   watch(signal: AbortSignal): AsyncIterable<AdminState>;
   updateSchedule(input: ScheduleInput): Promise<void>;
-  uploadSlide(upload: SlideUpload): Promise<Slide>;
+  uploadFile(upload: SlideUpload): Promise<LibraryItem>;
+  showItem(slot: SlideSlot, itemId: string): Promise<void>;
   setSlideEnabled(slot: SlideSlot, enabled: boolean): Promise<void>;
   setSlideInterval(seconds: number): Promise<void>;
   setLayout(layoutId: LayoutId): Promise<void>;
+  setDayEventEnabled(kind: DayEventKind, enabled: boolean): Promise<void>;
+  saveTemplate(upload: TemplateUpload): Promise<LibraryItem>;
+  duplicateItem(itemId: string): Promise<LibraryItem>;
+  renameItem(itemId: string, name: string): Promise<void>;
+  removeItem(itemId: string): Promise<void>;
 }
 
 /** What only the app's own windows may ask of the desktop app. */
@@ -42,6 +56,7 @@ export interface DesktopApi {
   showAdmin(): void;
   /** Restarts into a downloaded update. */
   installUpdate(): void;
+  checkForUpdate(): Promise<UpdateCheckResult>;
 }
 
 export interface AppRouterDependencies {
@@ -108,6 +123,10 @@ export function createAppRouter({ version, displayStates, admin, desktop }: AppR
         desktop.installUpdate();
       }),
 
+      checkForUpdate: adminProcedure
+        .output(updateCheckResultSchema)
+        .mutation(() => desktop.checkForUpdate()),
+
       state: adminProcedure.output(adminStateSchema).query(() => admin.getState()),
 
       onState: adminProcedure.subscription(async function* ({ signal }) {
@@ -118,20 +137,43 @@ export function createAppRouter({ version, displayStates, admin, desktop }: AppR
         .input(scheduleInputSchema)
         .mutation(({ input }) => admin.updateSchedule(input)),
 
+      setDayEventEnabled: adminProcedure
+        .input(dayEventToggleInputSchema)
+        .mutation(({ input }) => admin.setDayEventEnabled(input.kind, input.enabled)),
+
       setLayout: adminProcedure
         .input(layoutInputSchema)
         .mutation(({ input }) => admin.setLayout(input.layoutId)),
 
       slides: router({
+        /** A file to the library, shown in a slot when the form names one. */
         upload: adminProcedure
           .input(z.instanceof(FormData))
-          .mutation(({ input }) => admin.uploadSlide(parseSlideUpload(input))),
+          .mutation(({ input }) => admin.uploadFile(parseSlideUpload(input))),
+        show: adminProcedure
+          .input(showLibraryItemInputSchema)
+          .mutation(({ input }) => admin.showItem(input.slot, input.itemId)),
         setEnabled: adminProcedure
           .input(slideToggleInputSchema)
           .mutation(({ input }) => admin.setSlideEnabled(input.slot, input.enabled)),
         setInterval: adminProcedure
           .input(slideIntervalInputSchema)
           .mutation(({ input }) => admin.setSlideInterval(input.slideIntervalSec)),
+      }),
+
+      library: router({
+        saveTemplate: adminProcedure
+          .input(z.instanceof(FormData))
+          .mutation(({ input }) => admin.saveTemplate(parseTemplateUpload(input))),
+        duplicate: adminProcedure
+          .input(libraryItemRefInputSchema)
+          .mutation(({ input }) => admin.duplicateItem(input.itemId)),
+        rename: adminProcedure
+          .input(renameLibraryItemInputSchema)
+          .mutation(({ input }) => admin.renameItem(input.itemId, input.name)),
+        remove: adminProcedure
+          .input(libraryItemRefInputSchema)
+          .mutation(({ input }) => admin.removeItem(input.itemId)),
       }),
     }),
   });

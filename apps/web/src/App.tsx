@@ -8,6 +8,7 @@ import { NotFoundPage } from './pages/NotFoundPage.tsx';
 const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/admin" replace /> },
   { path: '/admin', element: <AdminPage /> },
+  { path: '/admin/:section', element: <AdminPage /> },
   { path: '/display/:id', element: <DisplayPage /> },
   { path: '*', element: <NotFoundPage /> },
 ]);

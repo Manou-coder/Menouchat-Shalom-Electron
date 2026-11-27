@@ -1,8 +1,14 @@
 import { z } from 'zod';
 
 import { displaySchema, layoutIdSchema } from './persisted/displays.ts';
+import { DAY_EVENT_KINDS, dayEventSettingsSchema } from './persisted/settings.ts';
 import { scheduleSchema } from './persisted/schedule.ts';
-import { slideSchema, slideSlotSchema } from './persisted/slides.ts';
+import {
+  libraryItemIdSchema,
+  libraryItemSchema,
+  slideSlotSchema,
+  slotSchema,
+} from './persisted/slides.ts';
 
 export const scheduleInputSchema = scheduleSchema.omit({ schemaVersion: true });
 export type ScheduleInput = z.infer<typeof scheduleInputSchema>;
@@ -10,6 +16,12 @@ export type ScheduleInput = z.infer<typeof scheduleInputSchema>;
 export const slideIntervalInputSchema = displaySchema.pick({ slideIntervalSec: true });
 
 export const layoutInputSchema = z.object({ layoutId: layoutIdSchema });
+
+/** Switches one kind of day event on or off on the screens. */
+export const dayEventToggleInputSchema = z.object({
+  kind: z.enum(DAY_EVENT_KINDS),
+  enabled: z.boolean(),
+});
 
 /** A newer version found on GitHub: downloaded in the background, installed on restart. */
 export const updateStatusSchema = z.discriminatedUnion('status', [
@@ -19,15 +31,31 @@ export const updateStatusSchema = z.discriminatedUnion('status', [
 ]);
 export type UpdateStatus = z.infer<typeof updateStatusSchema>;
 
+/** The answer to "check for an update now", asked from the admin. */
+export const updateCheckResultSchema = z.discriminatedUnion('result', [
+  z.object({ result: z.literal('upToDate') }),
+  /** Found, or already downloading or ready: `UpdateStatus` follows its download. */
+  z.object({ result: z.literal('found'), version: z.string() }),
+  /** Only an installed build knows where its updates come from. */
+  z.object({ result: z.literal('disabled') }),
+  z.object({ result: z.literal('failed') }),
+]);
+export type UpdateCheckResult = z.infer<typeof updateCheckResultSchema>;
+
 /** Everything the admin shows, pushed again after every change. */
 export const adminStateSchema = z.object({
   schedule: scheduleInputSchema,
-  slides: z.array(slideSchema),
+  /** The filled slots. */
+  slots: z.array(slotSchema),
+  /** Every picture and template, newest first, with the room its files take on disk. */
+  library: z.array(z.intersection(libraryItemSchema, z.object({ sizeBytes: z.number() }))),
   slideIntervalSec: displaySchema.shape.slideIntervalSec,
   /** The main display's layout ("theme" in the admin). */
   layoutId: displaySchema.shape.layoutId,
   /** Full addresses of the admin on this PC's local network, to type on a phone. */
   phoneUrls: z.array(z.string()),
+  /** Which kinds of day events the screens announce. */
+  events: dayEventSettingsSchema,
   update: updateStatusSchema,
 });
 export type AdminState = z.infer<typeof adminStateSchema>;
@@ -40,10 +68,34 @@ export const SLIDE_UPLOAD_LIMITS = {
   imageBytes: 10 * 1024 * 1024,
 } as const;
 
-/** Form field names of the slide upload (multipart/form-data). */
+/** Form field names of a file upload (multipart/form-data); without `slot`, to the library only. */
 export const SLIDE_UPLOAD_FIELDS = {
   slot: 'slot',
   title: 'title',
   original: 'original',
   image: 'image',
 } as const;
+
+/** Form field names of a template save (multipart/form-data); `id` only to update one. */
+export const TEMPLATE_UPLOAD_FIELDS = {
+  id: 'id',
+  name: 'name',
+  /** JSON of a `SlideDesign`. */
+  design: 'design',
+  /** PNG, JPEG or WebP. */
+  background: 'background',
+  /** The JPEG rendered in the browser. */
+  image: 'image',
+} as const;
+
+export const libraryItemRefInputSchema = z.object({ itemId: libraryItemIdSchema });
+
+export const showLibraryItemInputSchema = z.object({
+  slot: slideSlotSchema,
+  itemId: libraryItemIdSchema,
+});
+
+export const renameLibraryItemInputSchema = z.object({
+  itemId: libraryItemIdSchema,
+  name: libraryItemSchema.options[0].shape.name,
+});

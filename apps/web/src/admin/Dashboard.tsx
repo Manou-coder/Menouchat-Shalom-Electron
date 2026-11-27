@@ -1,82 +1,104 @@
-import { useEffect, useState } from 'react';
+import { Navigate, useParams } from 'react-router';
 
 import { strings } from '@menouchat/shared';
 
-import { useApiClient } from '../api/api-client.ts';
-import logo from '../assets/logo.png';
+import logoFull from '../assets/logo-full.png';
+import logoSymbol from '../assets/logo-symbol.png';
+import { AdminNav } from './AdminNav.tsx';
+import { DayEventsCard } from './cards/DayEventsCard.tsx';
 import { LayoutCard } from './cards/LayoutCard.tsx';
 import { ShabbatTimesCard, WeekdayTimesCard } from './cards/ScheduleCards.tsx';
 import { SlidesCard } from './cards/SlidesCard.tsx';
+import { UpdateCard } from './cards/UpdateCard.tsx';
+import { LibraryCard } from './pictures/LibraryCard.tsx';
 import { PhoneAddress } from './PhoneAddress.tsx';
-import { UpdateBanner } from './UpdateBanner.tsx';
+import { DEFAULT_SECTION, parseSection, sectionPath, type AdminSection } from './sections.ts';
+import { Card } from './ui/Card.tsx';
 import { useAdminState } from './use-admin-state.ts';
 
-function useVersion(): string | undefined {
-  const api = useApiClient();
-  const [version, setVersion] = useState<string>();
-  useEffect(() => {
-    void api.health.query().then(
-      (health) => {
-        setVersion(health.version);
-      },
-      () => undefined,
-    );
-  }, [api]);
-  return version;
-}
-
-/** Every card on one page: one column on a phone, a grid on wider screens (plan §9). */
+/**
+ * One section of the menu at a time. Every section stays mounted and only the current one
+ * is shown, so unsaved edits survive a switch to another section and back.
+ */
 export function Dashboard() {
+  const { section: param } = useParams();
+  const section = parseSection(param);
   const { state, reconnecting } = useAdminState();
-  const version = useVersion();
+
+  if (section === undefined) {
+    return <Navigate to={sectionPath(DEFAULT_SECTION)} replace />;
+  }
+
+  const shown = (id: AdminSection) => ({ hidden: section !== id });
 
   return (
     <>
       <header className="sticky top-0 z-10 border-b border-border/70 bg-surface/85 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">
-          <img src={logo} alt="" className="size-11 shrink-0" />
+        <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
+          {/*
+            The full logo, with its address, from 640 px up; the candle and book alone on a
+            phone, where the address would be unreadable. Its dark grey needs a light backing
+            in dark mode.
+          */}
+          <img
+            src={logoSymbol}
+            alt=""
+            className="size-11 shrink-0 rounded-lg sm:hidden dark:bg-white/90 dark:p-0.5"
+          />
+          <img
+            src={logoFull}
+            alt=""
+            className="hidden h-16 w-auto shrink-0 rounded-lg sm:block dark:bg-white/90 dark:p-1"
+          />
           <h1 className="min-w-0 flex-1 text-xl font-bold">
-            {strings.appName} ·{' '}
+            {/* The logo already shows the name on wider screens. */}
+            <span className="sm:sr-only">{strings.appName} · </span>
             <span className="font-medium text-text-muted">{strings.admin.title}</span>
           </h1>
-          {state !== undefined && (
-            // Its own full-width line, so the addresses do not break beside the logo.
-            <div className="w-full">
-              <PhoneAddress urls={state.phoneUrls} />
-            </div>
-          )}
         </div>
       </header>
-      <main className="mx-auto grid max-w-5xl grid-cols-1 gap-5 px-4 py-5 sm:py-8">
-        {reconnecting && (
-          <p role="status" className="rounded-lg bg-danger px-4 py-2 text-white">
-            {strings.admin.connectionLost}
-          </p>
-        )}
+      {/* Bottom padding on a phone keeps the last card clear of the tab bar. */}
+      <div className="mx-auto max-w-5xl gap-6 px-4 pt-5 pb-28 sm:pt-8 md:flex md:pb-8">
+        <AdminNav updatePending={state !== undefined && state.update.status !== 'none'} />
+        <main className="grid min-w-0 flex-1 content-start gap-5">
+          {reconnecting && (
+            <p role="status" className="rounded-lg bg-danger px-4 py-2 text-white">
+              {strings.admin.connectionLost}
+            </p>
+          )}
 
-        {state !== undefined && <UpdateBanner update={state.update} />}
-
-        {state === undefined ? (
-          <p role="status">{strings.admin.loading}</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <WeekdayTimesCard schedule={state.schedule} />
-            <ShabbatTimesCard schedule={state.schedule} />
-            <div className="md:col-span-2">
-              <SlidesCard slides={state.slides} slideIntervalSec={state.slideIntervalSec} />
-            </div>
-            <div className="md:col-span-2">
-              <LayoutCard layoutId={state.layoutId} />
-            </div>
-          </div>
-        )}
-
-        {version !== undefined && (
-          <footer className="text-center text-sm text-text-muted" dir="ltr">
-            v{version}
-          </footer>
-        )}
-      </main>
+          {state === undefined ? (
+            <p role="status">{strings.admin.loading}</p>
+          ) : (
+            <>
+              <div {...shown('times')} className="grid gap-5">
+                <WeekdayTimesCard schedule={state.schedule} />
+                <ShabbatTimesCard schedule={state.schedule} />
+              </div>
+              <div {...shown('slides')}>
+                <SlidesCard
+                  slots={state.slots}
+                  library={state.library}
+                  slideIntervalSec={state.slideIntervalSec}
+                />
+              </div>
+              <div {...shown('library')}>
+                <LibraryCard library={state.library} slots={state.slots} />
+              </div>
+              <div {...shown('layout')}>
+                <LayoutCard layoutId={state.layoutId} />
+              </div>
+              <div {...shown('settings')} className="grid gap-5">
+                <Card title={strings.admin.phone.title}>
+                  <PhoneAddress urls={state.phoneUrls} />
+                </Card>
+                <DayEventsCard events={state.events} />
+                <UpdateCard update={state.update} />
+              </div>
+            </>
+          )}
+        </main>
+      </div>
     </>
   );
 }

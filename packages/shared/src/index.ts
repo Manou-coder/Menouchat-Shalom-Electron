@@ -1,14 +1,21 @@
 export {
   adminStateSchema,
+  TEMPLATE_UPLOAD_FIELDS,
+  libraryItemRefInputSchema,
+  renameLibraryItemInputSchema,
+  showLibraryItemInputSchema,
+  dayEventToggleInputSchema,
   layoutInputSchema,
   scheduleInputSchema,
   SLIDE_UPLOAD_FIELDS,
   SLIDE_UPLOAD_LIMITS,
   slideIntervalInputSchema,
   slideToggleInputSchema,
+  updateCheckResultSchema,
   updateStatusSchema,
   type AdminState,
   type ScheduleInput,
+  type UpdateCheckResult,
   type UpdateStatus,
 } from './admin.ts';
 export {
@@ -20,9 +27,11 @@ export {
   type DesktopBridge,
 } from './desktop-bridge.ts';
 export {
+  dayEventSchema,
+  type DayEventSnapshot,
   displayStateSchema,
   SLIDES_PATH,
-  slidePageUrl,
+  libraryFileUrl,
   zmanSchema,
   type DisplayState,
   type ZmanSnapshot,

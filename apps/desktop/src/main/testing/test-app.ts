@@ -19,7 +19,7 @@ export interface TestApp {
   admin: AdminService;
   changes: ChangeHub;
   slidesRoot: string;
-  /** Calls the API made to the desktop app (open admin, install update). */
+  /** Calls the API made to the desktop app (open admin, check for and install updates). */
   desktopCalls: string[];
   dispose(): Promise<void>;
 }
@@ -63,6 +63,10 @@ export async function createTestApp(
     desktop: {
       showAdmin: () => desktopCalls.push('showAdmin'),
       installUpdate: () => desktopCalls.push('installUpdate'),
+      checkForUpdate: () => {
+        desktopCalls.push('checkForUpdate');
+        return Promise.resolve({ result: 'upToDate' });
+      },
     },
     slidesRoot,
     onError: () => undefined,
